@@ -1,19 +1,12 @@
 <head>
   <script type="text/javascript" src="jquery-1.8.3.js"></script>
+  <script type="text/javascript" src="dropblox.js"></script>
 </head>
 
-<body style="text-align: center;" onload="initialize()">
+<body style="text-align: center;" onload="board.initialize()">
   <object id="board" data="Board.swf" type="application/x-shockwave-flash" width="280" height="416">
     <param name="movie" value="Board.swf" />
     <!-- mode can be either "human" or "ai", gravity can be either "on" or "off" -->
     <param name="flashVars" value="mode=human&gravity=on" />
   </object>
 </body>
-
-<script>
-  var board;
-
-  function initialize() {
-    board = document.getElementById('board');
-  };
-</script>

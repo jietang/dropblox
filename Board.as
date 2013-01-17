@@ -113,6 +113,7 @@ package {
     // Auxiliary board variables.
     private var repeater:KeyRepeater;
     private var keysFired:Vector.<int>;
+    private var blockId:int;
 
     // Draw optimization variables.
     private var lastPos:Point;
@@ -254,6 +255,8 @@ package {
       heldBlockType = -1;
       score = 0;
       state = PLAYING;
+
+      blockId = -1;
     }
 
     private function gameLoop(e:TimerEvent):void {
@@ -377,6 +380,7 @@ package {
 
       held = (swap != null);
       optimize = false;
+      blockId++;
       return block;
     }
 
@@ -841,18 +845,18 @@ package {
     }
 
     public function getHeldBlock():String {
-      return (heldBlockType < 0 ? 'null' : stringifyBlock(Block.prototypes[heldBlockType], true));
+      return (heldBlockType < 0 ? 'null' : stringifyBlock(Block.prototypes[heldBlockType], false));
     }
 
     public function getNextBlocks():String {
       var blocksJSON:Vector.<String> = new Vector.<String>();
       for (var i:int = 0; i < preview.length; i++) {
-        blocksJSON.push(stringifyBlock(Block.prototypes[preview[i]], true));
+        blocksJSON.push(stringifyBlock(Block.prototypes[preview[i]], false));
       }
       return '[' + blocksJSON.join(',') + ']';
     }
 
-    public function stringifyBlock(block:Block, reset:Boolean=false):String {
+    public function stringifyBlock(block:Block, active:Boolean=true):String {
       var offsets:Vector.<Object> = new Vector.<Object>();
       for (var k:int = 0; k < block.numSquares; k++) {
         if (block.angle % 2 == 0) {
@@ -869,11 +873,15 @@ package {
       }
 
       return JSON.stringify({
+        id: (active ? blockId : -1),
         center: {
-          i: (reset ? 0 : block.y),
-          j: (reset ? 0 : block.x)
+          i: (active ? block.y : 0),
+          j: (active ? block.x : 0)
         },
-        offsets: offsets
+        offsets: offsets,
+        localStickFrames: block.localStickFrames,
+        globalStickFrames: block.globalStickFrames,
+        rotates: block.rotates
       });
     }
   }
