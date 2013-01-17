@@ -24,6 +24,10 @@ package {
   import KeyRepeater;
 
   public class Board extends MovieClip {
+    // Variables read from flashVars.
+    private static var human:Boolean;
+    private static var gravity:Boolean;
+
     // Board size constants.
     private static const VISIBLEROWS:int = 24;
     private static const ROWS:int = (VISIBLEROWS + Block.MAXBLOCKSIZE - 1);
@@ -96,6 +100,7 @@ package {
 
     // Board data structures.
     private var data:Vector.<Vector.<int>>;
+    private var binaryData:Vector.<Vector.<int>>;
     private var curBlock:Block;
     private var preview:Vector.<int>;
     private var previewFrame:int;
@@ -117,8 +122,10 @@ package {
     private var optimize:Boolean;
 
     public function Board() {
-      setSquareWidth(21);
+      human = (flashVars().mode == 'human');
+      gravity = (flashVars().gravity == 'on');
 
+      setSquareWidth(16);
       stage.align = StageAlign.TOP_LEFT;
       stage.scaleMode = StageScaleMode.NO_SCALE;
       initGraphics();
@@ -126,13 +133,17 @@ package {
       Block.loadBlockData();
 
       data = new Vector.<Vector.<int>>();
+      binaryData = new Vector.<Vector.<int>>();
       for (var i:int = 0; i < ROWS; i++) {
         data.push(new Vector.<int>(COLS));
         data[i].fixed = true;
+        binaryData.push(new Vector.<int>(COLS));
+        binaryData[i].fixed = true;
       }
       data.fixed = true;
+      binaryData.fixed = true;
 
-      if (true) {
+      if (human) {
         repeater = new KeyRepeater(PAUSE, REPEAT);
         stage.addEventListener(KeyboardEvent.KEY_DOWN, repeater.keyPressed);
         stage.addEventListener(KeyboardEvent.KEY_UP, repeater.keyReleased);
@@ -144,8 +155,7 @@ package {
       lastPos = new Point();
       optimize = false;
 
-      //ExternalInterface.addCallback('pause', pauseTimer);
-      //ExternalInterface.addCallback('unpause', startTimer);
+      ExternalInterface.addCallback('getBoardState', getBoardState);
       startTimer();
     }
 
@@ -229,6 +239,7 @@ package {
       for (var i:int = 0; i < ROWS; i++) {
         for (var j:int = 0; j < COLS; j++) {
           data[i][j] = Color.BLACK;
+          binaryData[i][j] = 0;
         }
       }
 
@@ -307,10 +318,13 @@ package {
         curFrame = (curFrame + 1) % MAXFRAME;
 
         if (keysFired.indexOf(Key.PAUSE) >= 0) {
-          state = PAUSED;
-          optimize = false;
-          return;
-        } else if (!held && keysFired.indexOf(Key.HOLD) >= 0) {
+          if (human) {
+            state = PAUSED;
+            optimize = false;
+            return;
+          }
+        }
+        if (!held && keysFired.indexOf(Key.HOLD) >= 0) {
           curBlock = getNextBlock(curBlock);
         } else if (curBlock == null || moveBlock(curBlock)) {
           curBlock = getNextBlock();
@@ -366,7 +380,7 @@ package {
     // Returns true if this block was placed.
     private function moveBlock(block:Block):Boolean {
       var shift:int = 0;
-      var drop:Boolean = curFrame % GRAVITY == 0;
+      var drop:Boolean = (gravity && curFrame % GRAVITY == 0);
       var turn:int = 0;
       var moved:Boolean = false;
 
@@ -486,6 +500,7 @@ package {
           point.y = block.y + (2 - (block.angle % 4))*block.squares[i].x;
         }
         data[point.y][point.x] = block.color;
+        binaryData[point.y][point.x] = 1;
       }
 
       score += POINTS[removeRows()];
@@ -507,12 +522,15 @@ package {
         if (isRowFull) {
           for (j = 0; j < COLS; j++) {
             data[i][j] = Color.BLACK;
+            binaryData[i][j] = 0;
           }
           numRowsCleared++;
         } else if (numRowsCleared > 0) {
           for (j = 0; j < COLS; j++) {
             data[i + numRowsCleared][j] = data[i][j];
             data[i][j] = Color.BLACK;
+            binaryData[i + numRowsCleared][j] = binaryData[i][j];
+            binaryData[i][j] = 0;
           }
         }
       }
@@ -805,6 +823,14 @@ package {
       for (var i:int = 0; i < l; i++) {
         bd.setPixel(x + i, y - i, c);
       }
+    }
+
+//-------------------------------------------------------------------------
+// AI game-playing API begins here!
+//-------------------------------------------------------------------------
+
+    public function getBoardState():String {
+      return JSON.stringify(binaryData);
     }
   }
 }

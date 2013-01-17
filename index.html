@@ -2,9 +2,10 @@
   <script type="text/javascript" src="jquery-1.8.3.js"></script>
 </head>
 
-<body bgcolor=white>
-  <object id="board" data="Board.swf" type="application/x-shockwave-flash" width="367" height="546">
+<body style="text-align: center;">
+  <object id="board" data="Board.swf" type="application/x-shockwave-flash" width="280" height="416">
     <param name="movie" value="Board.swf" />
-    <param name="allowScriptAccess" value="always" />
+    <!-- mode can be either "human" or "ai", gravity can be either "on" or "off" -->
+    <param name="flashVars" value="mode=human&gravity=on" />
   </object>
 </body>
