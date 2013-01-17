@@ -315,7 +315,7 @@ package {
     }
 
 //-------------------------------------------------------------------------
-// ntris game logic begins here!
+// Game logic begins here!
 //-------------------------------------------------------------------------
     private function update():void {
       repeater.query(keysFired);
