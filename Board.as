@@ -115,6 +115,10 @@ package {
     private var keysFired:Vector.<int>;
     private var blockId:int;
 
+    // Used by an AI to issue commands on the board.
+    private static const MAX_NUM_COMMANDS:int = 64;
+    private var commands:Vector.<int>;
+
     // Draw optimization variables.
     private var lastPos:Point;
     private var lastAngle:int;
@@ -148,8 +152,9 @@ package {
         repeater = new KeyRepeater(PAUSE, REPEAT);
         stage.addEventListener(KeyboardEvent.KEY_DOWN, repeater.keyPressed);
         stage.addEventListener(KeyboardEvent.KEY_UP, repeater.keyReleased);
-        keysFired = new Vector.<int>();
       }
+      keysFired = new Vector.<int>();
+      commands = new Vector.<int>();
 
       resetBoard();
 
@@ -160,6 +165,7 @@ package {
       ExternalInterface.addCallback('getCurBlock', getCurBlock);
       ExternalInterface.addCallback('getHeldBlock', getHeldBlock);
       ExternalInterface.addCallback('getNextBlocks', getNextBlocks);
+      ExternalInterface.addCallback('issueCommand', issueCommand);
       startTimer();
     }
 
@@ -256,6 +262,8 @@ package {
       score = 0;
       state = PLAYING;
 
+      keysFired.length = 0;
+      commands.length = 0;
       blockId = -1;
     }
 
@@ -318,7 +326,14 @@ package {
 // Game logic begins here!
 //-------------------------------------------------------------------------
     private function update():void {
-      repeater.query(keysFired);
+      keysFired.length = 0;
+      if (human) {
+        repeater.query(keysFired);
+      }
+      // Execute commands in the commands list, up to one per frame.
+      if (commands.length && keysFired.indexOf(commands[0]) < 0) {
+        keysFired.push(commands.shift());
+      }
 
       if (state == PLAYING) {
         curFrame = (curFrame + 1) % MAXFRAME;
@@ -854,6 +869,14 @@ package {
         blocksJSON.push(stringifyBlock(Block.prototypes[preview[i]], false));
       }
       return '[' + blocksJSON.join(',') + ']';
+    }
+
+    public function issueCommand(command:int):void {
+      if (commands.length < MAX_NUM_COMMANDS) {
+        if (command >= Key.UP && command <= Key.HOLD) {
+          commands.push(command);
+        }
+      }
     }
 
     public function stringifyBlock(block:Block, active:Boolean=true):String {

@@ -43,8 +43,6 @@ package {
     }
 
     public function query(keysFired:Vector.<int>):void {
-      keysFired.length = 0;
-
       for (var key:int = 0; key < Key.NUMKEYS; key++) {
         if (isKeyDown[key]) {
           if (fireFrames[key] < 0) {
