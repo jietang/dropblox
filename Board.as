@@ -156,6 +156,9 @@ package {
       optimize = false;
 
       ExternalInterface.addCallback('getBoardState', getBoardState);
+      ExternalInterface.addCallback('getCurBlock', getCurBlock);
+      ExternalInterface.addCallback('getHeldBlock', getHeldBlock);
+      ExternalInterface.addCallback('getNextBlocks', getNextBlocks);
       startTimer();
     }
 
@@ -831,6 +834,47 @@ package {
 
     public function getBoardState():String {
       return JSON.stringify(binaryData);
+    }
+
+    public function getCurBlock():String {
+      return (curBlock == null ? 'null' : stringifyBlock(curBlock));
+    }
+
+    public function getHeldBlock():String {
+      return (heldBlockType < 0 ? 'null' : stringifyBlock(Block.prototypes[heldBlockType], true));
+    }
+
+    public function getNextBlocks():String {
+      var blocksJSON:Vector.<String> = new Vector.<String>();
+      for (var i:int = 0; i < preview.length; i++) {
+        blocksJSON.push(stringifyBlock(Block.prototypes[preview[i]], true));
+      }
+      return '[' + blocksJSON.join(',') + ']';
+    }
+
+    public function stringifyBlock(block:Block, reset:Boolean=false):String {
+      var offsets:Vector.<Object> = new Vector.<Object>();
+      for (var k:int = 0; k < block.numSquares; k++) {
+        if (block.angle % 2 == 0) {
+          offsets.push({
+            i: (1 - (block.angle % 4))*block.squares[k].y,
+            j: (1 - (block.angle % 4))*block.squares[k].x
+          });
+        } else {
+          offsets.push({
+            i: (2 - (block.angle % 4))*block.squares[k].x,
+            j: -(2 - (block.angle % 4))*block.squares[k].y
+          });
+        }
+      }
+
+      return JSON.stringify({
+        center: {
+          i: (reset ? 0 : block.y),
+          j: (reset ? 0 : block.x)
+        },
+        offsets: offsets
+      });
     }
   }
 }
