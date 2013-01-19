@@ -162,9 +162,6 @@ package {
       optimize = false;
 
       ExternalInterface.addCallback('getBoardState', getBoardState);
-      ExternalInterface.addCallback('getCurBlock', getCurBlock);
-      ExternalInterface.addCallback('getHeldBlock', getHeldBlock);
-      ExternalInterface.addCallback('getNextBlocks', getNextBlocks);
       ExternalInterface.addCallback('issueCommand', issueCommand);
       startTimer();
     }
@@ -476,8 +473,10 @@ package {
           block.localStickFrames--;
         }
         if (block.localStickFrames <= 0 || block.globalStickFrames <= 0) {
-          placeBlock(block);
-          return true;
+          if (gravity) {
+            placeBlock(block);
+            return true;
+          }
         }
       }
 
@@ -852,34 +851,31 @@ package {
 //-------------------------------------------------------------------------
 
     public function getBoardState():String {
-      return JSON.stringify(binaryData);
+      return JSON.stringify({
+        board: binaryData,
+        curBlock: getCurBlock(),
+        heldBlock: getHeldBlock(),
+        nextBlocks: getNextBlocks()
+      });
     }
 
-    public function getCurBlock():String {
-      return (curBlock == null ? 'null' : stringifyBlock(curBlock));
+    public function getCurBlock():Object {
+      return (curBlock == null ? null : blockObject(curBlock));
     }
 
-    public function getHeldBlock():String {
-      return (heldBlockType < 0 ? 'null' : stringifyBlock(Block.prototypes[heldBlockType], false));
+    public function getHeldBlock():Object {
+      return (heldBlockType < 0 ? 'null' : blockObject(Block.prototypes[heldBlockType], false));
     }
 
-    public function getNextBlocks():String {
-      var blocksJSON:Vector.<String> = new Vector.<String>();
+    public function getNextBlocks():Vector.<Object> {
+      var blocks:Vector.<Object> = new Vector.<Object>();
       for (var i:int = 0; i < preview.length; i++) {
-        blocksJSON.push(stringifyBlock(Block.prototypes[preview[i]], false));
+        blocks.push(blockObject(Block.prototypes[preview[i]], false));
       }
-      return '[' + blocksJSON.join(',') + ']';
+      return blocks;
     }
 
-    public function issueCommand(command:int):void {
-      if (commands.length < MAX_NUM_COMMANDS) {
-        if (command >= Key.UP && command <= Key.HOLD) {
-          commands.push(command);
-        }
-      }
-    }
-
-    public function stringifyBlock(block:Block, active:Boolean=true):String {
+    public function blockObject(block:Block, active:Boolean=true):Object {
       var offsets:Vector.<Object> = new Vector.<Object>();
       for (var k:int = 0; k < block.numSquares; k++) {
         if (block.angle % 2 == 0) {
@@ -895,17 +891,23 @@ package {
         }
       }
 
-      return JSON.stringify({
+      return {
         id: (active ? blockId : -1),
         center: {
           i: (active ? block.y : 0),
           j: (active ? block.x : 0)
         },
         offsets: offsets,
-        localStickFrames: block.localStickFrames,
-        globalStickFrames: block.globalStickFrames,
         rotates: block.rotates
-      });
+      };
+    }
+
+    public function issueCommand(command:int):void {
+      if (commands.length < MAX_NUM_COMMANDS) {
+        if (command >= Key.UP && command <= Key.HOLD) {
+          commands.push(command);
+        }
+      }
     }
   }
 }

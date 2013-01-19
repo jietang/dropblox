@@ -9,18 +9,6 @@ var board = {
     return JSON.parse(this._board.getBoardState());
   },
 
-  getCurBlock: function() {
-    return JSON.parse(this._board.getCurBlock());
-  },
-
-  getHeldBlock: function() {
-    return JSON.parse(this._board.getHeldBlock());
-  },
-
-  getNextBlocks: function() {
-    return JSON.parse(this._board.getNextBlocks());
-  },
-
   issueCommand: function(command) {
     this._board.issueCommand(command);
   },
