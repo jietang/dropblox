@@ -38,6 +38,7 @@ class Board(object):
 
   def to_dict(self):
     return {
+      'state': self.state,
       'bitmap': self.bitmap,
       'block': self.block,
       'held_block': self.held_block,
@@ -60,7 +61,7 @@ class Board(object):
     self.score = 0
 
     self.block = self.get_block()
-    self.held_block = None
+    self.held_block = self.get_block()
     self.preview = [self.get_block() for i in range(PREVIEW)]
     self.state = 'playing'
 

@@ -127,8 +127,8 @@ package {
     private var optimize:Boolean;
 
     public function Board() {
-      human = (flashVars().mode == 'human');
-      gravity = (flashVars().gravity == 'on');
+      human = false;
+      gravity = false;
 
       setSquareWidth(16);
       stage.align = StageAlign.TOP_LEFT;
@@ -161,9 +161,10 @@ package {
       lastPos = new Point();
       optimize = false;
 
-      ExternalInterface.addCallback('getBoardState', getBoardState);
-      ExternalInterface.addCallback('issueCommand', issueCommand);
-      startTimer();
+      ExternalInterface.addCallback('setBoardState', setBoardState);
+      //ExternalInterface.addCallback('getBoardState', getBoardState);
+      //ExternalInterface.addCallback('issueCommand', issueCommand);
+      //startTimer();
     }
 
     private function flashVars():Object {
@@ -846,68 +847,44 @@ package {
       }
     }
 
-//-------------------------------------------------------------------------
-// AI game-playing API begins here!
-//-------------------------------------------------------------------------
+    public function setBoardState(json:String):void {
+      var vals:Object = JSON.parse(json);
 
-    public function getBoardState():String {
-      return JSON.stringify({
-        board: binaryData,
-        curBlock: getCurBlock(),
-        heldBlock: getHeldBlock(),
-        nextBlocks: getNextBlocks()
-      });
-    }
-
-    public function getCurBlock():Object {
-      return (curBlock == null ? null : blockObject(curBlock));
-    }
-
-    public function getHeldBlock():Object {
-      return (heldBlockType < 0 ? 'null' : blockObject(Block.prototypes[heldBlockType], false));
-    }
-
-    public function getNextBlocks():Vector.<Object> {
-      var blocks:Vector.<Object> = new Vector.<Object>();
-      for (var i:int = 0; i < preview.length; i++) {
-        blocks.push(blockObject(Block.prototypes[preview[i]], false));
+      if (vals.state == 'playing') {
+        state = PLAYING;
+      } else {
+        state = GAMEOVER;
       }
-      return blocks;
-    }
 
-    public function blockObject(block:Block, active:Boolean=true):Object {
-      var offsets:Vector.<Object> = new Vector.<Object>();
-      for (var k:int = 0; k < block.numSquares; k++) {
-        if (block.angle % 2 == 0) {
-          offsets.push({
-            i: (1 - (block.angle % 4))*block.squares[k].y,
-            j: (1 - (block.angle % 4))*block.squares[k].x
-          });
-        } else {
-          offsets.push({
-            i: (2 - (block.angle % 4))*block.squares[k].x,
-            j: -(2 - (block.angle % 4))*block.squares[k].y
-          });
+      for (var i:int = 0; i < ROWS; i++) {
+        for (var j:int = 0; j < COLS; j++) {
+          data[i][j] = (vals.bitmap[i][j] ? Color.WHITE : Color.BLACK);
         }
       }
 
-      return {
-        id: (active ? blockId : -1),
-        center: {
-          i: (active ? block.y : 0),
-          j: (active ? block.x : 0)
-        },
-        offsets: offsets,
-        rotates: block.rotates
-      };
+      curBlock = reconstructBlock(vals.block);
+      heldBlockType = vals.held_block.type;
+      preview.length = 0;
+      for (i = 0; i < PREVIEW; i++) {
+        preview.push(vals.preview[i].type);
+      }
+      score = vals.score;
+
+      optimize = false;
+      draw();
     }
 
-    public function issueCommand(command:int):void {
-      if (commands.length < MAX_NUM_COMMANDS) {
-        if (command >= Key.UP && command <= Key.HOLD) {
-          commands.push(command);
-        }
+    public function reconstructBlock(vals:Object):Block {
+      var block:Block = new Block(vals.type);
+      block.x = vals.center.j;
+      block.y = vals.center.i;
+
+      block.squares = new Vector.<Point>();
+      for (var i:int = 0; i < block.numSquares; i++) {
+        block.squares.push(new Point(vals.offsets[i].j, vals.offsets[i].i));
       }
+      block.rowsFree = calculateRowsFree(block);
+      return block;
     }
   }
 }
