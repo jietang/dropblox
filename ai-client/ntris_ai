@@ -61,7 +61,7 @@ def get_bitmaps_with_commands(bitmap, block):
       break
   return result
 
-def lookahead(bitmap, preview, objective, depth=1, max_per_round=1):
+def lookahead(bitmap, preview, objective, depth=2, max_per_round=10):
   bitmaps = [bitmap]
   for i in range(depth):
     bitmaps = itertools.chain(*(get_bitmaps(bitmap, preview[i]) for bitmap in bitmaps))
@@ -120,8 +120,9 @@ if __name__ == '__main__':
     state = json.loads(sys.argv[1])
     bitmaps = get_bitmaps_with_commands(state['bitmap'], state['block'])
     if bitmaps:
+      filtered = sorted(bitmaps.iteritems(), key=lambda x: objective(x[1]))[-10:]
       objective_fn = lambda x: lookahead(x[1], state['preview'], objective)
-      commands = max(bitmaps.iteritems(), key=objective_fn)[0]
+      commands = max(filtered, key=objective_fn)[0]
       for command in commands:
         print command
     else:
