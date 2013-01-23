@@ -61,7 +61,7 @@ def get_bitmaps_with_commands(bitmap, block):
       break
   return result
 
-def lookahead(bitmap, preview, objective, depth=2, max_per_round=1):
+def lookahead(bitmap, preview, objective, depth=1, max_per_round=1):
   bitmaps = [bitmap]
   for i in range(depth):
     bitmaps = itertools.chain(*(get_bitmaps(bitmap, preview[i]) for bitmap in bitmaps))
@@ -107,13 +107,12 @@ def diffs(l, pow):
   return sum(abs((l[i] - l[i + 1])**pow) for i in range(len(l) - 1))
 
 def objective(bitmap):
-  #heights = get_heights(bitmap)
-  densities = get_densities(bitmap)
+  heights = get_heights(bitmap)
   return -(
-    numpy.average(densities) +
-    4*numpy.std(densities) +
-    0.5*diffs(densities, 4) +
-    16*weighted_holes(bitmap)
+    10*numpy.average(heights) +
+    0.15*numpy.std(heights) +
+    0.15*diffs(heights, 2) +
+    1*max(heights)
   )
 
 if __name__ == '__main__':
