@@ -6,6 +6,7 @@
 
 import cherrypy
 import random
+import bcrypt
 import json
 import os
 
@@ -13,6 +14,9 @@ from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
 
 from logic.Board import Board
+
+# Admin
+ADMIN_HASHED_PW = "$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy"
 
 # Messaging protocol
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
@@ -41,8 +45,7 @@ def generate_game_id():
     choices += choices.upper()
     choices += '0123456789'
     while True:
-        candidate = ''.join([random.choice(choices) for i in xrange(8)])
-        # TODO: check to make sure game doesn't already exist
+        candidate = ''.join([random.choice(choices) for i in xrange(12)])
         break
     return candidate
 
@@ -69,6 +72,7 @@ class DropbloxWebSocketHandler(WebSocket):
             if msg['game_id'] in GAMES:
                 self.game_id = msg['game_id']
                 GAME_ID_TO_WEBSOCKET[self.game_id] = self
+                self.started = True
 
                 game = GAMES[self.game_id]
                 if game.state == 'playing':
@@ -117,9 +121,12 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     def clear_games(self, password):
-        for conn in GAME_ID_TO_WEBSOCKET.values():
-            conn.close(code=DO_NOT_RECONNECT, reason="Clearing all games")
-        GAMES.clear()
+        if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
+            for conn in GAME_ID_TO_WEBSOCKET.values():
+                conn.close(code=DO_NOT_RECONNECT, reason="Clearing all games")
+            GAMES.clear()
+        else:
+            return 'Incorrect password!'
 
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()
