@@ -26,7 +26,8 @@ RIGHT_CMD = 'right'
 UP_CMD = 'up'
 DOWN_CMD = 'down'
 DROP_CMD = 'drop'
-VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, DROP_CMD]
+ROTATE_CMD = 'rotate'
+VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, DROP_CMD, ROTATE_CMD]
 AI_PROCESS_PATH = './ntris_ai'
 AI_PROCESS_TIMEOUT = 10 # This is enforced server-side so don't change ;)
 
