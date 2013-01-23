@@ -20,9 +20,47 @@ from subprocess import Popen, PIPE, STDOUT
 SERVER_URL = 'http://localhost:9000/'
 WEBSOCKET_URL = 'ws://localhost:9000/ws'
 
+# Subprocess
+LEFT_CMD = 'left'
+RIGHT_CMD = 'right'
+UP_CMD = 'up'
+DOWN_CMD = 'down'
+DROP_CMD = 'drop'
+VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, DROP_CMD]
+AI_PROCESS_PATH = './ntris_ai'
+AI_PROCESS_TIMEOUT = 10 # This is enforced server-side so don't change ;)
+
 # Messaging protocol
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
 NEW_GAME_CREATED_MSG = 'NEW_GAME_CREATED'
+AWAITNG_NEXT_MOVE_MSG = 'AWAITNG_NEXT_MOVE'
+
+class Command(object):
+    def __init__(self, cmd):
+        self.cmd = cmd
+        self.process = None
+
+    def run(self, timeout):
+        cmds = []
+        def target():
+            print 'Executing %s' % self.cmd
+            self.process = Popen(self.cmd, stdout=PIPE, shell=True)
+            for line in iter(self.process.stdout.readline, ''):
+                line = line.rstrip('\n')
+                if line not in VALID_CMDS:
+                    print "Got a bad cmd from subprocess: %s" % line
+                elif line != DROP_CMD:
+                    cmds.append(line)
+
+        thread = threading.Thread(target=target)
+        thread.start()
+
+        thread.join(timeout)
+        if thread.is_alive():
+            print 'Terminating process'
+            self.process.terminate()
+            thread.join()
+        print 'commands received: %s' % cmds
 
 class SubscriberThread(threading.Thread):
     def __init__(self):
@@ -49,12 +87,12 @@ class Subscriber(WebSocketClient):
         msg = json.loads(str(msg))
         if msg['type'] == NEW_GAME_CREATED_MSG:
             print "New game started at %s%s" % (SERVER_URL, msg['game_id'])
+        elif msg['type'] == AWAITNG_NEXT_MOVE_MSG:
+            ai_arg = json.dumps(msg['game_state'])
+            command = Command(AI_PROCESS_PATH + " " + ai_arg)
+            command.run(timeout=AI_PROCESS_TIMEOUT)
         else:
             print "Received unsupported message type"
-
-        ai_process = Popen(['grep', 'f'], stdout=PIPE, stdin=PIPE, stderr=STDOUT)
-        grep_stdout = ai_process.communicate(input='one\ntwo\nthree\nfour\nfive\nsix\n')[0]
-        print(grep_stdout)
 
     def closed(self, code, reason=None):
         print "Connection to server closed. Code=%s, Reason=%s" % (code, reason)
