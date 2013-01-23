@@ -110,7 +110,7 @@ if __name__ == '__main__':
             'tools.websocket.handler_cls': DropbloxWebSocketHandler
         },
         '/': {
-            'tools.staticdir.root': os.getcwd(),
+            'tools.staticdir.root': '%s/%s' % (os.getcwd(), 'ai-server'),
             'tools.staticdir.on': True,
             'tools.staticdir.dir': 'static',
             'tools.staticdir.index': 'index.html',
