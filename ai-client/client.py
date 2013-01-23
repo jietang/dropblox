@@ -15,8 +15,11 @@ import json
 
 from ws4py.client.threadedclient import WebSocketClient
 from subprocess import Popen, PIPE, STDOUT
+from optparse import OptionParser
 
 # Remote server to connect to:
+#SERVER_URL = 'http://ec2-107-20-18-153.compute-1.amazonaws.com/'
+#WEBSOCKET_URL = 'ws://ec2-107-20-18-153.compute-1.amazonaws.com/ws'
 SERVER_URL = 'http://localhost/'
 WEBSOCKET_URL = 'ws://localhost/ws'
 
@@ -33,9 +36,11 @@ AI_PROCESS_TIMEOUT = 10 # This is enforced server-side so don't change ;)
 
 # Messaging protocol
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
+CONNECT_TO_EXISTING_GAME_MSG = 'CONNECT_TO_EXISTING_GAME'
 NEW_GAME_CREATED_MSG = 'NEW_GAME_CREATED'
 AWAITING_NEXT_MOVE_MSG = 'AWAITING_NEXT_MOVE'
 SUBMIT_MOVE_MSG = 'SUBMIT_MOVE'
+DO_NOT_RECONNECT = 1001
 
 class Command(object):
     def __init__(self, cmd):
@@ -74,22 +79,36 @@ class SubscriberThread(threading.Thread):
         ws.connect()
 
 class Subscriber(WebSocketClient):
+    game_id = -1
+
     def handshake_ok(self):
         self._th.start()
         self._th.join()
 
     def opened(self):
-        # TODO: Handle reconnecting to established games
         msg = {
             'type' : CREATE_NEW_GAME_MSG,
         }
+        if team_name:
+            msg['team_name'] = team_name
+
+        if self.game_id != -1:
+            # We must be reconnecting to a prior game
+            msg = {
+                'type' : CONNECT_TO_EXISTING_GAME_MSG,
+                'game_id' : self.game_id,
+            }
         self.send(json.dumps(msg))
 
     def received_message(self, msg):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
         if msg['type'] == NEW_GAME_CREATED_MSG:
-            print "New game started at %sgame.html#%s" % (SERVER_URL, msg['game_id'])
+            if not team_name:
+                self.game_id = msg['game_id']
+                print "New game started at %sgame.html#%s" % (SERVER_URL, msg['game_id'])
+            else:
+                print "Waiting for competition to begin"
         elif msg['type'] == AWAITING_NEXT_MOVE_MSG:
             ai_arg = json.dumps(msg['game_state'])
             command = Command(AI_PROCESS_PATH + (" '%s'" % ai_arg))
@@ -105,7 +124,20 @@ class Subscriber(WebSocketClient):
     def closed(self, code, reason=None):
         print "Connection to server closed. Code=%s, Reason=%s" % (code, reason)
 
+        if code != DO_NOT_RECONNECT:
+            # Attempt to re-connect
+            ws = Subscriber(WEBSOCKET_URL)
+            ws.game_id = self.game_id
+            ws.connect()
+
 if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option("-c", "--compete", dest="team_name",
+                      help="Enter competition with TEAM_NAME",
+                      metavar="TEAM_NAME")
+    (options, _) = parser.parse_args()
+    team_name = options.team_name
+
     subscriber = SubscriberThread()
     subscriber.daemon = True
     subscriber.start()

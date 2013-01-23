@@ -6,6 +6,7 @@
 
 import cherrypy
 import random
+import bcrypt
 import json
 import os
 
@@ -14,11 +15,16 @@ from ws4py.websocket import WebSocket
 
 from logic.Board import Board
 
+# Admin
+ADMIN_HASHED_PW = "$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy"
+
 # Messaging protocol
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
+CONNECT_TO_EXISTING_GAME_MSG = 'CONNECT_TO_EXISTING_GAME'
 NEW_GAME_CREATED_MSG = 'NEW_GAME_CREATED'
 AWAITING_NEXT_MOVE_MSG = 'AWAITING_NEXT_MOVE'
 SUBMIT_MOVE_MSG = 'SUBMIT_MOVE'
+DO_NOT_RECONNECT = 1001
 
 # Global variables (in-memory state)
 GAME_ID_TO_WEBSOCKET = {}
@@ -39,8 +45,7 @@ def generate_game_id():
     choices += choices.upper()
     choices += '0123456789'
     while True:
-        candidate = ''.join([random.choice(choices) for i in xrange(8)])
-        # TODO: check to make sure game doesn't already exist
+        candidate = ''.join([random.choice(choices) for i in xrange(12)])
         break
     return candidate
 
@@ -58,9 +63,26 @@ class DropbloxWebSocketHandler(WebSocket):
             print "GAME_ID_TO_WEBSOCKET: %s" % GAME_ID_TO_WEBSOCKET
             response = {
                 'type' : NEW_GAME_CREATED_MSG,
-                'game_id' : self.game_id,
             }
+            if 'team_name' not in msg:
+                response['game_id'] = self.game_id
+
             self.send(json.dumps(response))
+        elif msg['type'] == CONNECT_TO_EXISTING_GAME_MSG:
+            if msg['game_id'] in GAMES:
+                self.game_id = msg['game_id']
+                GAME_ID_TO_WEBSOCKET[self.game_id] = self
+                self.started = True
+
+                game = GAMES[self.game_id]
+                if game.state == 'playing':
+                    response = {
+                        'type': AWAITING_NEXT_MOVE_MSG,
+                        'game_state': game.to_dict(),
+                    }
+                    self.send(json.dumps(response))
+            else:
+                self.close(code=DO_NOT_RECONNECT, reason='Game no longer exists')
         elif msg['type'] == SUBMIT_MOVE_MSG:
             game = GAMES[self.game_id]
             game.send_commands(msg['move_list'])
@@ -75,7 +97,8 @@ class DropbloxWebSocketHandler(WebSocket):
 
     def closed(self, code, reason=None):
         print "Connection to client closed. Code=%s, Reason=%s" % (code, reason)
-        del GAME_ID_TO_WEBSOCKET[self.game_id]
+        if self.game_id in GAME_ID_TO_WEBSOCKET:
+            del GAME_ID_TO_WEBSOCKET[self.game_id]
         print "GAME_ID_TO_WEBSOCKET: %s" % GAME_ID_TO_WEBSOCKET
 
 class DropbloxGameServer(object):
@@ -95,6 +118,15 @@ class DropbloxGameServer(object):
             return json.dumps(GAMES[game_id].to_dict())
         except KeyError:
             return 'Game not found!'
+
+    @cherrypy.expose
+    def clear_games(self, password):
+        if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
+            for conn in GAME_ID_TO_WEBSOCKET.values():
+                conn.close(code=DO_NOT_RECONNECT, reason="Clearing all games")
+            GAMES.clear()
+        else:
+            return 'Incorrect password!'
 
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()
