@@ -137,6 +137,7 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     def clear_games(self, password):
         if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
+            global COMPETITION_SEED
             COMPETITION_SEED = None
             for conn in GAME_ID_TO_WEBSOCKET.values():
                 conn.close(code=DO_NOT_RECONNECT, reason="Clearing all games")
@@ -151,6 +152,7 @@ class DropbloxGameServer(object):
                 conn.close(code=DO_NOT_RECONNECT, reason="Clearing all games")
             GAMES.clear()
 
+            global COMPETITION_SEED
             COMPETITION_SEED = seed
         else:
             return 'Incorrect password!'

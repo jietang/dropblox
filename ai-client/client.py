@@ -129,6 +129,8 @@ class Subscriber(WebSocketClient):
             ws = Subscriber(WEBSOCKET_URL)
             ws.game_id = self.game_id
             ws.connect()
+        else:
+            exit(0)
 
 if __name__ == '__main__':
     parser = OptionParser()
