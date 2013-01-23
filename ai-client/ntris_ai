@@ -48,11 +48,11 @@ def get_bitmaps_with_commands(bitmap, block):
       while True:
         result[tuple(commands)] = Helper.drop(bitmap, new_block)['bitmap']
         try:
-          if i % 2:
+          if j % 2:
             new_block = Helper.left(bitmap, new_block)
           else:
             new_block = Helper.right(bitmap, new_block)
-          commands.append('left' if i % 2 else 'right')
+          commands.append('left' if j % 2 else 'right')
         except InvalidMoveError:
           break
     try:
@@ -67,7 +67,7 @@ def lookahead(bitmap, preview, objective, depth=1, max_per_round=1):
     bitmaps = itertools.chain(*(get_bitmaps(bitmap, preview[i]) for bitmap in bitmaps))
     if max_per_round:
       bitmaps = sorted(bitmaps, key=objective)[-max_per_round:]
-  return max(objective(bitmap) for bitmap in bitmaps)
+  return max(objective(bitmap) for bitmap in bitmaps) if bitmaps else float('-Inf')
 
 def num_holes(bitmap):
   holes = 0
