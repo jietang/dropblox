@@ -12,6 +12,7 @@
 import threading
 import cherrypy
 import json
+import os
 
 from ws4py.client.threadedclient import WebSocketClient
 from subprocess import Popen, PIPE, STDOUT
@@ -130,7 +131,7 @@ class Subscriber(WebSocketClient):
             ws.game_id = self.game_id
             ws.connect()
         else:
-            exit(0)
+            os._exit(0)
 
 if __name__ == '__main__':
     parser = OptionParser()

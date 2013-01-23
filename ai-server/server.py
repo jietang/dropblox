@@ -32,8 +32,10 @@ DO_NOT_RECONNECT = 1001
 GAME_ID_TO_WEBSOCKET = {}
 GAMES = {}
 COMPETITION_SEED = None
+COMPETITION_IN_PROGRESS = False
 
 def start_game(game_id):
+    print "starting game with id %s" % game_id
     conn = GAME_ID_TO_WEBSOCKET[game_id]
     if not conn.started:
       msg = {
@@ -61,7 +63,17 @@ class DropbloxWebSocketHandler(WebSocket):
     def received_message(self, msg):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
+
+        if COMPETITION_IN_PROGRESS:
+            if msg['type'] != SUBMIT_MOVE_MSG:
+                self.close(code=DO_NOT_RECONNECT, reason='A competition is currently in progress')
+                return
+
         if msg['type'] == CREATE_NEW_GAME_MSG:
+            if COMPETITION_SEED and 'team_name' not in message:
+                self.close(code=DO_NOT_RECONNECT, reason='A team name must be provided to enter the competition')
+                return
+
             self.game_id = generate_game_id()
             GAME_ID_TO_WEBSOCKET[self.game_id] = self
             GAMES[self.game_id] = Board(seed=COMPETITION_SEED)
@@ -70,11 +82,8 @@ class DropbloxWebSocketHandler(WebSocket):
                 'type' : NEW_GAME_CREATED_MSG,
             }
             if 'team_name' not in msg:
-                if not COMPETITION_SEED:
-                    response['game_id'] = self.game_id
-                else:
-                    self.close(code=DO_NOT_RECONNECT, reason='A team name must be provided to enter the competition')
-                    return
+                # Game IDs are hidden during competition
+                response['game_id'] = self.game_id
 
             self.send(json.dumps(response))
         elif msg['type'] == CONNECT_TO_EXISTING_GAME_MSG:
@@ -138,7 +147,9 @@ class DropbloxGameServer(object):
     def clear_games(self, password):
         if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
             global COMPETITION_SEED
+            global COMPETITION_IN_PROGRESS
             COMPETITION_SEED = None
+            COMPETITION_IN_PROGRESS = False
             for conn in GAME_ID_TO_WEBSOCKET.values():
                 conn.close(code=DO_NOT_RECONNECT, reason="Clearing all games")
             GAMES.clear()
@@ -159,7 +170,11 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     def begin_competition(self, password):
+        if not COMPETITION_SEED:
+            return 'Must call /open_competition with a seed first!'
         if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
+            global COMPETITION_IN_PROGRESS
+            COMPETITION_IN_PROGRESS = True
             for game_id in GAME_ID_TO_WEBSOCKET:
                 start_game(game_id)
         else:
