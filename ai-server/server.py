@@ -64,11 +64,12 @@ class DropbloxWebSocketHandler(WebSocket):
         elif msg['type'] == SUBMIT_MOVE_MSG:
             game = GAMES[self.game_id]
             game.send_commands(msg['move_list'])
-            response = {
-                'type': AWAITING_NEXT_MOVE_MSG,
-                'game_state': game.to_dict(),
-            }
-            self.send(json.dumps(response))
+            if game.state == 'playing':
+              response = {
+                  'type': AWAITING_NEXT_MOVE_MSG,
+                  'game_state': game.to_dict(),
+              }
+              self.send(json.dumps(response))
         else:
             print "Received unsupported message type"
 
