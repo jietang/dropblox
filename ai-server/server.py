@@ -145,14 +145,18 @@ class DropbloxGameServer(object):
             return 'Incorrect password!'
 
     @cherrypy.expose
-    def open_competition(self, seed):
+    def open_competition(self, password, seed):
         if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
+            for conn in GAME_ID_TO_WEBSOCKET.values():
+                conn.close(code=DO_NOT_RECONNECT, reason="Clearing all games")
+            GAMES.clear()
+
             COMPETITION_SEED = seed
         else:
             return 'Incorrect password!'
 
     @cherrypy.expose
-    def begin_competition(self):
+    def begin_competition(self, password):
         if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
             for game_id in GAME_ID_TO_WEBSOCKET:
                 start_game(game_id)
