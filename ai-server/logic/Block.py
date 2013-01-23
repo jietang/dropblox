@@ -28,7 +28,7 @@ def loadBlockData():
 
   for block in blocks:
     block['center']['i'] += MAX_BLOCK_SIZE - height(block)
-    block['center']['j'] += COLS/2 - 1
+    block['center']['j'] += COLS/2
 
 def height(block):
   return (max(offset['i'] for offset in block['offsets'])

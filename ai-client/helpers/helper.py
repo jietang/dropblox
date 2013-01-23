@@ -33,7 +33,7 @@ class Helper(object):
       'i': offset['j'],
       'j': -offset['i'],
     } for offset in result['offsets']]
-    if not Helper.check(bitmap, block):
+    if not Helper.check(bitmap, result):
       raise InvalidMoveError()
     return result
 
@@ -44,7 +44,7 @@ class Helper(object):
       'i': result['center']['i'] + i,
       'j': result['center']['j'] + j,
     }
-    if not Helper.check(bitmap, block):
+    if not Helper.check(bitmap, result):
       raise InvalidMoveError()
     return result
 
@@ -69,7 +69,7 @@ class Helper(object):
   @staticmethod
   def rows_free(bitmap, block):
     temp_block = deepcopy(block)
-    while Helper.check(temp_block):
+    while Helper.check(bitmap, temp_block):
       temp_block['center']['i'] += 1
     return temp_block['center']['i'] - block['center']['i'] - 1
 
@@ -87,13 +87,14 @@ class Helper(object):
     rows_free = Helper.rows_free(bitmap, block)
     if rows_free < 0:
       raise InvalidMoveError()
-    for point in self.block['offsets']:
-      i = point['i'] + self.block['center']['i'] + rows_free
-      j = point['j'] + self.block['center']['j']
-      new_bitmap[i][j] = self.block['type'] + 1
+    for point in block['offsets']:
+      i = point['i'] + block['center']['i'] + rows_free
+      j = point['j'] + block['center']['j']
+      new_bitmap[i][j] = block['type'] + 1
     return Helper.remove_rows(new_bitmap)
 
   # Takes a bitmap and removes any full rows. Returns the same data as drop().
+  @staticmethod
   def remove_rows(bitmap):
     new_bitmap = [row for row in bitmap if not all(row)]
     num_rows_cleared = ROWS - len(new_bitmap)
