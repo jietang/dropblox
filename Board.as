@@ -859,7 +859,8 @@ package {
 
       for (var i:int = 0; i < ROWS; i++) {
         for (var j:int = 0; j < COLS; j++) {
-          data[i][j] = (vals.bitmap[i][j] ? Color.WHITE : Color.BLACK);
+          var c:int = vals.bitmap[i][j];
+          data[i][j] = (c ? Color.colorCode(c - 1) : Color.BLACK);
         }
       }
 

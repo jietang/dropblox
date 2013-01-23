@@ -110,7 +110,7 @@ class Board(object):
     for point in self.block['offsets']:
       i = point['i'] + self.block['center']['i'] + rows_free
       j = point['j'] + self.block['center']['j']
-      self.bitmap[i][j] = 1
+      self.bitmap[i][j] = self.block['type'] + 1
     self.remove_rows()
 
     self.block = self.preview.pop(0)
