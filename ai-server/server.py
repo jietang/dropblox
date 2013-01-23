@@ -7,6 +7,7 @@
 import cherrypy
 import random
 import json
+import os
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
@@ -102,7 +103,7 @@ if __name__ == '__main__':
             'tools.websocket.handler_cls': DropbloxWebSocketHandler
         },
         '/': {
-            'tools.staticdir.root': '/Users/spoletto/source/dropblox/ai-server',
+            'tools.staticdir.root': os.getcwd(),
             'tools.staticdir.on': True,
             'tools.staticdir.dir': 'static',
             'tools.staticdir.index': 'index.html',
