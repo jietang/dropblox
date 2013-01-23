@@ -28,7 +28,7 @@ class Helper(object):
   # The block's original position is assumed to be valid.
   @staticmethod
   def rotate(bitmap, block):
-    result = deepcopy(block)
+    result = dict(block)
     result['offsets'] = [{
       'i': offset['j'],
       'j': -offset['i'],
@@ -39,7 +39,7 @@ class Helper(object):
 
   @staticmethod
   def translate(bitmap, block, i=0, j=0):
-    result = deepcopy(block)
+    result = dict(block)
     result['center'] = {
       'i': result['center']['i'] + i,
       'j': result['center']['j'] + j,
@@ -68,7 +68,8 @@ class Helper(object):
   # If the block is not in a valid position, returns -1.
   @staticmethod
   def rows_free(bitmap, block):
-    temp_block = deepcopy(block)
+    temp_block = dict(block)
+    temp_block['center'] = dict(temp_block['center'])
     while Helper.check(bitmap, temp_block):
       temp_block['center']['i'] += 1
     return temp_block['center']['i'] - block['center']['i'] - 1
