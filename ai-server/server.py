@@ -59,7 +59,7 @@ class DropbloxWebSocketHandler(WebSocket):
     game_id = -1
     started = False
     move_requested_at = None
-
+    
     def received_message(self, msg):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
@@ -70,7 +70,7 @@ class DropbloxWebSocketHandler(WebSocket):
                 return
 
         if msg['type'] == CREATE_NEW_GAME_MSG:
-            if COMPETITION_SEED and 'team_name' not in message:
+            if COMPETITION_SEED and 'team_name' not in msg:
                 self.close(code=DO_NOT_RECONNECT, reason='A team name must be provided to enter the competition')
                 return
 
