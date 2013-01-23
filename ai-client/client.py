@@ -92,7 +92,7 @@ class Subscriber(WebSocketClient):
             print "New game started at %s%s" % (SERVER_URL, msg['game_id'])
         elif msg['type'] == AWAITING_NEXT_MOVE_MSG:
             ai_arg = json.dumps(msg['game_state'])
-            command = Command(AI_PROCESS_PATH + " " + ai_arg)
+            command = Command(AI_PROCESS_PATH + (" '%s'" % ai_arg))
             ai_cmds = command.run(timeout=AI_PROCESS_TIMEOUT)
             response = {
                 'type' : SUBMIT_MOVE_MSG,

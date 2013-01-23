@@ -7,6 +7,7 @@
 import cherrypy
 import random
 import json
+import os
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
@@ -61,11 +62,11 @@ class DropbloxWebSocketHandler(WebSocket):
         elif msg['type'] == SUBMIT_MOVE_MSG:
             game = GAMES[self.game_id]
             game.send_commands(msg['move_list'])
-            msg = {
+            response = {
                 'type': AWAITING_NEXT_MOVE_MSG,
                 'game_state': game.to_dict(),
             }
-            self.send(json.dumps(msg))
+            self.send(json.dumps(response))
         else:
             print "Received unsupported message type"
 
@@ -102,7 +103,7 @@ if __name__ == '__main__':
             'tools.websocket.handler_cls': DropbloxWebSocketHandler
         },
         '/': {
-            'tools.staticdir.root': '/Users/spoletto/source/dropblox/ai-server',
+            'tools.staticdir.root': os.getcwd(),
             'tools.staticdir.on': True,
             'tools.staticdir.dir': 'static',
             'tools.staticdir.index': 'index.html',
