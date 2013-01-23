@@ -1,17 +1,61 @@
 #!/usr/bin/env python
 #
-# Sample ntris_ai exectuable
+# ntris_ai reference player
 #
 
+from copy import deepcopy
+import itertools
 import json
 import time
 import sys
 
+from helpers.helper import Helper, InvalidMoveError
+
+def get_bitmaps_with_commands(bitmap, block):
+  if not Helper.check(bitmap, block):
+    return {}
+  commands = []
+  result = {}
+  cur_rotation = deepcopy(block)
+  for i in range(4):
+    assert Helper.check(bitmap, cur_rotation)
+    for j in range(2):
+      commands = i*['rotate']
+      new_block = deepcopy(cur_rotation)
+      assert Helper.check(bitmap, new_block)
+      while True:
+        assert Helper.check(bitmap, new_block)
+        result[tuple(commands)] = Helper.drop(bitmap, new_block)['bitmap']
+        try:
+          if i % 2:
+            new_block = Helper.left(bitmap, new_block)
+          else:
+            new_block = Helper.right(bitmap, new_block)
+          commands.append('left' if i % 2 else 'right')
+        except InvalidMoveError:
+          break
+    try:
+      cur_rotation = Helper.rotate(bitmap, cur_rotation)
+    except InvalidMoveError:
+      break
+  return result
+
+def get_holes(bitmap):
+  num_holes = 0
+  block_found = {}
+  for i in range(len(bitmap)):
+    for j in range(len(bitmap[i])):
+      if bitmap[i][j]:
+        block_found[j] = 1
+      else:
+        num_holes += block_found.get(j, 0)
+  return num_holes
+
 if __name__ == '__main__':
-	if len(sys.argv) == 2:
-		game_state = json.loads(sys.argv[1])
-		print 'left'
-		sys.stdout.flush()
-		time.sleep(11)
-		print 'right'
-		sys.stdout.flush()
+  if len(sys.argv) == 2:
+    state = json.loads(sys.argv[1])
+    bitmaps = get_bitmaps_with_commands(state['bitmap'], state['block'])
+    commands = min(bitmaps.iteritems(), key=lambda x: get_holes(x[1]))[0]
+    for command in commands:
+      print command
+    sys.stdout.flush()
