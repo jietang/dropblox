@@ -7,6 +7,7 @@
 import cherrypy
 import random
 import bcrypt
+import time
 import json
 import os
 
@@ -17,6 +18,7 @@ from logic.Board import Board
 
 # Admin
 ADMIN_HASHED_PW = "$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy"
+AI_CLIENT_TIMEOUT = 11 # Allow 1 second extra for latency
 
 # Messaging protocol
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
@@ -38,6 +40,7 @@ def start_game(game_id):
           'game_state' : GAMES[game_id].to_dict(),
       }
       conn.send(json.dumps(msg))
+      conn.move_requested_at = time.time()
       conn.started = True
 
 def generate_game_id():
@@ -52,6 +55,7 @@ def generate_game_id():
 class DropbloxWebSocketHandler(WebSocket):
     game_id = -1
     started = False
+    move_requested_at = None
 
     def received_message(self, msg):
         print "received_message %s" % msg
@@ -81,17 +85,23 @@ class DropbloxWebSocketHandler(WebSocket):
                         'game_state': game.to_dict(),
                     }
                     self.send(json.dumps(response))
+                    self.move_requested_at = time.time()
             else:
                 self.close(code=DO_NOT_RECONNECT, reason='Game no longer exists')
         elif msg['type'] == SUBMIT_MOVE_MSG:
             game = GAMES[self.game_id]
-            game.send_commands(msg['move_list'])
+
+            commands = msg['move_list']
+            if time.time() - self.move_requested_at > AI_CLIENT_TIMEOUT:
+                commands = ['drop']
+            game.send_commands(commands)
             if game.state == 'playing':
               response = {
                   'type': AWAITING_NEXT_MOVE_MSG,
                   'game_state': game.to_dict(),
               }
               self.send(json.dumps(response))
+              self.move_requested_at = time.time()
         else:
             print "Received unsupported message type"
 
