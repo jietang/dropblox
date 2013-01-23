@@ -64,7 +64,7 @@ class DropbloxWebSocketHandler(WebSocket):
         if msg['type'] == CREATE_NEW_GAME_MSG:
             self.game_id = generate_game_id()
             GAME_ID_TO_WEBSOCKET[self.game_id] = self
-            GAMES[self.game_id] = Board()
+            GAMES[self.game_id] = Board(seed=COMPETITION_SEED)
             print "GAME_ID_TO_WEBSOCKET: %s" % GAME_ID_TO_WEBSOCKET
             response = {
                 'type' : NEW_GAME_CREATED_MSG,
