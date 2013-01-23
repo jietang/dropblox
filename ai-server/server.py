@@ -15,6 +15,7 @@ from ws4py.websocket import WebSocket
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
 NEW_GAME_CREATED_MSG = 'NEW_GAME_CREATED'
 AWAITNG_NEXT_MOVE_MSG = 'AWAITNG_NEXT_MOVE'
+SUBMIT_MOVE_MSG = 'SUBMIT_MOVE'
 
 # Global variables (in-memory state)
 GAME_ID_TO_WEBSOCKET = {}
@@ -55,6 +56,8 @@ class DropbloxWebSocketHandler(WebSocket):
                 'game_id' : self.game_id,
             }
             self.send(json.dumps(response))
+        elif msg['type'] == SUBMIT_MOVE_MSG:
+            print "Received move %s" % msg['move_list']
         else:
             print "Received unsupported message type"
 

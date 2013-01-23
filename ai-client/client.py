@@ -34,6 +34,7 @@ AI_PROCESS_TIMEOUT = 10 # This is enforced server-side so don't change ;)
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
 NEW_GAME_CREATED_MSG = 'NEW_GAME_CREATED'
 AWAITNG_NEXT_MOVE_MSG = 'AWAITNG_NEXT_MOVE'
+SUBMIT_MOVE_MSG = 'SUBMIT_MOVE'
 
 class Command(object):
     def __init__(self, cmd):
@@ -61,6 +62,7 @@ class Command(object):
             self.process.terminate()
             thread.join()
         print 'commands received: %s' % cmds
+        return cmds
 
 class SubscriberThread(threading.Thread):
     def __init__(self):
@@ -90,7 +92,12 @@ class Subscriber(WebSocketClient):
         elif msg['type'] == AWAITNG_NEXT_MOVE_MSG:
             ai_arg = json.dumps(msg['game_state'])
             command = Command(AI_PROCESS_PATH + " " + ai_arg)
-            command.run(timeout=AI_PROCESS_TIMEOUT)
+            ai_cmds = command.run(timeout=AI_PROCESS_TIMEOUT)
+            response = {
+                'type' : SUBMIT_MOVE_MSG,
+                'move_list' : ai_cmds,
+            }
+            self.send(json.dumps(response))
         else:
             print "Received unsupported message type"
 
