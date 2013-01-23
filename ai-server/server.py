@@ -31,6 +31,7 @@ DO_NOT_RECONNECT = 1001
 # Global variables (in-memory state)
 GAME_ID_TO_WEBSOCKET = {}
 GAMES = {}
+COMPETITION_SEED = None
 
 def start_game(game_id):
     conn = GAME_ID_TO_WEBSOCKET[game_id]
@@ -69,7 +70,11 @@ class DropbloxWebSocketHandler(WebSocket):
                 'type' : NEW_GAME_CREATED_MSG,
             }
             if 'team_name' not in msg:
-                response['game_id'] = self.game_id
+                if not COMPETITION_SEED:
+                    response['game_id'] = self.game_id
+                else:
+                    self.close(code=DO_NOT_RECONNECT, reason='A team name must be provided to enter the competition')
+                    return
 
             self.send(json.dumps(response))
         elif msg['type'] == CONNECT_TO_EXISTING_GAME_MSG:
@@ -132,11 +137,27 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     def clear_games(self, password):
         if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
+            COMPETITION_SEED = None
             for conn in GAME_ID_TO_WEBSOCKET.values():
                 conn.close(code=DO_NOT_RECONNECT, reason="Clearing all games")
             GAMES.clear()
         else:
             return 'Incorrect password!'
+
+    @cherrypy.expose
+    def open_competition(self, seed):
+        if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
+            COMPETITION_SEED = seed
+        else:
+            return 'Incorrect password!'
+
+    @cherrypy.expose
+    def begin_competition(self):
+        if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
+            for game_id in GAME_ID_TO_WEBSOCKET:
+                start_game(game_id)
+        else:
+            return 'Incorrect password!'            
 
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()
