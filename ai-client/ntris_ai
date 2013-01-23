@@ -6,10 +6,34 @@
 from copy import deepcopy
 import itertools
 import json
+import numpy
 import time
 import sys
 
 from helpers.helper import Helper, InvalidMoveError
+
+def get_bitmaps(bitmap, block):
+  if not Helper.check(bitmap, block):
+    return []
+  result = []
+  cur_rotation = deepcopy(block)
+  for i in range(4):
+    for j in range(2):
+      new_block = deepcopy(cur_rotation)
+      while True:
+        result.append(Helper.drop(bitmap, new_block)['bitmap'])
+        try:
+          if i % 2:
+            new_block = Helper.left(bitmap, new_block)
+          else:
+            new_block = Helper.right(bitmap, new_block)
+        except InvalidMoveError:
+          break
+    try:
+      cur_rotation = Helper.rotate(bitmap, cur_rotation)
+    except InvalidMoveError:
+      break
+  return result
 
 def get_bitmaps_with_commands(bitmap, block):
   if not Helper.check(bitmap, block):
@@ -18,13 +42,10 @@ def get_bitmaps_with_commands(bitmap, block):
   result = {}
   cur_rotation = deepcopy(block)
   for i in range(4):
-    assert Helper.check(bitmap, cur_rotation)
     for j in range(2):
       commands = i*['rotate']
       new_block = deepcopy(cur_rotation)
-      assert Helper.check(bitmap, new_block)
       while True:
-        assert Helper.check(bitmap, new_block)
         result[tuple(commands)] = Helper.drop(bitmap, new_block)['bitmap']
         try:
           if i % 2:
@@ -40,22 +61,70 @@ def get_bitmaps_with_commands(bitmap, block):
       break
   return result
 
-def get_holes(bitmap):
-  num_holes = 0
+def lookahead(bitmap, preview, objective, depth=2, max_per_round=1):
+  bitmaps = [bitmap]
+  for i in range(depth):
+    bitmaps = itertools.chain(*(get_bitmaps(bitmap, preview[i]) for bitmap in bitmaps))
+    if max_per_round:
+      bitmaps = sorted(bitmaps, key=objective)[-max_per_round:]
+  return max(objective(bitmap) for bitmap in bitmaps)
+
+def num_holes(bitmap):
+  holes = 0
   block_found = {}
   for i in range(len(bitmap)):
     for j in range(len(bitmap[i])):
       if bitmap[i][j]:
         block_found[j] = 1
       else:
-        num_holes += block_found.get(j, 0)
-  return num_holes
+        holes += block_found.get(j, 0)
+  return holes
+
+def weighted_holes(bitmap):
+  holes = 0
+  block_found = {}
+  for i in range(len(bitmap)):
+    for j in range(len(bitmap[i])):
+      if bitmap[i][j] and not block_found.get(j):
+        block_found[j] = 1
+      elif not bitmap[i][j] and block_found.get(j):
+        holes += block_found[j]
+        block_found[j] += 1
+  return holes
+
+def get_heights(bitmap):
+  heights = len(bitmap[0])*[0]
+  for i in range(len(bitmap)):
+    for j in range(len(bitmap[i])):
+      if bitmap[i][j]:
+        heights[j] = max(heights[j], len(bitmap) - i)
+  return heights
+
+def get_densities(bitmap):
+  return [sum(1 if bitmap[i][j] else 0 for i in range(len(bitmap))) for j in range(len(bitmap[0]))]
+
+def diffs(l, pow):
+  return sum(abs((l[i] - l[i + 1])**pow) for i in range(len(l) - 1))
+
+def objective(bitmap):
+  #heights = get_heights(bitmap)
+  densities = get_densities(bitmap)
+  return -(
+    numpy.average(densities) +
+    4*numpy.std(densities) +
+    0.5*diffs(densities, 4) +
+    16*weighted_holes(bitmap)
+  )
 
 if __name__ == '__main__':
   if len(sys.argv) == 2:
     state = json.loads(sys.argv[1])
     bitmaps = get_bitmaps_with_commands(state['bitmap'], state['block'])
-    commands = min(bitmaps.iteritems(), key=lambda x: get_holes(x[1]))[0]
-    for command in commands:
-      print command
+    if bitmaps:
+      objective_fn = lambda x: lookahead(x[1], state['preview'], objective)
+      commands = max(bitmaps.iteritems(), key=objective_fn)[0]
+      for command in commands:
+        print command
+    else:
+      print 'drop'
     sys.stdout.flush()
