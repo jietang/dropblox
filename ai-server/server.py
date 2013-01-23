@@ -11,22 +11,24 @@ import json
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
 
+from logic.Board import Board
+
 # Messaging protocol
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
 NEW_GAME_CREATED_MSG = 'NEW_GAME_CREATED'
-AWAITNG_NEXT_MOVE_MSG = 'AWAITNG_NEXT_MOVE'
+AWAITING_NEXT_MOVE_MSG = 'AWAITING_NEXT_MOVE'
 SUBMIT_MOVE_MSG = 'SUBMIT_MOVE'
 
 # Global variables (in-memory state)
 GAME_ID_TO_WEBSOCKET = {}
+GAMES = {}
 
 def start_game(game_id):
     conn = GAME_ID_TO_WEBSOCKET[game_id]
     if conn:
-        # TODO: fill in game state
         msg = {
-            'type' : AWAITNG_NEXT_MOVE_MSG,
-            'game_state' : {}
+            'type' : AWAITING_NEXT_MOVE_MSG,
+            'game_state' : GAMES[game_id].to_dict(),
         }
         conn.send(json.dumps(msg))
 
@@ -47,9 +49,9 @@ class DropbloxWebSocketHandler(WebSocket):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
         if msg['type'] == CREATE_NEW_GAME_MSG:
-            # TODO create new game instance
             self.game_id = generate_game_id()
             GAME_ID_TO_WEBSOCKET[self.game_id] = self
+            GAMES[self.game_id] = Board()
             print "GAME_ID_TO_WEBSOCKET: %s" % GAME_ID_TO_WEBSOCKET
             response = {
                 'type' : NEW_GAME_CREATED_MSG,
@@ -57,7 +59,13 @@ class DropbloxWebSocketHandler(WebSocket):
             }
             self.send(json.dumps(response))
         elif msg['type'] == SUBMIT_MOVE_MSG:
-            print "Received move %s" % msg['move_list']
+            game = GAMES[self.game_id]
+            game.send_commands(msg['move_list'])
+            msg = {
+                'type': AWAITING_NEXT_MOVE_MSG,
+                'game_state': game.to_dict(),
+            }
+            self.send(json.dumps(msg))
         else:
             print "Received unsupported message type"
 
@@ -76,6 +84,10 @@ class DropbloxGameServer(object):
     def start(self, game_id):
         # TODO: Make this called from a button on the game page
         start_game(game_id)
+
+    @cherrypy.expose
+    def game(self, game_id):
+        return json.dumps(GAMES[game_id].to_dict())
 
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()

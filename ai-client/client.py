@@ -33,7 +33,7 @@ AI_PROCESS_TIMEOUT = 10 # This is enforced server-side so don't change ;)
 # Messaging protocol
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
 NEW_GAME_CREATED_MSG = 'NEW_GAME_CREATED'
-AWAITNG_NEXT_MOVE_MSG = 'AWAITNG_NEXT_MOVE'
+AWAITING_NEXT_MOVE_MSG = 'AWAITING_NEXT_MOVE'
 SUBMIT_MOVE_MSG = 'SUBMIT_MOVE'
 
 class Command(object):
@@ -89,7 +89,7 @@ class Subscriber(WebSocketClient):
         msg = json.loads(str(msg))
         if msg['type'] == NEW_GAME_CREATED_MSG:
             print "New game started at %s%s" % (SERVER_URL, msg['game_id'])
-        elif msg['type'] == AWAITNG_NEXT_MOVE_MSG:
+        elif msg['type'] == AWAITING_NEXT_MOVE_MSG:
             ai_arg = json.dumps(msg['game_state'])
             command = Command(AI_PROCESS_PATH + " " + ai_arg)
             ai_cmds = command.run(timeout=AI_PROCESS_TIMEOUT)

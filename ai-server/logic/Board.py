@@ -36,6 +36,15 @@ class Board(object):
     board_str += '\n%s! Score = %s' % (state, self.score)
     return board_str
 
+  def to_dict(self):
+    return {
+      'bitmap': self.bitmap,
+      'block': self.block,
+      'held_block': self.held_block,
+      'preview': self.preview,
+      'score': self.score,
+    }
+
   def check(self, block):
     for point in block['offsets']:
       i = point['i'] + block['center']['i']
@@ -82,6 +91,7 @@ class Board(object):
       'up': Board.up,
       'down': Board.down,
     }
+    commands.append('drop')
     for command in commands:
       if command in commands_dict:
         block = commands_dict[command](self.block)
