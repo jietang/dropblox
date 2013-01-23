@@ -101,6 +101,13 @@ class Board(object):
         block = commands_dict[command](self.block)
         if self.check(block):
           self.block = block
+      elif command == 'hold':
+        block = deepcopy(self.held_block)
+        block['center']['i'] = self.block['center']['i']
+        block['center']['j'] = self.block['center']['j']
+        if self.check(block):
+          self.held_block = self.block
+          self.block = block
       elif command == 'drop':
         self.place()
         break
@@ -130,8 +137,6 @@ class Board(object):
     self.score += 2**num_rows_cleared - 1
     self.bitmap = [[0 for j in range(COLS)] for i in range(num_rows_cleared)] + self.bitmap
 
-  # None of the movement methods check that the block is valid afterwards!
-  # Call Board.check(block) to do so.
   @staticmethod
   def rotate(block):
     result = deepcopy(block)
