@@ -103,14 +103,14 @@ if __name__ == '__main__':
     cherrypy.quickstart(DropbloxGameServer(), config={
         'global': {
             'server.socket_host': '0.0.0.0',
-            'server.socket_port': int(os.environ.get('PORT', 5000)),
+            'server.socket_port': 80,
         },
         '/ws': {
             'tools.websocket.on': True,
             'tools.websocket.handler_cls': DropbloxWebSocketHandler
         },
         '/': {
-            'tools.staticdir.root': '%s/%s' % (os.getcwd(), 'ai-server'),
+            'tools.staticdir.root': os.getcwd(),
             'tools.staticdir.on': True,
             'tools.staticdir.dir': 'static',
             'tools.staticdir.index': 'index.html',
