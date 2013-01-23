@@ -25,13 +25,12 @@ GAME_ID_TO_WEBSOCKET = {}
 GAMES = {}
 
 def start_game(game_id):
+    msg = {
+        'type' : AWAITING_NEXT_MOVE_MSG,
+        'game_state' : GAMES[game_id].to_dict(),
+    }
     conn = GAME_ID_TO_WEBSOCKET[game_id]
-    if conn:
-        msg = {
-            'type' : AWAITING_NEXT_MOVE_MSG,
-            'game_state' : GAMES[game_id].to_dict(),
-        }
-        conn.send(json.dumps(msg))
+    conn.send(json.dumps(msg))
 
 def generate_game_id():
     choices = 'abcdefghijklmnopqrstuvwxyz'
@@ -96,7 +95,8 @@ if __name__ == '__main__':
 
     cherrypy.quickstart(DropbloxGameServer(), config={
         'global': {
-            'server.socket_port': 9000,
+            'server.socket_host': '0.0.0.0',
+            'server.socket_port': 80,
         },
         '/ws': {
             'tools.websocket.on': True,
