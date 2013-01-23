@@ -12,6 +12,7 @@
 import threading
 import cherrypy
 import json
+import os
 
 from ws4py.client.threadedclient import WebSocketClient
 from subprocess import Popen, PIPE, STDOUT
@@ -42,6 +43,10 @@ AWAITING_NEXT_MOVE_MSG = 'AWAITING_NEXT_MOVE'
 SUBMIT_MOVE_MSG = 'SUBMIT_MOVE'
 DO_NOT_RECONNECT = 1001
 
+# Printing utilities
+colorred = "\033[01;31m{0}\033[00m"
+colorgrn = "\033[1;36m{0}\033[00m"
+
 class Command(object):
     def __init__(self, cmd):
         self.cmd = cmd
@@ -50,12 +55,11 @@ class Command(object):
     def run(self, timeout):
         cmds = []
         def target():
-            print 'Executing %s' % self.cmd
             self.process = Popen(self.cmd, stdout=PIPE, shell=True)
             for line in iter(self.process.stdout.readline, ''):
                 line = line.rstrip('\n')
                 if line not in VALID_CMDS:
-                    print "Got a bad cmd from subprocess: %s" % line
+                    print line # Forward debug output to terminal
                 elif line != DROP_CMD:
                     cmds.append(line)
 
@@ -64,10 +68,10 @@ class Command(object):
 
         thread.join(timeout)
         if thread.is_alive():
-            print 'Terminating process'
+            print colorred.format('Terminating process')
             self.process.terminate()
             thread.join()
-        print 'commands received: %s' % cmds
+        print colorgrn.format('commands received: %s' % cmds)
         return cmds
 
 class SubscriberThread(threading.Thread):
@@ -101,14 +105,13 @@ class Subscriber(WebSocketClient):
         self.send(json.dumps(msg))
 
     def received_message(self, msg):
-        print "received_message %s" % msg
         msg = json.loads(str(msg))
         if msg['type'] == NEW_GAME_CREATED_MSG:
             if not team_name:
                 self.game_id = msg['game_id']
-                print "New game started at %sgame.html#%s" % (SERVER_URL, msg['game_id'])
+                print colorgrn.format("New game started at %sgame.html#%s" % (SERVER_URL, msg['game_id']))
             else:
-                print "Waiting for competition to begin"
+                print colorgrn.format("Waiting for competition to begin")
         elif msg['type'] == AWAITING_NEXT_MOVE_MSG:
             ai_arg = json.dumps(msg['game_state'])
             command = Command(AI_PROCESS_PATH + (" '%s'" % ai_arg))
@@ -119,16 +122,18 @@ class Subscriber(WebSocketClient):
             }
             self.send(json.dumps(response))
         else:
-            print "Received unsupported message type"
+            print colorred.format("Received unsupported message type")
 
     def closed(self, code, reason=None):
-        print "Connection to server closed. Code=%s, Reason=%s" % (code, reason)
+        print colorred.format("Connection to server closed. Code=%s, Reason=%s" % (code, reason))
 
         if code != DO_NOT_RECONNECT:
             # Attempt to re-connect
             ws = Subscriber(WEBSOCKET_URL)
             ws.game_id = self.game_id
             ws.connect()
+        else:
+            os._exit(0)
 
 if __name__ == '__main__':
     parser = OptionParser()
