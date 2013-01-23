@@ -17,8 +17,8 @@ from ws4py.client.threadedclient import WebSocketClient
 from subprocess import Popen, PIPE, STDOUT
 
 # Remote server to connect to:
-SERVER_URL = 'http://localhost:9000/'
-WEBSOCKET_URL = 'ws://localhost:9000/ws'
+SERVER_URL = 'http://localhost/'
+WEBSOCKET_URL = 'ws://localhost/ws'
 
 # Subprocess
 LEFT_CMD = 'left'
@@ -89,7 +89,7 @@ class Subscriber(WebSocketClient):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
         if msg['type'] == NEW_GAME_CREATED_MSG:
-            print "New game started at %s%s" % (SERVER_URL, msg['game_id'])
+            print "New game started at %sgame.html#%s" % (SERVER_URL, msg['game_id'])
         elif msg['type'] == AWAITING_NEXT_MOVE_MSG:
             ai_arg = json.dumps(msg['game_state'])
             command = Command(AI_PROCESS_PATH + (" '%s'" % ai_arg))

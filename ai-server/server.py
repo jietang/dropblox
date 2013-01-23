@@ -25,12 +25,14 @@ GAME_ID_TO_WEBSOCKET = {}
 GAMES = {}
 
 def start_game(game_id):
-    msg = {
-        'type' : AWAITING_NEXT_MOVE_MSG,
-        'game_state' : GAMES[game_id].to_dict(),
-    }
     conn = GAME_ID_TO_WEBSOCKET[game_id]
-    conn.send(json.dumps(msg))
+    if not conn.started:
+      msg = {
+          'type' : AWAITING_NEXT_MOVE_MSG,
+          'game_state' : GAMES[game_id].to_dict(),
+      }
+      conn.send(json.dumps(msg))
+      conn.started = True
 
 def generate_game_id():
     choices = 'abcdefghijklmnopqrstuvwxyz'
@@ -44,6 +46,7 @@ def generate_game_id():
 
 class DropbloxWebSocketHandler(WebSocket):
     game_id = -1
+    started = False
 
     def received_message(self, msg):
         print "received_message %s" % msg
@@ -86,8 +89,11 @@ class DropbloxGameServer(object):
         start_game(game_id)
 
     @cherrypy.expose
-    def game(self, game_id):
-        return json.dumps(GAMES[game_id].to_dict())
+    def game_state(self, game_id):
+        try:
+            return json.dumps(GAMES[game_id].to_dict())
+        except KeyError:
+            return 'Game not found!'
 
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()

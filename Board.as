@@ -162,6 +162,7 @@ package {
       optimize = false;
 
       ExternalInterface.addCallback('setBoardState', setBoardState);
+      ExternalInterface.addCallback('failed', failed);
       //ExternalInterface.addCallback('getBoardState', getBoardState);
       //ExternalInterface.addCallback('issueCommand', issueCommand);
       //startTimer();
@@ -885,6 +886,10 @@ package {
       }
       block.rowsFree = calculateRowsFree(block);
       return block;
+    }
+
+    public function failed():Boolean {
+      return state == GAMEOVER;
     }
   }
 }

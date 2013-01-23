@@ -85,6 +85,9 @@ class Board(object):
     return deepcopy(blocks[type])
 
   def send_commands(self, commands):
+    if self.state != 'playing':
+      return
+
     commands_dict = {
       'rotate': Board.rotate,
       'left': Board.left,
@@ -103,9 +106,6 @@ class Board(object):
         break
 
   def place(self):
-    if self.state != 'playing':
-      return
-
     rows_free = self.rows_free(self.block)
     for point in self.block['offsets']:
       i = point['i'] + self.block['center']['i'] + rows_free
