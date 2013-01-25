@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Sample ntris_ai exectuable.
+# Sample dropblox_ai exectuable.
 #
 
 import json
