@@ -37,9 +37,15 @@ var dropblox = {
       '<div id="subcontent">Loading...</div>'
     );
     $.ajax('http://localhost:9000', {
-      success: function(data) {
+      success: function(json) {
         if ($.cookie('active-link') == 'submission_history') {
-          $('#subcontent').html(data);
+          var response = JSON.parse(json);
+          if (response.code == 200) {
+            $('#subcontent').html('Got a 200!');
+            console.log(response);
+          } else {
+            $('#subcontent').html(response.error);
+          }
         }
       },
       error: function() {
