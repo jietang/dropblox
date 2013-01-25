@@ -1,4 +1,7 @@
 var dropblox = {
+  games: undefined,
+  cur_game: undefined,
+
   initialize: function() {
     $('#left-bar a, #top-bar a').each(function() {
       var link = this.id;
@@ -41,8 +44,22 @@ var dropblox = {
         if ($.cookie('active-link') == 'submission_history') {
           var response = JSON.parse(json);
           if (response.code == 200) {
-            $('#subcontent').html('Got a 200!');
-            console.log(response);
+            dropblox.games = {};
+            var left_content = '';
+            for (var i = response.games.length - 1; i >= 0; i--) {
+              dropblox.games[response.games[i].id] = response.games[i];
+              var game = response.games[i];
+              var date_str = dropblox.format_timestamp(game.timestamp);
+              left_content += '<div id="' + game.id + '" class="game-link">';
+              left_content += 'Game ' + i + ' (' + date_str + ')</div>';
+            }
+            $('#subcontent').html(
+              '<div id="leftcontent">' + left_content + '</div>' +
+              '<div id="rightcontent">Click on a game to review your AI\'s moves.</div>'
+            );
+            $('#leftcontent .game-link').click(function() {
+              dropblox.load_game_history(this.id);
+            });
           } else {
             $('#subcontent').html(response.error);
           }
@@ -56,6 +73,30 @@ var dropblox = {
             '<span class="code">python history.py</span> ' +
             'in your ai-client folder.</div>'
           );
+        }
+      },
+    });
+  },
+
+  load_game_history: function(game_id) {
+    dropblox.cur_game = dropblox.games[game_id];
+    $('#' + game_id).addClass('active');
+    $('#rightcontent').html('Loading game data...');
+    $.ajax('http://localhost:9000/details?game_id=' + game_id, {
+      success: function(json) {
+        if (dropblox.cur_game.id == game_id) {
+          var response = JSON.parse(json);
+          if (response.code == 200) {
+            $('#rightcontent').html('Successfully loaded the game data.');
+            console.log(response);
+          } else {
+            $('#rightcontent').html(response.error);
+          }
+        }
+      },
+      error: function() {
+        if (dropblox.cur_game.id == game_id) {
+          $('#rightcontent').html('There was an error loading the game data.');
         }
       },
     });
@@ -97,5 +138,12 @@ var dropblox = {
     $.cookie('active-link', link);
     $('#left-bar a, #top-bar a').removeClass('active');
     $('#' + link).addClass('active');
+  },
+
+  format_timestamp: function(ts) {
+    var date = new Date(1000*ts);
+    return (date.getHours() +
+            (date.getMinutes() < 10 ? ':0' : ':') + date.getMinutes() +
+            (date.getSeconds() < 10 ? ':0' : ':') + date.getSeconds())
   },
 };
