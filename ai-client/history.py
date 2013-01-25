@@ -25,13 +25,13 @@ class DropbloxDebugServer(object):
     for game_dir in game_dirs:
       try:
         timestamp = int(game_dir.split('_')[1])
-        response['games'].append({
-          'timestamp': timestamp,
-          'id': game_dir,
-          'active': os.path.getmtime(os.path.join(LOGGING_DIR, game_dir)) > active_time,
-        })
-      except IndexError, ValueError:
-        pass
+      except (IndexError, ValueError):
+        continue
+      response['games'].append({
+        'timestamp': timestamp,
+        'id': game_dir,
+        'active': os.path.getmtime(os.path.join(LOGGING_DIR, game_dir)) > active_time,
+      })
     if not response['games']:
       response['code'] = 401
       response['error'] = (
