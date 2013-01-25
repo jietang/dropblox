@@ -80,7 +80,7 @@ class DropbloxGameServer(object):
         return wrapped
 
     @cherrypy.expose
-    #@admin_only
+    @admin_only
     def list_teams(self):
         response = {}
         response['team_scores'] = {}
@@ -108,7 +108,7 @@ class DropbloxGameServer(object):
         return json.dumps(response)
 
     @cherrypy.expose
-    #@admin_only
+    @admin_only
     def start_next_round(self):
         if not len(CURRENT_COMPETITION.team_whitelist):
             raise cherrypy.HTTPError(400, "Can't start a game with no participants!")
@@ -121,23 +121,23 @@ class DropbloxGameServer(object):
         return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
-    #@admin_only
+    @admin_only
     def whitelist_team(self):
         cl = cherrypy.request.headers['Content-Length']
         rawbody = cherrypy.request.body.read(int(cl))
         body = json.loads(rawbody)
 
-        CURRENT_COMPETITION.whitelist_team(body['team_name'])
+        CURRENT_COMPETITION.whitelist_team(body['target_team'])
         return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
-    #@admin_only
+    @admin_only
     def blacklist_team(self):
         cl = cherrypy.request.headers['Content-Length']
         rawbody = cherrypy.request.body.read(int(cl))
         body = json.loads(rawbody)
 
-        CURRENT_COMPETITION.blacklist_team(body['team_name'])
+        CURRENT_COMPETITION.blacklist_team(body['target_team'])
         return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
