@@ -207,11 +207,8 @@ class DropbloxGameServer(object):
         rawbody = cherrypy.request.body.read(int(cl))
         body = json.loads(rawbody)
         
-        team = model.Database.get_team(body['team_name'])
+        team = model.Database.authenticate_team(body['team_name'], body['password'])
         if not team:
-            raise cherrypy.HTTPError(401, "Incorrect team name or password")
-
-        if not bcrypt.hashpw(body['password'], team[model.Database.TEAM_PASSWORD]) == team[model.Database.TEAM_PASSWORD]:
             raise cherrypy.HTTPError(401, "Incorrect team name or password")
 
         return "Success"
