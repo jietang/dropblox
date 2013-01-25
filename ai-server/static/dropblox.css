@@ -125,3 +125,11 @@ form {
 .hidden {
   display: none;
 }
+
+.col-header {
+  margin: 6px 4px;
+}
+
+.col-header.spacer {
+  margin-top: 18px;
+}

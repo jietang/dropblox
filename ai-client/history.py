@@ -1,7 +1,9 @@
 import cherrypy
 import json
 import os
+import time
 
+ACTIVE_TIMEOUT = 30
 LOGGING_DIR = os.path.join(os.getcwd(), 'history')
 
 class DropbloxDebugServer(object):
@@ -17,6 +19,7 @@ class DropbloxDebugServer(object):
         '<span class="code">python client.py test</span>.<div>'
       )
       return json.dumps(response)
+    active_time = int(time.time()) - ACTIVE_TIMEOUT
     response['games'] = []
     game_dirs = os.listdir(LOGGING_DIR)
     for game_dir in game_dirs:
@@ -27,6 +30,7 @@ class DropbloxDebugServer(object):
       response['games'].append({
         'timestamp': timestamp,
         'id': game_dir,
+        'active': os.path.getmtime(os.path.join(LOGGING_DIR, game_dir)) > active_time,
       })
     if not response['games']:
       response['code'] = 401
@@ -36,7 +40,7 @@ class DropbloxDebugServer(object):
         '<span class="code">python client.py test</span>.<div>'
       )
       return json.dumps(response)
-    response['games'].sort(key=lambda x: x['timestamp'])
+    response['games'].sort(key=lambda x: (1 if x['active'] else 0, x['timestamp']))
     return json.dumps(response)
 
   @cherrypy.expose
@@ -62,6 +66,7 @@ class DropbloxDebugServer(object):
       response['code'] = 401
       response['error'] = 'Malformed state file found: %s' % (state_files,)
       return json.dumps(response)
+    response['active'] = os.path.getmtime(game_dir) > int(time.time()) - ACTIVE_TIMEOUT
     return json.dumps(response)
 
   def read(self, filename, default=None):
