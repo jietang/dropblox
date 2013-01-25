@@ -1,6 +1,16 @@
 <head>
+  <link rel="stylesheet" type="text/css" href="dropblox.css">
+  <script type="text/javascript" src="jquery-1.8.3.js"></script>
+  <script type="text/javascript" src="board.js"></script>
+  <script type="text/javascript" src="dropblox.js"></script>
 </head>
 
-<body style="text-align: center;">
-  There's nothing here right now!
+<body onload="dropblox.initialize()">
+  <div id="top-bar">Dropblox</div>
+  <div id="left-bar">
+    <div><a id="getting_started" href="#">Getting started</a></div>
+    <div><a id="documentation" href="#">Documentation</a></div>
+    <div><a id="submission_history" href="#">Submission history</a></div>
+  </div>
+  <div id="content"></div>
 </body>

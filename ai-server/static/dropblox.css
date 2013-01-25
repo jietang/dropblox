@@ -1,0 +1,27 @@
+body {
+  font-family: verdana, arial, sans-serif;
+}
+
+#top-bar {
+  background-color: #39F;
+  color: white;
+  font-size: 24px;
+  padding: 4px;
+}
+
+#left-bar {
+  background-color: #CCC;
+  float: left;
+}
+
+#left-bar div {
+  margin: 8px;
+}
+
+#left-bar a {
+  color: #444;
+}
+
+#left-bar a.active {
+  color: black;
+}
