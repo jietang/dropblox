@@ -23,16 +23,16 @@ var competition = {
   },
 
   update: function() {
-    this.post('/competition_state',
+    competition.post('/competition_state',
       {
         team_name: $.cookie('team_name'),
         password: $.cookie('password'),
       },
       function(data) {
-        if (this.round === undefined) {
-          this.round = data.round;
+        if (competition.round === undefined) {
+          competition.round = data.round;
           $('#round-text').html('Dropblox - Round ' + data.round);
-        } else if (this.round != data.round) {
+        } else if (competition.round != data.round) {
           return;
         }
 
@@ -46,14 +46,14 @@ var competition = {
         }
 
         for (var team in data.boards) {
-          if (!this.boards.hasOwnProperty(team)) {
+          if (!competition.boards.hasOwnProperty(team)) {
             $('#boards').append('<div id="' + team + '-container"></div>');
-            this.boards[team] = this.create_board(team + '-container', team, team);
-            this.boards[team].setBoardState(data.boards[team]);
+            competition.boards[team] = competition.create_board(team + '-container', team, team);
+            competition.boards[team].setBoardState(data.boards[team]);
           }
-          this.boards[team].setBoardState(data.boards[team]);
+          competition.boards[team].setBoardState(data.boards[team]);
         }
-        for (var team in this.boards) {
+        for (var team in competition.boards) {
           if (!data.boards.hasOwnProperty(team)) {
             $('#' + team + '-container').remove();
           }
