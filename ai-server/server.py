@@ -5,9 +5,9 @@
 #
 
 import cherrypy
-import sqlite3
 import random
 import bcrypt
+import model
 import time
 import json
 import os
@@ -181,22 +181,11 @@ class DropbloxGameServer(object):
         else:
             return 'Incorrect password!'
 
-def add_user(team_name, password):
-    sql = 'INSERT INTO users (team_name, password) VALUES(%s, %s);' % (team_name, password)
-
-def initialize_db():
-    conn = sqlite3.connect('data.db')
-
-    def create_user_table():
-        sql = 'CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY NOT NULL, team_name VARCHAR(64), password CHAR(64));'
-        conn.execute(sql)
-        conn.commit()
-
-    create_user_table()
-
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()
     cherrypy.tools.websocket = WebSocketTool()
+
+    model.Database.initialize_db()
 
     cherrypy.quickstart(DropbloxGameServer(), config={
         'global': {
@@ -214,4 +203,3 @@ if __name__ == '__main__':
             'tools.staticdir.index': 'index.html',
         },
     })
-    
