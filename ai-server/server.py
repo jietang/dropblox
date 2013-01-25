@@ -93,7 +93,7 @@ class DropbloxGameServer(object):
     @admin_only
     def competition_state(self):
         response = {}
-        for team in CURRENT_COMPETITION.team_to_game():
+        for team in CURRENT_COMPETITION.team_to_game:
             response[team] = CURRENT_COMPETITION.team_to_game[team].to_dict()
         return json.dumps(response)
 
