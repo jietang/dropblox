@@ -120,6 +120,7 @@ var dropblox = {
       '  <div class="header">' + header + '</div>' +
       '  <object id="' + id + '" data="Board.swf" type="application/x-shockwave-flash" width="280" height="416">' +
       '    <param name="movie" value="Board.swf" />' +
+      '    <param name="flashVars" value="squareWidth=16" />' +
       '  </object>' +
       '</div>'
     );

@@ -1,21 +1,55 @@
 var competition = {
+  boards: {},
+
   initialize: function() {
-    b = competition.create_board('foo', 'bar', 'baz');
-    
+    $.ajax('/competition_state', {
+      success: function(json) {
+        var data = JSON.parse(json);
+        var empty = true;
+        for (var team in data.boards) {
+          $('#boards').append('<div id="' + team + '-container"></div>');
+          competition.boards[team] = competition.create_board(team + '-container', team, team);
+          competition.boards[team].setBoardState(data.boards[team]);
+          empty = false;
+        }
+        if (empty) {
+          $('#boards').html('No competition is currently running.');
+        } else {
+          setInterval(competition.update, 1000);
+        }
+      },
+      error: function(data) {
+        $('#boards').html(data);
+      },
+    });
   },
 
   create_board: function(target, id, header) {
     var html = (
       '<div class="container">' +
       '  <div class="header">' + header + '</div>' +
-      '  <object id="' + id + '" data="Board.swf" type="application/x-shockwave-flash" width="280" height="416">' +
+      '  <object id="' + id + '" data="Board.swf" type="application/x-shockwave-flash" width="175" height="260">' +
       '    <param name="movie" value="Board.swf" />' +
+      '    <param name="flashVars" value="squareWidth=10" />' +
       '  </object>' +
       '</div>'
     );
     $('#' + target).append(html);
     return board.initialize(id);
   },
-};
 
-x = '{"bitmap": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 23, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 23, 23, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 3, 23, 23, 0, 0, 0, 0], [0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 70, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 70, 70, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 70, 70, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 9, 70, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 9, 9, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 9, 17, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 25, 17, 17, 0, 0, 0, 0], [0, 0, 0, 0, 0, 25, 17, 17, 0, 0, 0, 0], [0, 0, 0, 0, 0, 25, 25, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 25, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0], [0, 0, 0, 0, 21, 21, 21, 0, 0, 0, 0, 0], [0, 0, 0, 0, 28, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 28, 28, 28, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 28, 0, 0, 0, 0, 0]], "held_block": {"type": 24, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": -2, "j": 0}, {"i": 0, "j": 1}, {"i": 1, "j": 1}]}, "state": "failed", "score": 0, "preview": [{"type": 10, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 0, "j": -1}, {"i": 1, "j": -1}]}, {"type": 21, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 0, "j": 1}, {"i": 1, "j": -1}]}, {"type": 25, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": -2, "j": 0}, {"i": 0, "j": -1}, {"i": 1, "j": -1}]}, {"type": 14, "center": {"i": 7, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 0, "j": 1}, {"i": 1, "j": 0}, {"i": 2, "j": 0}]}, {"type": 2, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}]}], "block": {"type": 19, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": -1, "j": -1}, {"i": 1, "j": 0}, {"i": 1, "j": -1}]}}';
+  update: function() {
+    $.ajax('/competition_state', {
+      success: function(json) {
+        var data = JSON.parse(json);
+        for (var team in data.boards) {
+          competition.boards[team].setBoardState(data.boards[team]);
+        }
+      },
+      error: function(json) {
+        var data = JSON.parse(json);
+        console.log('Error in update:', data.message);
+      },
+    });
+  },
+};
