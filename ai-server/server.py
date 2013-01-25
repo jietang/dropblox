@@ -5,9 +5,9 @@
 #
 
 import cherrypy
-import sqlite3
 import random
 import bcrypt
+import model
 import time
 import json
 import os
@@ -181,22 +181,47 @@ class DropbloxGameServer(object):
         else:
             return 'Incorrect password!'
 
-def add_user(team_name, password):
-    sql = 'INSERT INTO users (team_name, password) VALUES(%s, %s);' % (team_name, password)
+    @cherrypy.expose
+    def signup(self):
+        cl = cherrypy.request.headers['Content-Length']
+        rawbody = cherrypy.request.body.read(int(cl))
+        body = json.loads(rawbody)
 
-def initialize_db():
-    conn = sqlite3.connect('data.db')
+        if len(body['team_name']) < 5:
+            raise cherrypy.HTTPError(400, "Team name must be at least 5 characters long!")
 
-    def create_user_table():
-        sql = 'CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY NOT NULL, team_name VARCHAR(64), password CHAR(64));'
-        conn.execute(sql)
-        conn.commit()
+        if len(body['password']) < 5:
+            raise cherrypy.HTTPError(400, "Password must be at least 5 characters long!") 
+        
+        team = model.Database.get_team(body['team_name'])
+        if team:
+            raise cherrypy.HTTPError(400, "Team name already taken!")
 
-    create_user_table()
+        hashed = bcrypt.hashpw(body['password'], bcrypt.gensalt())
+        model.Database.add_team(body['team_name'], hashed)
+        return "Success"
+
+    @cherrypy.expose
+    def login(self):
+        cl = cherrypy.request.headers['Content-Length']
+        rawbody = cherrypy.request.body.read(int(cl))
+        body = json.loads(rawbody)
+        
+        team = model.Database.get_team(body['team_name'])
+        if not team:
+            raise cherrypy.HTTPError(401, "Incorrect team name or password")
+
+        if not bcrypt.hashpw(body['password'], team[model.Database.TEAM_PASSWORD]) == team[model.Database.TEAM_PASSWORD]:
+            raise cherrypy.HTTPError(401, "Incorrect team name or password")
+
+        return "Success"
+                
 
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()
     cherrypy.tools.websocket = WebSocketTool()
+
+    model.Database.initialize_db()
 
     cherrypy.quickstart(DropbloxGameServer(), config={
         'global': {
@@ -214,4 +239,3 @@ if __name__ == '__main__':
             'tools.staticdir.index': 'index.html',
         },
     })
-    
