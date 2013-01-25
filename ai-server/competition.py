@@ -135,6 +135,7 @@ class Competition(object):
 				Competition.record_game(team, game, self.round)
 			Competition.send_game_over(game, sock)
 		elif game.state == 'playing':
+			time.sleep(1)
 			Competition.request_next_move(game, sock)
 
 	# Called when a socket is closed.

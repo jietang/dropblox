@@ -2,9 +2,9 @@
 #
 # This client connects to the centralized game server
 # via websocket. After creating a new game on the game
-# server, it spaws an AI subprocess called "ntris_ai."
+# server, it spaws an AI subprocess called "droplox_ai."
 # For each turn, this client passes in the current game
-# state to a new instance of ntris_ai, waits ten seconds
+# state to a new instance of droplox_ai, waits ten seconds
 # for a response, then kills the AI process and sends
 # back the move list.
 #
@@ -22,10 +22,8 @@ from ws4py.client.threadedclient import WebSocketClient
 from subprocess import Popen, PIPE, STDOUT
 
 # Remote server to connect to:
-#SERVER_URL = 'http://ec2-107-20-18-153.compute-1.amazonaws.com/'
-#WEBSOCKET_URL = 'ws://ec2-107-20-18-153.compute-1.amazonaws.com/ws'
-SERVER_URL = 'http://localhost/'
-WEBSOCKET_URL = 'ws://localhost/ws'
+SERVER_URL = 'http://ec2-107-20-18-153.compute-1.amazonaws.com/'
+WEBSOCKET_URL = 'ws://ec2-107-20-18-153.compute-1.amazonaws.com/ws'
 
 # Subprocess
 LEFT_CMD = 'left'
@@ -34,8 +32,9 @@ UP_CMD = 'up'
 DOWN_CMD = 'down'
 DROP_CMD = 'drop'
 ROTATE_CMD = 'rotate'
-VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, DROP_CMD, ROTATE_CMD]
-AI_PROCESS_PATH = './ntris_ai'
+HOLD_CMD = 'hold'
+VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, DROP_CMD, ROTATE_CMD, HOLD_CMD]
+AI_PROCESS_PATH = './droplox_ai'
 AI_PROCESS_TIMEOUT = 10 # This is enforced server-side so don't change ;)
 
 # Messaging protocol
