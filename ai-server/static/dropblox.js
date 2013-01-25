@@ -33,10 +33,26 @@ var dropblox = {
 
   submission_history: function() {
     $('#content').html(
-      '<div>' +
-      '  This is a placeholder for the submission history!' +
-      '</div>'
+      '<h3>Submission history</h3>' +
+      '<div id="subcontent">Loading...</div>'
     );
+    $.ajax('http://localhost:9000', {
+      success: function(data) {
+        if ($.cookie('active-link') == 'submission_history') {
+          $('#subcontent').html(data);
+        }
+      },
+      error: function() {
+        if ($.cookie('active-link') == 'submission_history') {
+          $('#subcontent').html(
+            '<div>Request failed! Make sure your history server is running.</div>' +
+            '<div class="spaced">You can start this server by running ' +
+            '<span class="code">python history.py</span> ' +
+            'in your ai-client folder.</div>'
+          );
+        }
+      },
+    });
   },
 
   login_form: (
@@ -49,7 +65,7 @@ var dropblox = {
 
   log_in: function() {
     $('#content').html(
-      '<div><h3>Log in:</h3> ' + this.login_form + '</div>'
+      '<h3>Log in</h3>' + this.login_form
     );
     $('#submit').click(function() {
       dropblox.submit_login('log_in', $('#team-name').val(), $('#password').val());
@@ -59,7 +75,7 @@ var dropblox = {
 
   sign_up: function() {
     $('#content').html(
-      '<div><h3>Sign up:</h3> ' + this.login_form + '</div>'
+      '<div><h3>Sign up</h3> ' + this.login_form + '</div>'
     );
     $('#submit').click(function() {
       dropblox.submit_login('sign_up', $('#team-name').val(), $('#password').val());
