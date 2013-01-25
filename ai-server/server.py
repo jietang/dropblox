@@ -21,6 +21,7 @@ TESTING_COMPETITIONS = {} # Socket -> Practice competition instance
 
 class DropbloxWebSocketHandler(WebSocket):    
     def handle_competition_msg_from_team(self, msg, team):
+        global CURRENT_COMPETITION
         team_name = team[model.Database.TEAM_TEAM_NAME]
         if msg['type'] == messaging.CREATE_NEW_GAME_MSG:
             CURRENT_COMPETITION.register_team(team_name, self)
@@ -54,8 +55,9 @@ class DropbloxWebSocketHandler(WebSocket):
 
     def closed(self, code, reason=None):
         CURRENT_COMPETITION.disconnect_sock(self)
-        TESTING_COMPETITIONS[self].disconnect_sock(self)
-        del TESTING_COMPETITIONS[self]
+        if self in TESTING_COMPETITIONS:
+            TESTING_COMPETITIONS[self].disconnect_sock(self)
+            del TESTING_COMPETITIONS[self]
         
 class DropbloxGameServer(object):
     @cherrypy.expose
@@ -80,9 +82,13 @@ class DropbloxGameServer(object):
     #@admin_only
     def list_teams(self):
         response = {}
+        response['team_scores'] = {}
+        response['team_connect'] = {}
         for team in model.Database.list_all_teams():
             team_name = team[model.Database.TEAM_TEAM_NAME]
-            response[team_name] = model.Database.scores_by_team(team_name)
+            response['team_scores'][team_name] = model.Database.scores_by_team(team_name)
+            response['team_connect'][team_name] = CURRENT_COMPETITION.is_team_connected(team_name)
+
         return json.dumps(response)
 
     @cherrypy.expose
@@ -96,6 +102,7 @@ class DropbloxGameServer(object):
         remaining = len(CURRENT_COMPETITION.team_whitelist) - len(CURRENT_COMPETITION.sock_to_team)
         response['waiting_for_players'] = remaining
         response['round'] = CURRENT_COMPETITION.round
+        response['started'] = CURRENT_COMPETITION.started
 
         return json.dumps(response)
 
