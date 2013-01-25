@@ -64,7 +64,7 @@ h3 {
 }
 
 #move-slider {
-  margin: 8px;
+  margin: 8px 16px 8px 8px;
   width: 300px;
 }
 
@@ -132,4 +132,8 @@ form {
 
 .col-header.spacer {
   margin-top: 18px;
+}
+
+#animate {
+  color: black;
 }

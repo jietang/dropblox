@@ -156,6 +156,7 @@ var dropblox = {
               '<table><tr>' +
               '<td id="select-a-move">Game progress:</td>' +
               '<td><div id="move-slider"></td>' +
+              '<td><a id="animate" href="#">Animate</a></td>' +
               '</tr></table>' +
               '<div id="cur-state-label"></div>'
             );
@@ -166,6 +167,16 @@ var dropblox = {
               slide: function(event, ui) {
                 dropblox.set_cur_game_state(game_id, ui.value);
               },
+            });
+            $('#animate').click(function() {
+              var index = dropblox.cur_game.index;
+              if (index !== undefined && index < dropblox.cur_game.states.length - 1) {
+                dropblox.set_cur_game_state(game_id, index + 1);
+                setTimeout(function() {
+                  dropblox.animate_game(game_id, index + 1);
+                }, dropblox.ANIMATE_MOVE);
+              }
+              window.event.preventDefault();
             });
             if (index === undefined) {
               var index = dropblox.cur_game.states.length - 1;
@@ -201,7 +212,7 @@ var dropblox = {
         setTimeout(function() {
           dropblox.animate_game(game_id, index + 1);
         }, dropblox.ANIMATE_MOVE);
-      } else {
+      } else if (dropblox.cur_game.active) {
         setTimeout(function() {
           dropblox.load_game_history(game_id);
         }, dropblox.WAIT_FOR_MOVE);
