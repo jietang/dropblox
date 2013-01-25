@@ -7,21 +7,13 @@
 import competition
 import messaging
 import cherrypy
-import random
 import bcrypt
 import model
-import time
 import json
-import util
 import os
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
-
-from logic.Board import Board
-
-# Admin
-ADMIN_HASHED_PW = "$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy"
 
 CURRENT_COMPETITION = competition.Competition()
 TESTING_COMPETITIONS = {} # Socket -> Practice competition instance
@@ -68,9 +60,41 @@ class DropbloxGameServer(object):
         "Method must exist to serve as a exposed hook for the websocket"
         pass
 
+    def admin_only(f):
+        def wrapped(*args, **kwargs):
+            cl = cherrypy.request.headers['Content-Length']
+            rawbody = cherrypy.request.body.read(int(cl))
+            body = json.loads(rawbody)
+
+            team = model.Database.authenticate_team(body['team_name'], body['password'])
+            if not team or not team[model.Database.TEAM_IS_ADMIN]:
+                raise cherrypy.HTTPError(401, "You are not authorized to perform this action")
+            else:
+                return f(*args, **kwargs)
+        return wrapped
+
     @cherrypy.expose
-    def hackstart(self):
+    @admin_only
+    def start_competition(self, password):        
         CURRENT_COMPETITION.start_competition()
+        return "Success"
+
+    @cherrypy.expose
+    @admin_only
+    def list_teams(self, password):
+        return json.dumps({
+            'teams': model.Database.list_all_teams(),
+        })
+
+    @cherrypy.expose
+    @admin_only
+    def whitelist_team(self, password):
+        pass
+
+    @cherrypy.expose
+    @admin_only
+    def blacklist_team(self, password):
+        pass
 
     @cherrypy.expose
     def signup(self):
@@ -104,6 +128,10 @@ class DropbloxGameServer(object):
 
         return "Success"
                 
+def jsonify_error(status, message, traceback, version):
+    response = cherrypy.response
+    response.headers['Content-Type'] = 'application/json'
+    return json.dumps({'status': status, 'message': message})
 
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()
@@ -125,5 +153,6 @@ if __name__ == '__main__':
             'tools.staticdir.on': True,
             'tools.staticdir.dir': 'static',
             'tools.staticdir.index': 'index.html',
+            'error_page.default': jsonify_error,
         },
     })
