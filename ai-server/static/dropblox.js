@@ -277,6 +277,7 @@ var dropblox = {
     $('#content').html(
       '<h3>Log in</h3>' + this.login_form
     );
+    $('#team-name').focus();
     $('#submit').click(function() {
       dropblox.submit_login('/login', $('#team-name').val(), $('#password').val());
       window.event.preventDefault();
@@ -287,6 +288,7 @@ var dropblox = {
     $('#content').html(
       '<div><h3>Sign up</h3> ' + this.login_form + '</div>'
     );
+    $('#team-name').focus();
     $('#submit').click(function() {
       dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val());
       window.event.preventDefault();
