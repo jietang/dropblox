@@ -9,6 +9,7 @@
 # back the move list.
 #
 
+import traceback
 import threading
 import cherrypy
 import config
@@ -48,6 +49,9 @@ DO_NOT_RECONNECT = 1001
 colorred = "\033[01;31m{0}\033[00m"
 colorgrn = "\033[1;36m{0}\033[00m"
 
+# Logging AI actions for debug webserver
+LOGGING_DIR = "%s/%s" % (os.getcwd(), 'history')
+
 class Command(object):
     def __init__(self, cmd):
         self.cmd = cmd
@@ -83,19 +87,51 @@ class SubscriberThread(threading.Thread):
         ws = Subscriber(WEBSOCKET_URL)
         ws.connect()
 
+class GameStateLogger(object):
+    log_dir = None
+    turn_num = 0
+
+    def __init__(self, game_id):
+        self.log_dir = "%s/%s" % (LOGGING_DIR, game_id)
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
+
+    def log_game_state(self, game_state):
+        fname = "%s/%s%s" % (self.log_dir, "state", self.turn_num)
+        with open(fname, 'w+') as f:
+            f.write(game_state)
+
+    def log_ai_move(self, move_list):
+        fname = "%s/%s%s" % (self.log_dir, "move", self.turn_num)
+        with open(fname, 'w+') as f:
+            f.write(move_list)
+        self.turn_num += 1
+
+def catch_exceptions(f):
+    def wrapped(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception, e:
+            print traceback.format_exc()
+    return wrapped
+
 class Subscriber(WebSocketClient):
     game_id = -1
+    logger = None
 
+    @catch_exceptions
     def handshake_ok(self):
         self._th.start()
         self._th.join()
 
+    @catch_exceptions
     def send_msg(self, msg):
         msg['team_name'] = config.team_name
         msg['team_password'] = config.team_password
         msg['entry_mode'] = entry_mode
         self.send(json.dumps(msg))
 
+    @catch_exceptions
     def opened(self):
         msg = {
             'type' : CREATE_NEW_GAME_MSG,
@@ -109,18 +145,24 @@ class Subscriber(WebSocketClient):
             }
         self.send_msg(msg)
 
+    @catch_exceptions
     def received_message(self, msg):
         msg = json.loads(str(msg))
         if msg['type'] == NEW_GAME_CREATED_MSG:
             if 'game_id' in msg:
                 self.game_id = msg['game_id']
+                self.logger = GameStateLogger(self.game_id)
                 print colorgrn.format("New game started at %sgame.html#%s" % (SERVER_URL, msg['game_id']))
             else:
                 print colorgrn.format("Waiting for competition to begin")
         elif msg['type'] == AWAITING_NEXT_MOVE_MSG:
             ai_arg = json.dumps(msg['game_state'])
+            if self.logger:
+                self.logger.log_game_state(ai_arg)
             command = Command(AI_PROCESS_PATH + (" '%s'" % ai_arg))
             ai_cmds = command.run(timeout=AI_PROCESS_TIMEOUT)
+            if self.logger:
+                self.logger.log_ai_move(json.dumps(ai_cmds))
             response = {
                 'type' : SUBMIT_MOVE_MSG,
                 'move_list' : ai_cmds,
