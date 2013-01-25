@@ -80,11 +80,12 @@ class DropbloxGameServer(object):
         return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
-    @admin_only
+    #@admin_only
     def list_teams(self):
-        return json.dumps({
-            'teams': model.Database.list_all_teams(),
-        })
+        response = {}
+        for team in model.Database.list_all_teams():
+            response[team] = model.Database.scores_by_team(team)
+        return json.dumps(response)
 
     @cherrypy.expose
     @admin_only

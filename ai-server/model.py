@@ -43,6 +43,20 @@ class Database(object):
 		return result
 
 	@staticmethod
+	def scores_by_team(team_name):
+		conn = sqlite3.connect('data.db')
+		sql = 'SELECT * FROM scores WHERE team_name="%s" ORDER BY round ASC' % team_name
+		scores = conn.execute(sql).fetchall()
+
+		result = []
+		for score in scores:
+			result.append({
+				'score' : score[Database.SCORE_SCORE],
+				'round' : score[Database.SCORE_ROUND],
+			})
+		return result
+
+	@staticmethod
 	def get_team(team_name):
 		conn = sqlite3.connect('data.db')
 		sql = 'SELECT * FROM teams WHERE team_name="%s"' % team_name
