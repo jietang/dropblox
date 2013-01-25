@@ -2,9 +2,9 @@
 #
 # This client connects to the centralized game server
 # via websocket. After creating a new game on the game
-# server, it spaws an AI subprocess called "droplox_ai."
+# server, it spaws an AI subprocess called "dropblox_ai."
 # For each turn, this client passes in the current game
-# state to a new instance of droplox_ai, waits ten seconds
+# state to a new instance of dropblox_ai, waits ten seconds
 # for a response, then kills the AI process and sends
 # back the move list.
 #
@@ -34,7 +34,7 @@ DROP_CMD = 'drop'
 ROTATE_CMD = 'rotate'
 HOLD_CMD = 'hold'
 VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, DROP_CMD, ROTATE_CMD, HOLD_CMD]
-AI_PROCESS_PATH = './droplox_ai'
+AI_PROCESS_PATH = './dropblox_ai'
 AI_PROCESS_TIMEOUT = 10 # This is enforced server-side so don't change ;)
 
 # Messaging protocol
