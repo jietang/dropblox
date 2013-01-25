@@ -21,14 +21,16 @@ class Board(object):
   def __init__(self, seed):
     assert(seed is not None)
     self.seed = seed
-    random.seed(seed)
-    self.bitmap = [[0 for j in range(COLS)] for i in range(ROWS)]
-    self.score = 0
+    self.random = random.Random()
+    self.random.seed(seed)
 
+    self.score = 0
+    self.state = 'playing'
+
+    self.bitmap = [[0 for j in range(COLS)] for i in range(ROWS)]
     self.block = self.get_block()
     self.held_block = self.get_block()
     self.preview = [self.get_block() for i in range(PREVIEW)]
-    self.state = 'playing'
 
   def __repr__(self):
     return self.__str__()
@@ -67,7 +69,7 @@ class Board(object):
     level = len(types) - 1
 
     # Calculate the ratio r between the probability of different levels.
-    p = random.random()
+    p = self.random.random()
     x = 2.0*(self.score - R_INTERVAL)/R_INTERVAL
     r = (MAX_R - MIN_R)*(x/math.sqrt(x*x + 1) + 1)/2 + MIN_R
 
@@ -79,7 +81,7 @@ class Board(object):
         break
     
     # Return a block of the appropriate difficuly level.
-    type = int(random.random()*types[level])
+    type = int(self.random.random()*types[level])
     return deepcopy(blocks[type])
 
   def send_commands(self, commands):
