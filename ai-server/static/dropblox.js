@@ -16,11 +16,17 @@ var dropblox = {
         window.event.preventDefault();
       });
     });
-    if ($.cookie('active-link')) {
+
+    if (window.location.hash) {
+      var hash = window.location.hash;
+      window.location.hash = '';
+      $(hash).trigger('click');
+    } else if ($.cookie('active-link')) {
       $('#' + $.cookie('active-link')).trigger('click');
     } else {
       $('#getting_started').trigger('click');
     }
+
     if ($.cookie('team_name')) {
       this.set_team_cookie($.cookie('team_name'), $.cookie('password'));
     }
@@ -43,6 +49,8 @@ var dropblox = {
   },
 
   submission_history: function() {
+    dropblox.games = undefined;
+    dropblox.cur_game = undefined;
     $('#content').html(
       '<h3>Submission history</h3>' +
       '<div id="subcontent">Loading...</div>'
@@ -81,6 +89,13 @@ var dropblox = {
             $('#leftcontent .game-link').click(function() {
               dropblox.load_game_history(this.id);
             });
+            if (response.games.length) {
+              setTimeout(function() {
+                if (!dropblox.cur_game) {
+                  dropblox.load_game_history(response.games[response.games.length - 1].id);
+                }
+              }, 100);
+            }
           } else {
             $('#subcontent').html(response.error);
           }
@@ -109,8 +124,7 @@ var dropblox = {
       '</div>'
     );
     $('#' + target).append(html);
-    b = board.initialize(id);
-    return b;
+    return board.initialize(id);
   },
 
   load_game_history: function(game_id) {
@@ -156,8 +170,10 @@ var dropblox = {
               '<table><tr>' +
               '<td id="select-a-move">Game progress:</td>' +
               '<td><div id="move-slider"></td>' +
+              '<td><a id="animate" href="#">Animate</a></td>' +
               '</tr></table>' +
-              '<div id="cur-state-label"></div>'
+              '<div id="cur-state-label"></div>' +
+              '<div class="big-spacer"><a id="copy-state" href="#">Get game state JSON for debugging</a></div>'
             );
             $('#move-slider').slider({
               min: 0,
@@ -167,6 +183,28 @@ var dropblox = {
                 dropblox.set_cur_game_state(game_id, ui.value);
               },
             });
+            $('#animate').click(function() {
+              var index = dropblox.cur_game.index;
+              if (index !== undefined && index < dropblox.cur_game.states.length - 1) {
+                dropblox.set_cur_game_state(game_id, index + 1);
+                setTimeout(function() {
+                  dropblox.animate_game(game_id, index + 1);
+                }, dropblox.ANIMATE_MOVE);
+              }
+              window.event.preventDefault();
+            });
+            setTimeout(function() {
+              $('#copy-state').zclip({
+                path: 'ZeroClipboard.swf',
+                copy: function() {
+                  var index = dropblox.cur_game.index;
+                  if (index !== undefined) {
+                    return "'" + dropblox.cur_game.states[index].board + "'";
+                  }
+                },
+              });
+            }, 100);
+
             if (index === undefined) {
               var index = dropblox.cur_game.states.length - 1;
               dropblox.set_cur_game_state(game_id, index);
@@ -201,9 +239,11 @@ var dropblox = {
         setTimeout(function() {
           dropblox.animate_game(game_id, index + 1);
         }, dropblox.ANIMATE_MOVE);
-      } else {
+      } else if (dropblox.cur_game.active) {
         setTimeout(function() {
-          dropblox.load_game_history(game_id);
+          if (dropblox.cur_game.id == game_id) {
+            dropblox.load_game_history(game_id);
+          }
         }, dropblox.WAIT_FOR_MOVE);
       }
     }

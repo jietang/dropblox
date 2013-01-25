@@ -117,6 +117,12 @@ def objective(bitmap):
 
 if __name__ == '__main__':
   if len(sys.argv) == 2:
+    time.sleep(1)
+    print 'left'
+    print 'drop'
+    sys.stdout.flush()
+    sys.exit(0)
+
     state = json.loads(sys.argv[1])
     bitmaps = get_bitmaps_with_commands(state['bitmap'], state['block'])
     if bitmaps:
