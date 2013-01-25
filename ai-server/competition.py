@@ -16,11 +16,12 @@ import time
 
 class Competition(object):
 
-	def __init__(self):
+	def __init__(self, is_test_run=False):
 		self.team_to_game = {}
 		self.sock_to_team = {}
 		self.team_whitelist = set(['myteam'])
 		self.common_seed = None
+		self.is_test_run = is_test_run
 
 	def whitelist_team(self, team):
 		self.team_whitelist.add(team)
@@ -45,7 +46,12 @@ class Competition(object):
 			game = Board(seed=self.common_seed)
 			game.game_id = util.generate_game_id()
 			self.team_to_game[team] = game
-			Competition.notify_game_created(sock)
+
+			# Game IDs are visible to the client only in testing.
+			if self.is_test_run:
+				Competition.notify_game_created(sock, game.game_id)
+			else:
+				Competition.notify_game_created(sock)
 		else:
 			# We must be resuming a broken connection.
 			Competition.request_next_move(self.team_to_game[team], sock)
