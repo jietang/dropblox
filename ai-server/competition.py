@@ -78,12 +78,16 @@ class Competition(object):
 
 	@staticmethod
 	def send_game_over(game, sock):
-		sock.close(code=messaging.DO_NOT_RECONNECT, reason="Game over! Your score was: %s" % game.score)
+		response = {
+			'type': messaging.GAME_OVER_MSG,
+			'game_state': game.to_dict(),
+			'final_score': game.score,
+		}
+		sock.send(json.dumps(response))
 
 	@staticmethod
 	def record_game(team, game):
-		if not self.is_test_run:
-			model.Database.add_score(team, game.game_id, game.seed, game.score, self.round)
+		model.Database.add_score(team, game.game_id, game.seed, game.score, self.round)
 
 	def start_competition(self):
 		for sock in self.sock_to_team:
@@ -99,7 +103,8 @@ class Competition(object):
 		game.send_commands(commands)
 
 		if game.state == 'failed':
-			Competition.record_game(team, game)
+			if not self.is_test_run:
+				Competition.record_game(team, game)
 			Competition.send_game_over(game, sock)
 		elif game.state == 'playing':
 			Competition.request_next_move(game, sock)

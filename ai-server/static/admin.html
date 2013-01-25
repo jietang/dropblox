@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dropblox Competition</title>
+    <link href="bootstrap.min.css" rel="stylesheet" media="screen">
+    <style type="text/css">
+
+      /* Sticky footer styles
+      -------------------------------------------------- */
+
+      html,
+      body {
+        height: 100%;
+        /* The html and body elements cannot have any padding or margin. */
+      }
+
+      /* Wrapper for page content to push down footer */
+      #wrap {
+        min-height: 100%;
+        height: auto !important;
+        height: 100%;
+        /* Negative indent footer by it's height */
+        margin: 0 auto -60px;
+      }
+
+      /* Set the fixed height of the footer here */
+      #push,
+      #footer {
+        height: 60px;
+      }
+      #footer {
+        background-color: #f5f5f5;
+      }
+
+      /* Lastly, apply responsive CSS fixes as necessary */
+      @media (max-width: 767px) {
+        #footer {
+          margin-left: -20px;
+          margin-right: -20px;
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+      }
+
+      /* Custom page CSS
+      -------------------------------------------------- */
+      /* Not required for template or sticky footer method. */
+
+      .container {
+        width: auto;
+        max-width: 680px;
+      }
+      .container .credit {
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Part 1: Wrap all page content here -->
+    <div id="wrap">
+
+      <!-- Begin page content -->
+      <div class="container">
+        <div class="page-header">
+          <h1>Dropblox Leaderboard</h1>
+        </div>
+        <p class="lead">Prepare your team for competition by running <code>python client.py compete</code></p>
+
+        <table class="table table-striped">
+          <thead>
+            <tr><th>First name</th><th>Last name</th></tr>
+          </thead>
+          <tbody data-bind="foreach: people">
+            <tr>
+              <td data-bind="text: firstName"></td>
+              <td data-bind="text: lastName"></td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+
+      <div id="push"></div>
+    </div>
+
+    <div id="footer">
+      <div class="container">
+        <p class="muted credit">Currently playing: <a href="#">round 1</a></p>
+      </div>
+    </div>
+
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="bootstrap.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/knockout/2.2.0/knockout-min.js"></script>
+
+    <script type="text/javascript">
+    $(document).ready(function() {
+      $.ajax({
+        type: 'GET',
+        url: '/list_teams',
+        success: function(response) {
+          alert(response);
+        },
+        error: function(request, status, error) {
+
+        },
+      });
+      ko.applyBindings({
+        people: [
+            { firstName: 'Bert', lastName: 'Bertington' },
+            { firstName: 'Charles', lastName: 'Charlesforth' },
+            { firstName: 'Denise', lastName: 'Dentiste' }
+        ]
+      });
+    });
+    </script>
+  </body>
+</html>

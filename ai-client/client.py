@@ -43,6 +43,7 @@ CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
 NEW_GAME_CREATED_MSG = 'NEW_GAME_CREATED'
 AWAITING_NEXT_MOVE_MSG = 'AWAITING_NEXT_MOVE'
 SUBMIT_MOVE_MSG = 'SUBMIT_MOVE'
+GAME_OVER_MSG = 'GAME_OVER'
 DO_NOT_RECONNECT = 1001
 
 # Printing utilities
@@ -161,6 +162,12 @@ class Subscriber(WebSocketClient):
                 'move_list' : ai_cmds,
             }
             self.send_msg(response)
+        elif msg['type'] == GAME_OVER_MSG:
+            ai_arg = json.dumps(msg['game_state'])
+            if self.logger:
+                self.logger.log_game_state(ai_arg)
+            print colorgrn.format("Game over! Your score was: %s" % msg['final_score'])
+            self.close(code=DO_NOT_RECONNECT, reason="Game over!")
         else:
             print colorred.format("Received unsupported message type")
 
