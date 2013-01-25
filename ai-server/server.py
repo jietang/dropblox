@@ -15,6 +15,7 @@ import os
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
 
+model.Database.initialize_db()
 CURRENT_COMPETITION = competition.Competition()
 TESTING_COMPETITIONS = {} # Socket -> Practice competition instance
 
@@ -84,7 +85,8 @@ class DropbloxGameServer(object):
     def list_teams(self):
         response = {}
         for team in model.Database.list_all_teams():
-            response[team] = model.Database.scores_by_team(team)
+            team_name = team[model.Database.TEAM_TEAM_NAME]
+            response[team_name] = model.Database.scores_by_team(team_name)
         return json.dumps(response)
 
     @cherrypy.expose
@@ -142,8 +144,6 @@ def jsonify_error(status, message, traceback, version):
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()
     cherrypy.tools.websocket = WebSocketTool()
-
-    model.Database.initialize_db()
 
     cherrypy.quickstart(DropbloxGameServer(), config={
         'global': {

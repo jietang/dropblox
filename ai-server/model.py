@@ -65,8 +65,8 @@ class Database(object):
 	@staticmethod
 	def list_all_teams():
 		conn = sqlite3.connect('data.db')
-		sql = 'SELECT team_name FROM teams'
-		return conn.execute(sql).fetchone()		
+		sql = 'SELECT * FROM teams'
+		return conn.execute(sql).fetchall()		
 
 	@staticmethod
 	def authenticate_team(team_name, password):
@@ -89,7 +89,7 @@ class Database(object):
 			conn.commit()
 
 		def create_score_table():
-			sql = 'CREATE TABLE IF NOT EXISTS scores (team_name VARCHAR(64), game_id VARCHAR(64), seed INTEGER, score INTEGER, round INTEGER);'
+			sql = 'CREATE TABLE IF NOT EXISTS scores (team_name VARCHAR(64), game_id VARCHAR(64), seed INTEGER, score INTEGER, round INTEGER, PRIMARY KEY (team_name, round));'
 			conn.execute(sql)
 			conn.commit()
 
