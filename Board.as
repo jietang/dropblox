@@ -893,27 +893,27 @@ package {
       try{
         if (command == 'left') {
           curBlock.x--;
-          if (!checkBlock(curBlock)) {
+          if (checkBlock(curBlock) != OK) {
             curBlock.x++;
           }
         } else if (command == 'right') {
           curBlock.x++;
-          if (!checkBlock(curBlock)) {
+          if (checkBlock(curBlock) != OK) {
             curBlock.x--;
           }
         } else if (command == 'up') {
           curBlock.y--;
-          if (!checkBlock(curBlock)) {
+          if (checkBlock(curBlock) != OK) {
             curBlock.y++;
           }
         } else if (command == 'down') {
           curBlock.y++;
-          if (!checkBlock(curBlock)) {
+          if (checkBlock(curBlock) != OK) {
             curBlock.y--;
           }
         } else if (command == 'rotate') {
           curBlock.angle = (curBlock.angle + 1) % 4;
-          if (!checkBlock(curBlock)) {
+          if (checkBlock(curBlock) != OK) {
             curBlock.angle = (curBlock.angle + 3) % 4;
           }
         } else if (command == 'hold') {
@@ -921,7 +921,7 @@ package {
           block.x = curBlock.x;
           block.y = curBlock.y;
           block.angle = heldBlock.angle;
-          if (checkBlock(block)) {
+          if (checkBlock(block) != OK) {
             heldBlock = curBlock;
             heldBlockType = curBlock.type;
             curBlock = block;
