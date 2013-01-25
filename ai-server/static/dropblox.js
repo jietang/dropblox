@@ -214,7 +214,9 @@ var dropblox = {
         }, dropblox.ANIMATE_MOVE);
       } else if (dropblox.cur_game.active) {
         setTimeout(function() {
-          dropblox.load_game_history(game_id);
+          if (dropblox.cur_game.id == game_id) {
+            dropblox.load_game_history(game_id);
+          }
         }, dropblox.WAIT_FOR_MOVE);
       }
     }

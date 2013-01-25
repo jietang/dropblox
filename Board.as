@@ -726,7 +726,7 @@ package {
         drawTextField(canvasBD, stateText);
       } else if (state == GAMEOVER) {
         canvasBD.colorTransform(new Rectangle(0, 0, WIDTH, HEIGHT), redTint);
-        stateText.text = "-- You FAILED --\nPress ENTER to try again";
+        stateText.text = "Your AI scored " + score + " points.\nYou can still try again!";
         drawTextField(canvasBD, stateText);
       }
 
