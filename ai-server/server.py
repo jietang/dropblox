@@ -47,6 +47,7 @@ class DropbloxWebSocketHandler(WebSocket):
         team = model.Database.authenticate_team(msg['team_name'], msg['team_password'])
         if not team:
             self.close(code=messaging.DO_NOT_RECONNECT, reason="Incorrect team name or password")
+            return
 
         if msg['entry_mode'] == 'compete':
             self.handle_competition_msg_from_team(msg, team)
@@ -109,11 +110,10 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     #@admin_only
     def start_next_round(self):
-        cl = cherrypy.request.headers['Content-Length']
-        rawbody = cherrypy.request.body.read(int(cl))
-        body = json.loads(rawbody)
+        if not len(CURRENT_COMPETITION.team_whitelist):
+            raise cherrypy.HTTPError(400, "Can't start a game with no participants!")
 
-        for team_name in body['next_round_teams']:
+        for team_name in CURRENT_COMPETITION.team_whitelist:
             if not CURRENT_COMPETITION.is_team_connected(team_name):
                 raise cherrypy.HTTPError(400, "Not all teams are connected!")
 
