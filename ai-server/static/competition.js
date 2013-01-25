@@ -57,6 +57,7 @@ var competition = {
         for (var team in competition.boards) {
           if (!data.boards.hasOwnProperty(team)) {
             $('#' + team + '-container').remove();
+            delete competition.boards[team];
           }
         }
       }
