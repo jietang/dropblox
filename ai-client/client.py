@@ -22,10 +22,8 @@ from ws4py.client.threadedclient import WebSocketClient
 from subprocess import Popen, PIPE, STDOUT
 
 # Remote server to connect to:
-#SERVER_URL = 'http://ec2-107-20-18-153.compute-1.amazonaws.com/'
-#WEBSOCKET_URL = 'ws://ec2-107-20-18-153.compute-1.amazonaws.com/ws'
-SERVER_URL = 'http://localhost/'
-WEBSOCKET_URL = 'ws://localhost/ws'
+SERVER_URL = 'http://ec2-107-20-18-153.compute-1.amazonaws.com/'
+WEBSOCKET_URL = 'ws://ec2-107-20-18-153.compute-1.amazonaws.com/ws'
 
 # Subprocess
 LEFT_CMD = 'left'
