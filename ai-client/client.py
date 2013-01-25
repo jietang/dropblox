@@ -82,7 +82,7 @@ class Command(object):
 
 class SubscriberThread(threading.Thread):
     def __init__(self):
-        threading.Thread.__init__(self) 
+        threading.Thread.__init__(self)
 
     def run(self):
         ws = Subscriber(WEBSOCKET_URL)
@@ -93,7 +93,7 @@ class GameStateLogger(object):
     turn_num = 0
 
     def __init__(self, game_id):
-        self.log_dir = "%s/%s" % (LOGGING_DIR, game_id)
+        self.log_dir = "%s/%s_%s" % (LOGGING_DIR, game_id, int(time.time()))
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
 
@@ -202,7 +202,7 @@ if __name__ == '__main__':
     subscriber.daemon = True
     subscriber.start()
 
-    while (True): 
+    while (True):
         # For some reason, KeyboardInterrupts are only allowed
         # when the websocket subscriber is on a background thread.
         time.sleep(1)
