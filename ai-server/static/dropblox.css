@@ -1,5 +1,5 @@
 body, table {
-  font-family: verdana, arial, sans-serif;
+  font-family: 'Lucida Sans Unicode','Lucida Grande', 'Lucida Sans', 'DejaVu Sans Condensed', sans-serif;
   font-size: 14px;
 }
 
@@ -49,4 +49,16 @@ h3 {
 #content {
   float: left;
   margin: 14px;
+}
+
+#subcontent {
+  margin-top: 7px;
+}
+
+#subcontent .spaced {
+  margin-top: 4px;
+}
+
+.code {
+  font-family: 'Courier New', Courier, 'Nimbus Mono L', serif, monospace;
 }
