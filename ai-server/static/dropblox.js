@@ -88,7 +88,7 @@ var dropblox = {
                 if (!dropblox.cur_game) {
                   dropblox.load_game_history(response.games[response.games.length - 1].id);
                 }
-              });
+              }, 100);
             }
           } else {
             $('#subcontent').html(response.error);
