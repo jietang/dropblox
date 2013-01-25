@@ -90,6 +90,14 @@ class DropbloxGameServer(object):
         return json.dumps(response)
 
     @cherrypy.expose
+    @admin_only
+    def competition_state(self):
+        response = {}
+        for team in CURRENT_COMPETITION.team_to_game():
+            response[team] = CURRENT_COMPETITION.team_to_game[team].to_dict()
+        return json.dumps(response)
+
+    @cherrypy.expose
     #@admin_only
     def prepare_next_round(self):
         cl = cherrypy.request.headers['Content-Length']
