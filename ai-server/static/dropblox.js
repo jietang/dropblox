@@ -7,8 +7,9 @@ var dropblox = {
     $('#left-bar a, #top-bar a').each(function() {
       var link = this.id;
       $(this).click(function() {
-        dropblox.set_active_link(link);
-        dropblox[link]();
+        if (!dropblox[link]()) {
+          dropblox.set_active_link(link);
+        }
         window.event.preventDefault();
       });
     });
@@ -16,6 +17,9 @@ var dropblox = {
       $('#' + $.cookie('active-link')).trigger('click');
     } else {
       $('#getting_started').trigger('click');
+    }
+    if ($.cookie('team_name')) {
+      this.set_team_cookie($.cookie('team_name'), $.cookie('password'));
     }
   },
 
@@ -56,7 +60,7 @@ var dropblox = {
             }
             $('#subcontent').html(
               '<div id="leftcontent">' + left_content + '</div>' +
-              '<div id="rightcontent">' + 
+              '<div id="rightcontent">' +
               '  <div id="history-message">Click on a game to review your AI\'s moves.</div>' +
               '  <div id="history-boards"></div>' +
               '  <div id="post-history-boards"></div>' +
@@ -125,7 +129,7 @@ var dropblox = {
             }
             $('#history-message').html('Successfully loaded the game data');
             $('#post-history-boards').html(
-              '<table><tr>' + 
+              '<table><tr>' +
               '<td id="select-a-move">Game progress:</td>' +
               '<td><div id="move-slider"></td>' +
               '</tr></table>' +
@@ -166,11 +170,12 @@ var dropblox = {
   },
 
   login_form: (
-    '<form><fieldset><table>' +
+    '<div><form><fieldset><table>' +
     ' <tr><td>Team name:</td><td><input type="text" id="team-name"></td>' +
     ' <tr><td>Password:</td><td><input type="password" id="password"></td>' +
     ' <tr><td><button id="submit">Submit</button></td>' +
-    '</table></fieldset></form>'
+    '</table></fieldset></form></div>' +
+    '<div id="login-error"></div>'
   ),
 
   log_in: function() {
@@ -178,8 +183,8 @@ var dropblox = {
       '<h3>Log in</h3>' + this.login_form
     );
     $('#submit').click(function() {
-      dropblox.submit_login('log_in', $('#team-name').val(), $('#password').val());
-      window.event.preventdefault();
+      dropblox.submit_login('/login', $('#team-name').val(), $('#password').val());
+      window.event.preventDefault();
     });
   },
 
@@ -188,13 +193,47 @@ var dropblox = {
       '<div><h3>Sign up</h3> ' + this.login_form + '</div>'
     );
     $('#submit').click(function() {
-      dropblox.submit_login('sign_up', $('#team-name').val(), $('#password').val());
-      window.event.preventdefault();
+      dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val());
+      window.event.preventDefault();
     });
   },
 
-  submit_login: function(type, team_name, password) {
-    console.debug(type, team_name, password);
+  log_out: function() {
+    this.clear_team_cookie();
+    return true;
+  },
+
+  submit_login: function(url, team_name, password) {
+    this.post(url, {
+      team_name: team_name,
+      password: password,
+    },
+    function(response) {
+      var verb = (url == '/login' ? 'logged in' : 'signed up');
+      $('#login-error').html('Successfully ' + verb + '!');
+      dropblox.set_team_cookie(team_name, password);
+    },
+    function(response) {
+      var data = JSON.parse(response.responseText);
+      $('#login-error').html(data.message);
+      dropblox.clear_team_cookie();
+    });
+  },
+
+  set_team_cookie: function(team_name, password) {
+    $.cookie('team_name', team_name);
+    $.cookie('password', password);
+    $('#login-status').html('Logged in as ' + team_name + '.');
+    $('#log_in, #sign_up').addClass('hidden');
+    $('#log_out').removeClass('hidden');
+  },
+
+  clear_team_cookie: function() {
+    $.cookie('team_name', '');
+    $.cookie('password', '');
+    $('#login-status').html('Logged out.');
+    $('#log_in, #sign_up').removeClass('hidden');
+    $('#log_out').addClass('hidden');
   },
 
   set_active_link: function(link) {
@@ -208,5 +247,17 @@ var dropblox = {
     return (date.getHours() +
             (date.getMinutes() < 10 ? ':0' : ':') + date.getMinutes() +
             (date.getSeconds() < 10 ? ':0' : ':') + date.getSeconds())
+  },
+
+  post: function(url, data, success, error) {
+    $.ajax({
+      type: 'POST',
+      url: url,
+      data: JSON.stringify(data),
+      contentType: "application/json",
+      dataType: "json",
+      success: success,
+      error: error,
+    });
   },
 };
