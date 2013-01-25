@@ -54,6 +54,10 @@
         text-align: right;
         margin: 20px 0;
       }
+
+      #next-round-btn {
+        margin-right: 20px;
+      }
     </style>
   </head>
   <body>
@@ -88,7 +92,10 @@
 
     <div id="footer">
       <div class="container">
-        <p class="muted credit"><a href='#' id="next-round-btn">Start the next round!</a></p>
+        <p class="muted credit">
+          <a href='#' id="next-round-btn">Start the next round!</a>
+          <a href='/competition.html'>See the round played</a>
+        </p>
       </div>
     </div>
 
@@ -114,6 +121,7 @@
           contentType: "application/json",
           dataType: "json",
           success: function(response) {
+            window.open('/competition.html');
             location.reload();
           },
           error: function(response) {
