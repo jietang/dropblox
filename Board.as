@@ -131,7 +131,7 @@ package {
       human = false;
       gravity = false;
 
-      setSquareWidth(16);
+      setSquareWidth(flashVars().squareWidth);
       stage.align = StageAlign.TOP_LEFT;
       stage.scaleMode = StageScaleMode.NO_SCALE;
       initGraphics();
