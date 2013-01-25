@@ -1,8 +1,6 @@
 var dropblox = {
-  active_link: undefined,
-
   initialize: function() {
-    $('#left-bar a').each(function() {
+    $('#left-bar a, #top-bar a').each(function() {
       var link = this.id;
       $(this).click(function() {
         dropblox.set_active_link(link);
@@ -10,7 +8,11 @@ var dropblox = {
         window.event.preventDefault();
       });
     });
-    $('#getting_started').trigger('click');
+    if ($.cookie('active-link')) {
+      $('#' + $.cookie('active-link')).trigger('click');
+    } else {
+      $('#getting_started').trigger('click');
+    }
   },
 
   getting_started: function() {
@@ -37,9 +39,25 @@ var dropblox = {
     );
   },
 
+  log_in: function() {
+    $('#content').html(
+      '<div>' +
+      '  This is a placeholder for the login page!' +
+      '</div>'
+    );
+  },
+
+  sign_up: function() {
+    $('#content').html(
+      '<div>' +
+      '  This is a placeholder for the signup page!' +
+      '</div>'
+    );
+  },
+
   set_active_link: function(link) {
-    this.active_link = link;
-    $('#left-bar a').removeClass('active');
+    $.cookie('active-link', link);
+    $('#left-bar a, #top-bar a').removeClass('active');
     $('#' + link).addClass('active');
   },
 };
