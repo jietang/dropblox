@@ -89,8 +89,14 @@ class DropbloxGameServer(object):
     @admin_only
     def competition_state(self):
         response = {}
+        response['boards'] = {}
         for team in CURRENT_COMPETITION.team_to_game:
-            response[team] = CURRENT_COMPETITION.team_to_game[team].to_dict()
+            response['boards'][team] = CURRENT_COMPETITION.team_to_game[team].to_dict()
+
+        remaining = len(CURRENT_COMPETITION.team_whitelist) - len(CURRENT_COMPETITION.sock_to_team)
+        response['waiting_for_players'] = remaining
+        response['round'] = CURRENT_COMPETITION.round
+
         return json.dumps(response)
 
     @cherrypy.expose
