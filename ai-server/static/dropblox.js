@@ -34,15 +34,18 @@ var dropblox = {
 
   getting_started: function() {
     $('#content').html(
-      '<div>' +
-      '  This is a placeholder for the getting started page!' +
+      '<h3>Getting started</h3>' +
+      '<div id=subcontent>' +
+      '  Welcome to Dropblox! The goal of this competition is to write a ' +
+      '  program that will autonomously play a Tetris variant.' +
       '</div>'
     );
   },
 
   documentation: function() {
     $('#content').html(
-      '<div>' +
+      '<h3>Documentation</h3>' +
+      '<div id=subcontent>' +
       '  This is a placeholder for the documentation!' +
       '</div>'
     );
