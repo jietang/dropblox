@@ -167,10 +167,9 @@ class Subscriber(WebSocketClient):
     def closed(self, code, reason=None):
         print colorred.format("Connection to server closed. Code=%s, Reason=%s" % (code, reason))
 
-        if code != DO_NOT_RECONNECT:
+        if code != DO_NOT_RECONNECT and 'entry_mode' == 'compete':
             # Attempt to re-connect
             ws = Subscriber(WEBSOCKET_URL)
-            ws.game_id = self.game_id
             ws.connect()
         else:
             os._exit(0)
