@@ -48,15 +48,16 @@ class DropbloxDebugServer(object):
       response['code'] = 401
       response['error'] = 'Could not find the game directory. Did you delete it?'
       return json.dumps(response)
-    response['states'] = {}
+    response['states'] = []
     state_files = [file for file in os.listdir(game_dir) if file.startswith('state')]
     try:
       states = [int(state_file[5:]) for state_file in state_files]
-      for state in states:
-        response['states'][state] = {
+      for state in sorted(states):
+        response['states'].append({
+          'id': state,
           'state': self.read(os.path.join(game_dir, 'state%s' % (state,))),
           'move': self.read(os.path.join(game_dir, 'move%s' % (state,)), 'No move file found!'),
-        }
+        })
     except ValueError:
       response['code'] = 401
       response['error'] = 'Malformed state file found: %s' % (state_files,)

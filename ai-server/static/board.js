@@ -1,34 +1,38 @@
 var board = {
-  _board: undefined,
-  game_id: undefined,
+  initialize: function(id) {
+    var result = {
+      _board: document.getElementById(id),
+    };
+    result.start = this._start;
+    result.update = this._update;
+    result.setBoardState = this._setBoardState;
+    return result;
+  },
 
-  initialize: function() {
-    this._board = document.getElementById('board');
-    this.game_id = window.location.hash.slice(1);
+  _start: function(game_id) {
+    this.game_id = game_id;
+    $.ajax('start?game_id=' + game_id);
     this.update_interval = setInterval(this.update, 1000);
-    this.start();
   },
 
-  start: function() {
-    $.ajax('start?game_id=' + this.game_id);
-  },
-
-  update: function() {
+  _update: function() {
     $.ajax('game_state?game_id=' + board.game_id, {success:
-      function(json) {
-        if (json == 'Game not found!') {
-          clearTimeout(board.update_interval);
-        } else {
-          board.setBoardState(json);
-          if (board._board.failed()) {
-            clearTimeout(board.update_interval);
+      function(elt) {
+        return function(json) {
+          if (json == 'Game not found!') {
+            clearTimeout(elt.update_interval);
+          } else {
+            elt.setBoardState(json);
+            if (elt._board.failed()) {
+              clearTimeout(elt.update_interval);
+            }
           }
         }
-      }
+      } (this)
     });
   },
 
-  setBoardState: function(json) {
+  _setBoardState: function(json) {
     this._board.setBoardState(json);
   },
 };

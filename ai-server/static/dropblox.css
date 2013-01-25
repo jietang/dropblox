@@ -55,8 +55,21 @@ h3 {
   margin-top: 7px;
 }
 
-#subcontent .spaced {
+.spacer {
   margin-top: 4px;
+}
+
+#select-a-move, #cur-move {
+  margin: 6px 6px 6px 0px;
+}
+
+#move-slider {
+  margin: 8px;
+  width: 300px;
+}
+
+.ui-slider-handle {
+  outline: none;
 }
 
 .code {
@@ -86,4 +99,15 @@ h3 {
 .game-link.active {
   background-color: #39F;
   color: white;
+}
+
+.container {
+  float: left;
+  margin: 16px 14px 7px;
+}
+
+.header {
+  background-color: #DDD;
+  border: 1px solid black; 
+  padding: 2px;
 }

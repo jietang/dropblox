@@ -1,6 +1,8 @@
 var dropblox = {
   games: undefined,
   cur_game: undefined,
+  pre_move: undefined,
+  post_move: undefined,
 
   initialize: function() {
     $('#left-bar a, #top-bar a').each(function() {
@@ -55,8 +57,14 @@ var dropblox = {
             }
             $('#subcontent').html(
               '<div id="leftcontent">' + left_content + '</div>' +
-              '<div id="rightcontent">Click on a game to review your AI\'s moves.</div>'
+              '<div id="rightcontent">' + 
+              '  <div id="history-message">Click on a game to review your AI\'s moves.</div>' +
+              '  <div id="history-boards"></div>' +
+              '  <div id="post-history-boards"></div>' +
+              '</div>'
             );
+            dropblox.pre_move = dropblox.create_board('history-boards', 'pre-move', 'Before this move:');
+            dropblox.post_move = dropblox.create_board('history-boards', 'post-move', 'After this move:');
             $('#leftcontent .game-link').click(function() {
               dropblox.load_game_history(this.id);
             });
@@ -69,7 +77,7 @@ var dropblox = {
         if ($.cookie('active-link') == 'submission_history') {
           $('#subcontent').html(
             '<div>Request failed! Make sure your history server is running.</div>' +
-            '<div class="spaced">You can start this server by running ' +
+            '<div class="spacer">You can start this server by running ' +
             '<span class="code">python history.py</span> ' +
             'in your ai-client folder.</div>'
           );
@@ -78,28 +86,65 @@ var dropblox = {
     });
   },
 
+  create_board: function(target, id, header) {
+    var html = (
+      '<div class="container">' +
+      '  <div class="header">' + header + '</div>' +
+      '  <object id="' + id + '" data="Board.swf" type="application/x-shockwave-flash" width="280" height="416">' +
+      '    <param name="movie" value="Board.swf" />' +
+      '  </object>' +
+      '</div>'
+    );
+    $('#' + target).append(html);
+    return board.initialize(id);
+  },
+
   load_game_history: function(game_id) {
     dropblox.cur_game = dropblox.games[game_id];
     $('#' + game_id).addClass('active');
-    $('#rightcontent').html('Loading game data...');
+    $('#history-message').html('Loading game data...');
     $.ajax('http://localhost:9000/details?game_id=' + game_id, {
       success: function(json) {
         if (dropblox.cur_game.id == game_id) {
           var response = JSON.parse(json);
           if (response.code == 200) {
-            $('#rightcontent').html('Successfully loaded the game data.');
-            console.log(response);
+            dropblox.cur_game.states = response.states;
+            $('#history-message').html('Successfully loaded the game data');
+            $('#post-history-boards').html(
+              '<table><tr>' + 
+              '<td id="select-a-move">Select a move:</td>' +
+              '<td><div id="move-slider"></td>' +
+              '<td><div id="cur-move"></div>' +
+              '</tr></table>'
+            );
+            $('#move-slider').slider({
+              min: 0,
+              max: response.states.length - 2,
+              step: 1,
+              slide: function(event, ui) {
+                dropblox.set_cur_game_state(game_id, ui.value);
+              },
+            });
           } else {
-            $('#rightcontent').html(response.error);
+            $('#history-message').html(response.error);
           }
         }
       },
       error: function() {
         if (dropblox.cur_game.id == game_id) {
-          $('#rightcontent').html('There was an error loading the game data.');
+          $('#history-message').html('There was an error loading the game data.');
         }
       },
     });
+  },
+
+  set_cur_game_state: function(game_id, index) {
+    if (dropblox.cur_game.id == game_id) {
+      $('#cur-move').html('Move ' + index);
+      var states = dropblox.cur_game.states;
+      dropblox.pre_move.setBoardState(states[index].state);
+      dropblox.post_move.setBoardState(states[index + 1].state);
+    }
   },
 
   login_form: (
