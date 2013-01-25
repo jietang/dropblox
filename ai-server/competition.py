@@ -27,9 +27,19 @@ class Competition(object):
 			self.round = model.Database.latest_round() + 1
 
 	def whitelist_team(self, team):
+		if self.started:
+			return
 		self.team_whitelist.add(team)
 
 	def blacklist_team(self, team):
+		if self.started:
+			return
+		if self.is_team_connected(team):
+			del self.team_to_game[team]
+			for sock, t in self.sock_to_team.items():
+				if t == team:
+					sock.close(code=messaging.DO_NOT_RECONNECT, reason="You have been blacklisted by the competition organizer.")
+					del self.sock_to_team[sock]
 		self.team_whitelist.remove(team)
 
 	# Called when a team connects via client.py
