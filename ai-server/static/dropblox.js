@@ -1,4 +1,7 @@
 var dropblox = {
+  ANIMATE_MOVE: 40,
+  WAIT_FOR_MOVE: 1000,
+
   games: undefined,
   cur_game: undefined,
   history_board: undefined,
@@ -50,10 +53,18 @@ var dropblox = {
           var response = JSON.parse(json);
           if (response.code == 200) {
             dropblox.games = {};
-            var left_content = '';
+            var left_content = '<div class="col-header">Current games:</div>';
+            var in_active_section = true;
             for (var i = response.games.length - 1; i >= 0; i--) {
               dropblox.games[response.games[i].id] = response.games[i];
               var game = response.games[i];
+              if (in_active_section && !game.active) {
+                in_active_section = false;
+                if (i == response.games.length - 1) {
+                  left_content += '<div class="col-header">There are no current games.</div>';
+                }
+                left_content += '<div class="col-header spacer">Older games:</div>';
+              }
               var date_str = dropblox.format_timestamp(game.timestamp);
               left_content += '<div id="' + game.id + '" class="game-link">';
               left_content += 'Game ' + i + ' (' + date_str + ')</div>';
@@ -103,14 +114,26 @@ var dropblox = {
   },
 
   load_game_history: function(game_id) {
+    if (dropblox.cur_game && dropblox.cur_game.id != game_id) {
+      $('#' + dropblox.cur_game.id).removeClass('active');
+      dropblox.cur_game.states = [];
+      dropblox.cur_game.index = undefined;
+    }
     dropblox.cur_game = dropblox.games[game_id];
     $('#' + game_id).addClass('active');
+
     $('#history-message').html('Loading game data...');
     $.ajax('http://localhost:9000/details?game_id=' + game_id, {
       success: function(json) {
         if (dropblox.cur_game.id == game_id) {
           var response = JSON.parse(json);
           if (response.code == 200) {
+            // Variables used to animate the game's progress in real-time.
+            var index = dropblox.cur_game.index;
+            var catch_up = (dropblox.cur_game.states &&
+                            index === dropblox.cur_game.states.length - 1);
+            var was_active = dropblox.cur_game.active;
+
             dropblox.cur_game.states = [];
             for (var i = 0; i < response.states.length; i++) {
               var moves = JSON.parse(response.states[i].moves);
@@ -127,6 +150,7 @@ var dropblox = {
                 dropblox.cur_game.states.push(state);
               }
             }
+            dropblox.cur_game.active = response.active;
             $('#history-message').html('Successfully loaded the game data');
             $('#post-history-boards').html(
               '<table><tr>' +
@@ -143,7 +167,20 @@ var dropblox = {
                 dropblox.set_cur_game_state(game_id, ui.value);
               },
             });
-            dropblox.set_cur_game_state(game_id, 0);
+            if (index === undefined) {
+              var index = dropblox.cur_game.states.length - 1;
+              dropblox.set_cur_game_state(game_id, index);
+              if (dropblox.cur_game.active) {
+                setTimeout(function() {
+                  dropblox.animate_game(game_id, index);
+                }, dropblox.ANIMATE_MOVE);
+              }
+            } else if (dropblox.cur_game.active && catch_up) {
+              dropblox.set_cur_game_state(game_id, index);
+              setTimeout(function() {
+                dropblox.animate_game(game_id, index);
+              }, dropblox.ANIMATE_MOVE);
+            }
           } else {
             $('#history-message').html(response.error);
           }
@@ -157,8 +194,25 @@ var dropblox = {
     });
   },
 
+  animate_game: function(game_id, index) {
+    if (this.cur_game.id == game_id && this.cur_game.index == index) {
+      if (index < this.cur_game.states.length - 1) {
+        this.set_cur_game_state(game_id, index + 1);
+        setTimeout(function() {
+          dropblox.animate_game(game_id, index + 1);
+        }, dropblox.ANIMATE_MOVE);
+      } else {
+        setTimeout(function() {
+          dropblox.load_game_history(game_id);
+        }, dropblox.WAIT_FOR_MOVE);
+      }
+    }
+  },
+
   set_cur_game_state: function(game_id, index) {
     if (dropblox.cur_game.id == game_id) {
+      $('#move-slider').slider('option', 'value', index);
+      dropblox.cur_game.index = index;
       var state = dropblox.cur_game.states[index];
       $('#cur-state-label').html('Turn ' + state.state_index + ', moves: [' + state.moves.join(', ') + ']');
       dropblox.history_board.setBoardState(state.board, true);

@@ -5,5 +5,5 @@
 # server.
 #
 
-team_name = "TEAM_NAME_HERE"
-team_password = "TEAM_PASSWORD_HERE"
+team_name = "skishore"
+team_password = "redwall4"
