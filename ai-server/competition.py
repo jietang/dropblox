@@ -12,28 +12,31 @@ import random
 import model
 import util
 import json
-
-# TODO MOVE THIS
-AI_CLIENT_TIMEOUT = 11 # Allow 1 second extra for latency
+import time
 
 class Competition(object):
 
-	team_to_game = {}
-	team_whitelist = ['myteam']
-	common_seed = None
+	def __init__(self, is_test_run=False):
+		self.team_to_game = {}
+		self.sock_to_team = {}
+		self.team_whitelist = set(['myteam'])
+		self.common_seed = None
+		self.is_test_run = is_test_run
 
-	#add_team() -- called from admin page
-	#remove_team() -- called from admin page
-	#start_competition() -- called from admin page
+	def whitelist_team(self, team):
+		self.team_whitelist.add(team)
 
-	#def start_competition(self):
-	#	for team in TEAM_TO_GAME:
-
+	def blacklist_team(self, team):
+		self.team_whitelist.remove(team)
 
 	# Called when a team connects via client.py
 	def register_team(self, team, sock):
 		if not team in self.team_whitelist:
 			sock.close(code=messaging.DO_NOT_RECONNECT, reason="This team is not registered for the competition.")
+
+		if team in self.sock_to_team.values():
+			sock.close(code=messaging.DO_NOT_RECONNECT, reason="This team already has a connection to the game server.")
+		self.sock_to_team[sock] = team
 
 		# All games in a given competition will use the same seed.
 		if not self.common_seed:
@@ -44,9 +47,22 @@ class Competition(object):
 			game.game_id = util.generate_game_id()
 			self.team_to_game[team] = game
 
+			# Game IDs are visible to the client only in testing.
+			if self.is_test_run:
+				Competition.notify_game_created(sock, game.game_id)
+			else:
+				Competition.notify_game_created(sock)
+		else:
+			# We must be resuming a broken connection.
+			Competition.request_next_move(self.team_to_game[team], sock)
+		
+	@staticmethod
+	def notify_game_created(sock, game_id=None):
 		response = {
 			'type' : messaging.NEW_GAME_CREATED_MSG,
 		}
+		if game_id:
+			response['game_id'] = game_id
 		sock.send(json.dumps(response))
 
 	@staticmethod
@@ -58,22 +74,30 @@ class Competition(object):
 		sock.send(json.dumps(response))
 		game.move_requested_at = time.time()
 
+	@staticmethod
+	def send_game_over(game, sock):
+		sock.close(code=messaging.DO_NOT_RECONNECT, reason="Game over! Your score was: %s" % game.score)
+
 	def start_competition(self):
-		pass
+		for sock in self.sock_to_team:
+			Competition.request_next_move(self.team_to_game[self.sock_to_team[sock]], sock)
 
 	def make_move(self, team, sock, commands):
 		if not team in self.team_to_game:
 			sock.close(code=messaging.DO_NOT_RECONNECT, reason="This team is not active.")
 
 		game = self.team_to_game[team]
-		if time.time() - game.move_requested_at > AI_CLIENT_TIMEOUT:
+		if time.time() - game.move_requested_at > util.AI_CLIENT_TIMEOUT:
 			commands = ['drop']
 		game.send_commands(commands)
 
-		if game.state == 'playing':
+		if game.state == 'failed':
+			Competition.send_game_over(game, sock)
+		elif game.state == 'playing':
 			Competition.request_next_move(game, sock)
 
-	
-	def unregister_team(self, sock):
-		# call this in close
-		pass
+	# Called when a socket is closed.
+	def disconnect_sock(self, sock):
+		if sock in self.sock_to_team:
+			del self.sock_to_team[sock]
+		

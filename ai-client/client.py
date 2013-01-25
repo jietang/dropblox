@@ -40,7 +40,6 @@ AI_PROCESS_TIMEOUT = 10 # This is enforced server-side so don't change ;)
 
 # Messaging protocol
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
-CONNECT_TO_EXISTING_GAME_MSG = 'CONNECT_TO_EXISTING_GAME'
 NEW_GAME_CREATED_MSG = 'NEW_GAME_CREATED'
 AWAITING_NEXT_MOVE_MSG = 'AWAITING_NEXT_MOVE'
 SUBMIT_MOVE_MSG = 'SUBMIT_MOVE'
@@ -137,13 +136,6 @@ class Subscriber(WebSocketClient):
         msg = {
             'type' : CREATE_NEW_GAME_MSG,
         }
-
-        if self.game_id != -1:
-            # We must be reconnecting to a prior game
-            msg = {
-                'type' : CONNECT_TO_EXISTING_GAME_MSG,
-                'game_id' : self.game_id,
-            }
         self.send_msg(msg)
 
     @catch_exceptions
@@ -175,10 +167,9 @@ class Subscriber(WebSocketClient):
     def closed(self, code, reason=None):
         print colorred.format("Connection to server closed. Code=%s, Reason=%s" % (code, reason))
 
-        if code != DO_NOT_RECONNECT:
+        if code != DO_NOT_RECONNECT and entry_mode == 'compete':
             # Attempt to re-connect
             ws = Subscriber(WEBSOCKET_URL)
-            ws.game_id = self.game_id
             ws.connect()
         else:
             os._exit(0)

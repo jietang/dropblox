@@ -5,6 +5,8 @@
 
 import random
 
+AI_CLIENT_TIMEOUT = 11 # 1 second more than client.py for latency
+
 def generate_game_id():
     choices = 'abcdefghijklmnopqrstuvwxyz'
     choices += choices.upper()
