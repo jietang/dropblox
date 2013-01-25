@@ -116,7 +116,7 @@
           },
           error: function(response) {
             var data = JSON.parse(response.responseText);
-            alert(data.message);
+            console.debug(data.message);
           },
         });
         return false;
@@ -211,7 +211,7 @@
                     },
                     error: function(response) {
                       var data = JSON.parse(response.responseText);
-                      alert(data.message);
+                      console.debug(data.message);
                     },
                   });
                 } else {
@@ -233,7 +233,7 @@
                     },
                     error: function(response) {
                       var data = JSON.parse(response.responseText);
-                      alert(data.message);
+                      console.debug(data.message);
                     },
                   });
                 }
