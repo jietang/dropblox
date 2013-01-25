@@ -13,6 +13,7 @@ import traceback
 import threading
 import cherrypy
 import config
+import time
 import json
 import sys
 import os
@@ -182,11 +183,6 @@ class Subscriber(WebSocketClient):
         else:
             os._exit(0)
 
-class DropbloxDebugServer(object):
-    @cherrypy.expose
-    def foo(self):
-        return "Hello from cherrypy"
-
 if __name__ == '__main__':
     if config.team_name == "TEAM_NAME_HERE" or config.team_password == "TEAM_PASSWORD_HERE":
         print colorred.format("Please specify a team name and password in config.py")
@@ -206,8 +202,7 @@ if __name__ == '__main__':
     subscriber.daemon = True
     subscriber.start()
 
-    cherrypy.quickstart(DropbloxDebugServer(), config={
-        'global' : {
-            'server.socket_port' : 9000,
-        },
-    })
+    while (True): 
+        # For some reason, KeyboardInterrupts are only allowed
+        # when the websocket subscriber is on a background thread.
+        time.sleep(1)
