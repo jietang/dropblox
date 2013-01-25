@@ -93,6 +93,7 @@ class Subscriber(WebSocketClient):
     def send_msg(self, msg):
         msg['team_name'] = config.team_name
         msg['team_password'] = config.team_password
+        msg['entry_mode'] = entry_mode
         self.send(json.dumps(msg))
 
     def opened(self):
@@ -139,6 +140,11 @@ class Subscriber(WebSocketClient):
         else:
             os._exit(0)
 
+class DropbloxDebugServer(object):
+    @cherrypy.expose
+    def foo(self):
+        return "Hello from cherrypy"
+
 if __name__ == '__main__':
     if config.team_name == "TEAM_NAME_HERE" or config.team_password == "TEAM_PASSWORD_HERE":
         print colorred.format("Please specify a team name and password in config.py")
@@ -146,15 +152,20 @@ if __name__ == '__main__':
 
     if len(sys.argv) != 2:
         print colorred.format("Usage: client.py [compete|test]")
+        sys.exit(0)
 
     if sys.argv[1] != "compete" and sys.argv[1] != "test":
-        print colorred.format("Usage: client.py [compete|test]")        
+        print colorred.format("Usage: client.py [compete|test]")
+        sys.exit(0)
+
+    entry_mode = sys.argv[1]
 
     subscriber = SubscriberThread()
     subscriber.daemon = True
     subscriber.start()
 
-    while (True):
-        # For some reason, KeyboardInterrupts are only allowed
-        # when the websocket subscriber is on a background thread.
-        pass
+    cherrypy.quickstart(DropbloxDebugServer(), config={
+        'global' : {
+            'server.socket_port' : 9000,
+        },
+    })
