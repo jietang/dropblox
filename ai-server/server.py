@@ -5,6 +5,7 @@
 #
 
 import cherrypy
+import sqlite3
 import random
 import bcrypt
 import time
@@ -64,15 +65,15 @@ class DropbloxWebSocketHandler(WebSocket):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
 
-        if COMPETITION_IN_PROGRESS:
-            if msg['type'] != SUBMIT_MOVE_MSG:
-                self.close(code=DO_NOT_RECONNECT, reason='A competition is currently in progress')
-                return
+        #if COMPETITION_IN_PROGRESS:
+        #    if msg['type'] != SUBMIT_MOVE_MSG:
+        #        self.close(code=DO_NOT_RECONNECT, reason='A competition is currently in progress')
+        #        return
 
         if msg['type'] == CREATE_NEW_GAME_MSG:
-            if COMPETITION_SEED and 'team_name' not in msg:
-                self.close(code=DO_NOT_RECONNECT, reason='A team name must be provided to enter the competition')
-                return
+            #if COMPETITION_SEED and 'team_name' not in msg:
+            #    self.close(code=DO_NOT_RECONNECT, reason='A team name must be provided to enter the competition')
+            #    return
 
             self.game_id = generate_game_id()
             GAME_ID_TO_WEBSOCKET[self.game_id] = self
@@ -81,10 +82,10 @@ class DropbloxWebSocketHandler(WebSocket):
             response = {
                 'type' : NEW_GAME_CREATED_MSG,
             }
-            if 'team_name' not in msg:
+            #if 'team_name' not in msg:
                 # Game IDs are hidden during competition
-                response['game_id'] = self.game_id
-
+            response['game_id'] = self.game_id
+            print "sending " + str(response)
             self.send(json.dumps(response))
         elif msg['type'] == CONNECT_TO_EXISTING_GAME_MSG:
             if msg['game_id'] in GAMES:
@@ -178,7 +179,20 @@ class DropbloxGameServer(object):
             for game_id in GAME_ID_TO_WEBSOCKET:
                 start_game(game_id)
         else:
-            return 'Incorrect password!'            
+            return 'Incorrect password!'
+
+def add_user(team_name, password):
+    sql = 'INSERT INTO users (team_name, password) VALUES(%s, %s);' % (team_name, password)
+
+def initialize_db():
+    conn = sqlite3.connect('data.db')
+
+    def create_user_table():
+        sql = 'CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY NOT NULL, team_name VARCHAR(64), password CHAR(64));'
+        conn.execute(sql)
+        conn.commit()
+
+    create_user_table()
 
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()
@@ -200,3 +214,4 @@ if __name__ == '__main__':
             'tools.staticdir.index': 'index.html',
         },
     })
+    
