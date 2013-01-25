@@ -10,6 +10,7 @@ class Database(object):
 	# Tuple indices for team objects
 	TEAM_TEAM_NAME = 1
 	TEAM_PASSWORD = 2
+	TEAM_IS_ADMIN = 3
 
 	# Tuple indices for score objects
 	SCORE_TEAM_NAME = 0
@@ -21,7 +22,7 @@ class Database(object):
 	@staticmethod
 	def add_team(team_name, password):
 		conn = sqlite3.connect('data.db')
-		sql = 'INSERT INTO teams (team_name, password) VALUES("%s", "%s");' % (team_name, password)
+		sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES("%s", "%s", %s);' % (team_name, password, 0)
 		conn.execute(sql)
 		conn.commit()
 
@@ -39,6 +40,12 @@ class Database(object):
 		return conn.execute(sql).fetchone()
 
 	@staticmethod
+	def list_all_teams():
+		conn = sqlite3.connect('data.db')
+		sql = 'SELECT team_name FROM teams'
+		return conn.execute(sql).fetchone()		
+
+	@staticmethod
 	def authenticate_team(team_name, password):
 		team = Database.get_team(team_name)
 		if not team:
@@ -54,15 +61,23 @@ class Database(object):
 		conn = sqlite3.connect('data.db')
 
 		def create_team_table():
-			sql = 'CREATE TABLE IF NOT EXISTS teams (team_id INTEGER PRIMARY KEY NOT NULL, team_name VARCHAR(64), password CHAR(64));'
+			sql = 'CREATE TABLE IF NOT EXISTS teams (team_id INTEGER PRIMARY KEY NOT NULL, team_name VARCHAR(64), password CHAR(64), is_admin INTEGER);'
 			conn.execute(sql)
 			conn.commit()
-			print "here"
 
 		def create_score_table():
 			sql = 'CREATE TABLE IF NOT EXISTS scores (team_name VARCHAR(64), game_id VARCHAR(64), seed INTEGER, score INTEGER, round INTEGER);'
 			conn.execute(sql)
-			conn.commit()        	
+			conn.commit()
+
+		def create_admin_user():
+			if not Database.get_team('admin'):
+				conn = sqlite3.connect('data.db')
+				admin_pw = '$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy'
+				sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES("%s", "%s", %s);' % ('admin', admin_pw, 1)
+				conn.execute(sql)
+				conn.commit()
 
 		create_team_table()
 		create_score_table()
+		create_admin_user()

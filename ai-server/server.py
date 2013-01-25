@@ -75,25 +75,25 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @admin_only
-    def start_competition(self, password):        
+    def start_competition(self):        
         CURRENT_COMPETITION.start_competition()
         return "Success"
 
     @cherrypy.expose
     @admin_only
-    def list_teams(self, password):
+    def list_teams(self):
         return json.dumps({
             'teams': model.Database.list_all_teams(),
         })
 
     @cherrypy.expose
     @admin_only
-    def whitelist_team(self, password):
+    def whitelist_team(self):
         pass
 
     @cherrypy.expose
     @admin_only
-    def blacklist_team(self, password):
+    def blacklist_team(self):
         pass
 
     @cherrypy.expose
