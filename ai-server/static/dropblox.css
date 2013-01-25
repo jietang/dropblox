@@ -86,10 +86,11 @@ h3 {
 
 .game-link {
   background-color: #DDD;
+  cursor: pointer;
   margin: 2px;
   padding: 4px;
-  cursor: pointer;
-  width: 128px;
+  text-align: center;
+  width: 160px;
 }
 
 .game-link:hover {

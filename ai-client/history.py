@@ -56,7 +56,7 @@ class DropbloxDebugServer(object):
         response['states'].append({
           'id': state,
           'state': self.read(os.path.join(game_dir, 'state%s' % (state,))),
-          'move': self.read(os.path.join(game_dir, 'move%s' % (state,)), 'No move file found!'),
+          'moves': self.read(os.path.join(game_dir, 'move%s' % (state,)), '[]'),
         })
     except ValueError:
       response['code'] = 401

@@ -6,6 +6,8 @@ var board = {
     result.start = this._start;
     result.update = this._update;
     result.setBoardState = this._setBoardState;
+    result.issueCommand = this._issueCommand;
+    result.draw = this._draw;
     return result;
   },
 
@@ -32,7 +34,21 @@ var board = {
     });
   },
 
-  _setBoardState: function(json) {
+  _setBoardState: function(json, skip_draw) {
     this._board.setBoardState(json);
+    if (!skip_draw) {
+      this._board.draw();
+    }
+  },
+
+  _issueCommand: function(command, skip_draw) {
+    this._board.issueCommand(command);
+    if (!skip_draw) {
+      this._board.draw();
+    }
+  },
+
+  _draw: function() {
+    this._board.draw();
   },
 };

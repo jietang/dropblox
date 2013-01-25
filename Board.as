@@ -102,6 +102,7 @@ package {
     private var data:Vector.<Vector.<int>>;
     private var binaryData:Vector.<Vector.<int>>;
     private var curBlock:Block;
+    private var heldBlock:Block;
     private var preview:Vector.<int>;
     private var previewFrame:int;
     private var previewOffset:int;
@@ -162,9 +163,10 @@ package {
       optimize = false;
 
       ExternalInterface.addCallback('setBoardState', setBoardState);
+      ExternalInterface.addCallback('issueCommand', issueCommand);
+      ExternalInterface.addCallback('draw', drawBoard);
       ExternalInterface.addCallback('failed', failed);
       //ExternalInterface.addCallback('getBoardState', getBoardState);
-      //ExternalInterface.addCallback('issueCommand', issueCommand);
       //startTimer();
     }
 
@@ -865,15 +867,13 @@ package {
       }
 
       curBlock = reconstructBlock(vals.block);
+      heldBlock = reconstructBlock(vals.held_block);
       heldBlockType = vals.held_block.type;
       preview.length = 0;
       for (i = 0; i < PREVIEW; i++) {
         preview.push(vals.preview[i].type);
       }
       score = vals.score;
-
-      optimize = false;
-      draw();
     }
 
     public function reconstructBlock(vals:Object):Block {
@@ -887,6 +887,55 @@ package {
       }
       block.rowsFree = calculateRowsFree(block);
       return block;
+    }
+
+    public function issueCommand(command:String):void {
+      try{
+        if (command == 'left') {
+          curBlock.x--;
+          if (!checkBlock(curBlock)) {
+            curBlock.x++;
+          }
+        } else if (command == 'right') {
+          curBlock.x++;
+          if (!checkBlock(curBlock)) {
+            curBlock.x--;
+          }
+        } else if (command == 'up') {
+          curBlock.y--;
+          if (!checkBlock(curBlock)) {
+            curBlock.y++;
+          }
+        } else if (command == 'down') {
+          curBlock.y++;
+          if (!checkBlock(curBlock)) {
+            curBlock.y--;
+          }
+        } else if (command == 'rotate') {
+          curBlock.angle = (curBlock.angle + 1) % 4;
+          if (!checkBlock(curBlock)) {
+            curBlock.angle = (curBlock.angle + 3) % 4;
+          }
+        } else if (command == 'hold') {
+          var block:Block = new Block(heldBlock.type);
+          block.x = curBlock.x;
+          block.y = curBlock.y;
+          block.angle = heldBlock.angle;
+          if (checkBlock(block)) {
+            heldBlock = curBlock;
+            heldBlockType = curBlock.type;
+            curBlock = block;
+          }
+        }
+        curBlock.rowsFree = calculateRowsFree(curBlock);
+      } catch (e:Error) {
+        ExternalInterface.call('console.log', 'Error reconstructing game state! ', e);
+      }
+    }
+
+    public function drawBoard():void {
+      optimize = false;
+      draw();
     }
 
     public function failed():Boolean {
