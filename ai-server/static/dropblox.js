@@ -167,7 +167,8 @@ var dropblox = {
               '<td><div id="move-slider"></td>' +
               '<td><a id="animate" href="#">Animate</a></td>' +
               '</tr></table>' +
-              '<div id="cur-state-label"></div>'
+              '<div id="cur-state-label"></div>' +
+              '<div class="big-spacer"><a id="copy-state" href="#">Get game state JSON for debugging</a></div>'
             );
             $('#move-slider').slider({
               min: 0,
@@ -187,6 +188,15 @@ var dropblox = {
               }
               window.event.preventDefault();
             });
+            $('#copy-state').click(function() {
+              var index = dropblox.cur_game.index;
+              if (index !== undefined) {
+                window.prompt('Copy the text with ctrl-C: ',
+                    JSON.stringify(dropblox.cur_game.states[index]));
+              }
+              window.event.preventDefault();
+            });
+
             if (index === undefined) {
               var index = dropblox.cur_game.states.length - 1;
               dropblox.set_cur_game_state(game_id, index);

@@ -134,6 +134,10 @@ form {
   margin-top: 18px;
 }
 
-#animate {
+#animate, #copy-state {
   color: black;
+}
+
+.big-spacer {
+  margin-top: 8px;
 }
