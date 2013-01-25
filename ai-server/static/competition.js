@@ -5,16 +5,21 @@ var competition = {
     $.ajax('/competition_state', {
       success: function(json) {
         var data = JSON.parse(json);
+        var empty = true;
         for (var team in data.boards) {
           $('#boards').append('<div id="' + team + '-container"></div>');
           competition.boards[team] = competition.create_board(team + '-container', team, team);
           competition.boards[team].setBoardState(data.boards[team]);
+          empty = false;
         }
-        setInterval(competition.update, 1000);
+        if (empty) {
+          $('#boards').html('No competition is currently running.');
+        } else {
+          setInterval(competition.update, 1000);
+        }
       },
-      error: function(json) {
-        var data = JSON.parse(json);
-        $('#boards').html(data.message);
+      error: function(data) {
+        $('#boards').html(data);
       },
     });
   },
