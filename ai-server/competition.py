@@ -31,9 +31,6 @@ class Competition(object):
 	def blacklist_team(self, team):
 		self.team_whitelist.remove(team)
 
-	def team_to_game(self):
-		return self.team_to_game
-
 	# Called when a team connects via client.py
 	def register_team(self, team, sock):
 		if not team in self.team_whitelist:
