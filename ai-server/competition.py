@@ -22,6 +22,8 @@ class Competition(object):
 		self.team_whitelist = set(['myteam'])
 		self.common_seed = None
 		self.is_test_run = is_test_run
+		if not self.is_test_run:
+			self.round = model.Database.latest_round() + 1
 
 	def whitelist_team(self, team):
 		self.team_whitelist.add(team)
@@ -78,6 +80,11 @@ class Competition(object):
 	def send_game_over(game, sock):
 		sock.close(code=messaging.DO_NOT_RECONNECT, reason="Game over! Your score was: %s" % game.score)
 
+	@staticmethod
+	def record_game(team, game):
+		if not self.is_test_run:
+			model.Database.add_score(team, game.game_id, game.seed, game.score, self.round)
+
 	def start_competition(self):
 		for sock in self.sock_to_team:
 			Competition.request_next_move(self.team_to_game[self.sock_to_team[sock]], sock)
@@ -92,6 +99,7 @@ class Competition(object):
 		game.send_commands(commands)
 
 		if game.state == 'failed':
+			Competition.record_game(team, game)
 			Competition.send_game_over(game, sock)
 		elif game.state == 'playing':
 			Competition.request_next_move(game, sock)
