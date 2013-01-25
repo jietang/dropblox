@@ -242,7 +242,7 @@
           },
           error: function(response) {
             var data = JSON.parse(response.responseText);
-            alert(data.message);
+            console.log(data.message);
           },
         });
       }
