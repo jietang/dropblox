@@ -17,9 +17,10 @@ import time
 class Competition(object):
 
 	def __init__(self, is_test_run=False):
+		self.started = False
 		self.team_to_game = {}
 		self.sock_to_team = {}
-		self.team_whitelist = set(['myteam'])
+		self.team_whitelist = set()
 		self.common_seed = None
 		self.is_test_run = is_test_run
 		if not self.is_test_run:
@@ -48,15 +49,17 @@ class Competition(object):
 			game = Board(seed=self.common_seed)
 			game.game_id = util.generate_game_id()
 			self.team_to_game[team] = game
-
-			# Game IDs are visible to the client only in testing.
-			if self.is_test_run:
-				Competition.notify_game_created(sock, game.game_id)
-			else:
-				Competition.notify_game_created(sock)
-		else:
+		elif self.started:
 			# We must be resuming a broken connection.
 			Competition.request_next_move(self.team_to_game[team], sock)
+			return
+
+		# Game IDs are visible to the client only in testing.
+		if self.is_test_run:
+			Competition.notify_game_created(sock, game.game_id)
+		else:
+			Competition.notify_game_created(sock)
+
 
 	def is_team_connected(self, team):
 		return team in self.sock_to_team.values()
@@ -89,10 +92,11 @@ class Competition(object):
 		sock.send(json.dumps(response))
 
 	@staticmethod
-	def record_game(team, game):
-		model.Database.add_score(team, game.game_id, game.seed, game.score, self.round)
+	def record_game(team, game, round_num):
+		model.Database.add_score(team, game.game_id, game.seed, game.score, round_num)
 
 	def start_competition(self):
+		self.started = True
 		for sock in self.sock_to_team:
 			Competition.request_next_move(self.team_to_game[self.sock_to_team[sock]], sock)
 
@@ -115,7 +119,7 @@ class Competition(object):
 
 		if game.state == 'failed':
 			if not self.is_test_run:
-				Competition.record_game(team, game)
+				Competition.record_game(team, game, self.round)
 			Competition.send_game_over(game, sock)
 		elif game.state == 'playing':
 			Competition.request_next_move(game, sock)

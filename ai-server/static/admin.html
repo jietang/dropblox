@@ -86,7 +86,7 @@
 
     <div id="footer">
       <div class="container">
-        <p class="muted credit"><a href='#' id="next-round-btn">Prepare game server for next round</a></p>
+        <p class="muted credit"><a href='#' id="next-round-btn">Start the next round!</a></p>
       </div>
     </div>
 
@@ -109,15 +109,16 @@
 
         $.ajax({
           type: 'POST',
-          url: '/prepare_next_round',
+          url: '/start_next_round',
           data: JSON.stringify(params),
           contentType: "application/json",
           dataType: "json",
           success: function(response) {
             location.reload();
           },
-          error: function(request, status, error) {
-            alert(error);
+          error: function(response) {
+            var data = JSON.parse(response.responseText);
+            alert(data.message);
           },
         });
         return false;
@@ -129,7 +130,9 @@
           url: '/list_teams',
           success: function(response) {
             // (1) Find how many columns will be in the table.
-            var score_dict = JSON.parse(response);
+            var response_dict = JSON.parse(response);
+            var score_dict = response_dict['team_scores']
+            var connect_dict = response_dict['team_connect']
             var biggest_round = 0;
             var teams = [];
             for (var team in score_dict) {
@@ -152,7 +155,11 @@
             // (3) Iterate over each team in the response dict to fill in the per-round scores.
             var tbody = "<tbody>"
             $(teams).each(function(j, team) {
-              tbody += "<tr><td>" + team + "</td>";
+              if (connect_dict[team]) {
+                tbody += "<tr class='success'><td>" + team + "</td>";
+              } else {
+                tbody += "<tr><td>" + team + "</td>";
+              }
 
               var filled_rounds = 1;
               for (var i=0; i < score_dict[team].length; i++) {
@@ -183,20 +190,57 @@
               $(checkbox).click(function() {
                 if ($(checkbox).is(':checked')) {
                   next_round_teams[selected_team] = true;
+
+                  var params = {
+                    'team_name' : selected_team,
+                  };
+                  $.ajax({
+                    type: 'POST',
+                    url: '/whitelist_team',
+                    data: JSON.stringify(params),
+                    contentType: "application/json",
+                    dataType: "json",
+                    success: function(response) {
+                      
+                    },
+                    error: function(response) {
+                      var data = JSON.parse(response.responseText);
+                      alert(data.message);
+                    },
+                  });
                 } else {
                   delete next_round_teams[selected_team];
+
+                  var params = {
+                    'team_name' : selected_team,
+                  };
+                  $.ajax({
+                    type: 'POST',
+                    url: '/blacklist_team',
+                    data: JSON.stringify(params),
+                    contentType: "application/json",
+                    dataType: "json",
+                    success: function(response) {
+                      
+                    },
+                    error: function(response) {
+                      var data = JSON.parse(response.responseText);
+                      alert(data.message);
+                    },
+                  });
                 }
               });
             });
           },
-          error: function(request, status, error) {
-            alert(error);
+          error: function(response) {
+            var data = JSON.parse(response.responseText);
+            alert(data.message);
           },
         });
       }
 
       refresh_table();
-      setInterval(refresh_table, 5000);
+      setInterval(refresh_table, 1000);
     });
     </script>
   </body>
