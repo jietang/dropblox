@@ -1,6 +1,14 @@
-body {
+body, table {
   font-family: verdana, arial, sans-serif;
   font-size: 14px;
+}
+
+fieldset {
+  margin-top: 14px;
+}
+
+h3 {
+  margin: 0px;
 }
 
 #top-bar {
