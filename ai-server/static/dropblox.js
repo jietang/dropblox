@@ -43,6 +43,8 @@ var dropblox = {
   },
 
   submission_history: function() {
+    dropblox.games = undefined;
+    dropblox.cur_game = undefined;
     $('#content').html(
       '<h3>Submission history</h3>' +
       '<div id="subcontent">Loading...</div>'
@@ -81,6 +83,13 @@ var dropblox = {
             $('#leftcontent .game-link').click(function() {
               dropblox.load_game_history(this.id);
             });
+            if (response.games.length) {
+              setTimeout(function() {
+                if (!dropblox.cur_game) {
+                  dropblox.load_game_history(response.games[response.games.length - 1].id);
+                }
+              });
+            }
           } else {
             $('#subcontent').html(response.error);
           }
