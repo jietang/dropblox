@@ -181,6 +181,42 @@ class DropbloxGameServer(object):
         else:
             return 'Incorrect password!'
 
+    @cherrypy.expose
+    def signup(self):
+        cl = cherrypy.request.headers['Content-Length']
+        rawbody = cherrypy.request.body.read(int(cl))
+        body = json.loads(rawbody)
+
+        if len(body['team_name']) < 5:
+            raise cherrypy.HTTPError(400, "Team name must be at least 5 characters long!")
+
+        if len(body['password']) < 5:
+            raise cherrypy.HTTPError(400, "Password must be at least 5 characters long!") 
+        
+        team = model.Database.get_team(body['team_name'])
+        if team:
+            raise cherrypy.HTTPError(400, "Team name already taken!")
+
+        hashed = bcrypt.hashpw(body['password'], bcrypt.gensalt())
+        model.Database.add_team(body['team_name'], hashed)
+        return "Success"
+
+    @cherrypy.expose
+    def login(self):
+        cl = cherrypy.request.headers['Content-Length']
+        rawbody = cherrypy.request.body.read(int(cl))
+        body = json.loads(rawbody)
+        
+        team = model.Database.get_team(body['team_name'])
+        if not team:
+            raise cherrypy.HTTPError(401, "Incorrect team name or password")
+
+        if not bcrypt.hashpw(body['password'], team[model.Database.TEAM_PASSWORD]) == team[model.Database.TEAM_PASSWORD]:
+            raise cherrypy.HTTPError(401, "Incorrect team name or password")
+
+        return "Success"
+                
+
 if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()
     cherrypy.tools.websocket = WebSocketTool()
