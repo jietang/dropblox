@@ -77,7 +77,7 @@ class DropbloxGameServer(object):
     @admin_only
     def start_competition(self):        
         CURRENT_COMPETITION.start_competition()
-        return "Success"
+        return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
     @admin_only
@@ -88,13 +88,18 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @admin_only
+    def create_new_competition(self):
+        return json.dumps({'status': 200, 'message': 'Success!'})
+
+    @cherrypy.expose
+    @admin_only
     def whitelist_team(self):
-        pass
+        return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
     @admin_only
     def blacklist_team(self):
-        pass
+        return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
     def signup(self):
@@ -114,7 +119,7 @@ class DropbloxGameServer(object):
 
         hashed = bcrypt.hashpw(body['password'], bcrypt.gensalt())
         model.Database.add_team(body['team_name'], hashed)
-        return "Success"
+        return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
     def login(self):
@@ -126,7 +131,7 @@ class DropbloxGameServer(object):
         if not team:
             raise cherrypy.HTTPError(401, "Incorrect team name or password")
 
-        return "Success"
+        return json.dumps({'status': 200, 'message': 'Success!'})
                 
 def jsonify_error(status, message, traceback, version):
     response = cherrypy.response
