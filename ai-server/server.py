@@ -68,7 +68,7 @@ class DropbloxGameServer(object):
 
             team = model.Database.authenticate_team(body['team_name'], body['password'])
             if not team or not team[model.Database.TEAM_IS_ADMIN]:
-                raise cherrypy.HTTPError(401, "You are not authorized to perform this action")
+                raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
             else:
                 return f(*args, **kwargs)
         return wrapped
@@ -129,7 +129,7 @@ class DropbloxGameServer(object):
         
         team = model.Database.authenticate_team(body['team_name'], body['password'])
         if not team:
-            raise cherrypy.HTTPError(401, "Incorrect team name or password")
+            raise cherrypy.HTTPError(401, "Incorrect team name or password.")
 
         return json.dumps({'status': 200, 'message': 'Success!'})
                 
