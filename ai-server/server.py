@@ -113,7 +113,7 @@ class DropbloxWebSocketHandler(WebSocket):
             game = GAMES[self.game_id]
 
             commands = msg['move_list']
-            if time.time() - self.move_requested_at > AI_CLIENT_TIMEOUT:
+            if time.time() - self.move_requested_at > config.AI_CLIENT_TIMEOUT:
                 commands = ['drop']
             game.send_commands(commands)
             if game.state == 'playing':
@@ -127,6 +127,8 @@ class DropbloxWebSocketHandler(WebSocket):
             print "Received unsupported message type"
 
     def closed(self, code, reason=None):
+        CURRENT_COMPETITION.disconnect_sock(self)
+
         print "Connection to client closed. Code=%s, Reason=%s" % (code, reason)
         if self.game_id in GAME_ID_TO_WEBSOCKET:
             del GAME_ID_TO_WEBSOCKET[self.game_id]
@@ -142,6 +144,10 @@ class DropbloxGameServer(object):
     def start(self, game_id):
         # TODO: Make this called from a button on the game page
         start_game(game_id)
+
+    @cherrypy.expose
+    def hackstart(self):
+        CURRENT_COMPETITION.start_competition()
 
     @cherrypy.expose
     def game_state(self, game_id):
