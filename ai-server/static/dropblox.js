@@ -311,7 +311,7 @@ var dropblox = {
         if (team_name == 'admin') {
           window.location.href = '/admin.html';
         } else {
-          $('#submission_history').trigger('click');
+          $('#' + $.cookie('last-active-link')).trigger('click');
         }
       }, 500);
     },
@@ -340,6 +340,9 @@ var dropblox = {
 
   set_active_link: function(link) {
     $.cookie('active-link', link);
+    if (link != 'log_in' && link != 'sign_up') {
+      $.cookie('last-active-link', link);
+    }
     $('#left-bar a, #top-bar a').removeClass('active');
     $('#' + link).addClass('active');
   },
