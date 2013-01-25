@@ -33,7 +33,7 @@ var dropblox = {
 
   submission_history: function() {
     $('#content').html(
-      '<h3>Submission history:</h3>' +
+      '<h3>Submission history</h3>' +
       '<div id="subcontent">Loading...</div>'
     );
     $.ajax('http://localhost:9000', {
@@ -65,7 +65,7 @@ var dropblox = {
 
   log_in: function() {
     $('#content').html(
-      '<h3>Log in:</h3>' + this.login_form
+      '<h3>Log in</h3>' + this.login_form
     );
     $('#submit').click(function() {
       dropblox.submit_login('log_in', $('#team-name').val(), $('#password').val());
@@ -75,7 +75,7 @@ var dropblox = {
 
   sign_up: function() {
     $('#content').html(
-      '<div><h3>Sign up:</h3> ' + this.login_form + '</div>'
+      '<div><h3>Sign up</h3> ' + this.login_form + '</div>'
     );
     $('#submit').click(function() {
       dropblox.submit_login('sign_up', $('#team-name').val(), $('#password').val());
