@@ -30,7 +30,7 @@ h3 {
 }
 
 #left-bar {
-  background-color: #CCC;
+  background-color: #DDD;
   float: left;
 }
 
@@ -61,4 +61,29 @@ h3 {
 
 .code {
   font-family: 'Courier New', Courier, 'Nimbus Mono L', serif, monospace;
+}
+
+#leftcontent, #rightcontent {
+  float: left;
+}
+
+#rightcontent {
+  margin: 6px 21px;
+}
+
+.game-link {
+  background-color: #DDD;
+  margin: 2px;
+  padding: 4px;
+  cursor: pointer;
+  width: 128px;
+}
+
+.game-link:hover {
+  background-color: #BBB;
+}
+
+.game-link.active {
+  background-color: #39F;
+  color: white;
 }
