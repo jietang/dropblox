@@ -90,7 +90,8 @@
       </div>
     </div>
 
-    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="jquery-1.8.3.js"></script>
+    <script src="jquery.cookie.js"></script>
     <script src="bootstrap.min.js"></script>
     
 
@@ -99,7 +100,10 @@
       var next_round_teams = {};
       
       $("#next-round-btn").click(function(){
-        var params = {};
+        var params = {
+          team_name: $.cookie('team_name'),
+          password: $.cookie('password'),
+        };
 
         $.ajax({
           type: 'POST',
@@ -119,8 +123,14 @@
       });
 
       function refresh_table() {
+        var params = {
+          team_name: $.cookie('team_name'),
+          password: $.cookie('password'),
+        };
+
         $.ajax({
-          type: 'GET',
+          type: 'POST',
+          data: JSON.stringify(params),
           url: '/list_teams',
           success: function(response) {
             // (1) Find how many columns will be in the table.
@@ -186,7 +196,9 @@
                   next_round_teams[selected_team] = true;
 
                   var params = {
-                    'team_name' : selected_team,
+                    team_name: $.cookie('team_name'),
+                    password: $.cookie('password'),
+                    'target_team' : selected_team,
                   };
                   $.ajax({
                     type: 'POST',
@@ -206,7 +218,9 @@
                   delete next_round_teams[selected_team];
 
                   var params = {
-                    'team_name' : selected_team,
+                    team_name: $.cookie('team_name'),
+                    password: $.cookie('password'),
+                    'target_team' : selected_team,
                   };
                   $.ajax({
                     type: 'POST',
