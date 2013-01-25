@@ -3,6 +3,7 @@
 # Provides persistence to sqlite3
 
 import sqlite3
+import bcrypt
 
 class Database(object):
 
@@ -36,6 +37,17 @@ class Database(object):
 		conn = sqlite3.connect('data.db')
 		sql = 'SELECT * FROM teams WHERE team_name="%s"' % team_name
 		return conn.execute(sql).fetchone()
+
+	@staticmethod
+	def authenticate_team(team_name, password):
+		team = Database.get_team(team_name)
+		if not team:
+			return None
+
+		if not bcrypt.hashpw(password, team[Database.TEAM_PASSWORD]) == team[Database.TEAM_PASSWORD]:
+			return None
+
+		return team
 
 	@staticmethod
 	def initialize_db():
