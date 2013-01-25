@@ -2,8 +2,12 @@ var competition = {
   boards: {},
 
   initialize: function() {
-    $.ajax('/competition_state', {
-      success: function(json) {
+    this.post('/competition_state',
+      {
+        team_name: $.cookie('team_name'),
+        password: $.cookie('password'),
+      },
+      function(json) {
         var data = JSON.parse(json);
         var empty = true;
         for (var team in data.boards) {
@@ -18,10 +22,10 @@ var competition = {
           setInterval(competition.update, 1000);
         }
       },
-      error: function(data) {
+      function(data) {
         $('#boards').html(data);
-      },
-    });
+      }
+    );
   },
 
   create_board: function(target, id, header) {
@@ -39,17 +43,30 @@ var competition = {
   },
 
   update: function() {
-    $.ajax('/competition_state', {
-      success: function(json) {
+    this.post('/competition_state',
+      {
+        team_name: $.cookie('team_name'),
+        password: $.cookie('password'),
+      },
+      function(json) {
         var data = JSON.parse(json);
         for (var team in data.boards) {
           competition.boards[team].setBoardState(data.boards[team]);
         }
-      },
-      error: function(json) {
-        var data = JSON.parse(json);
-        console.log('Error in update:', data.message);
-      },
+      }
+    );
+  },
+
+
+  post: function(url, data, success, error) {
+    $.ajax({
+      type: 'POST',
+      url: url,
+      data: JSON.stringify(data),
+      contentType: "application/json",
+      dataType: "json",
+      success: success,
+      error: error,
     });
   },
 };
