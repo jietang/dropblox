@@ -307,6 +307,13 @@ var dropblox = {
       var verb = (url == '/login' ? 'logged in' : 'signed up');
       $('#login-error').html('Successfully ' + verb + '!');
       dropblox.set_team_cookie(team_name, password);
+      setTimeout(function() {
+        if (team_name == 'admin') {
+          window.location.href = '/admin.html';
+        } else {
+          $('#submission_history').trigger('click');
+        }
+      }, 500);
     },
     function(response) {
       var data = JSON.parse(response.responseText);
