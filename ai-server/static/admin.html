@@ -79,7 +79,9 @@
           </tbody>
         </table>
 
+        <div id="post-error" class="text-error"></div>
       </div>
+
 
       <div id="push"></div>
     </div>
@@ -116,7 +118,7 @@
           },
           error: function(response) {
             var data = JSON.parse(response.responseText);
-            console.debug(data.message);
+            $('#post-error').html(data.message);
           },
         });
         return false;
@@ -130,11 +132,12 @@
 
         $.ajax({
           type: 'POST',
-          data: JSON.stringify(params),
           url: '/list_teams',
-          success: function(response) {
+          data: JSON.stringify(params),
+          contentType: "application/json",
+          dataType: "json",
+          success: function(response_dict) {
             // (1) Find how many columns will be in the table.
-            var response_dict = JSON.parse(response);
             var score_dict = response_dict['team_scores']
             var connect_dict = response_dict['team_connect']
             var biggest_round = 0;
@@ -207,11 +210,11 @@
                     contentType: "application/json",
                     dataType: "json",
                     success: function(response) {
-                      
+                      $('#post-error').html('');
                     },
                     error: function(response) {
                       var data = JSON.parse(response.responseText);
-                      console.debug(data.message);
+                      $('#post-error').html(data.message);
                     },
                   });
                 } else {
@@ -229,11 +232,11 @@
                     contentType: "application/json",
                     dataType: "json",
                     success: function(response) {
-                      
+                      $('#post-error').html('');
                     },
                     error: function(response) {
                       var data = JSON.parse(response.responseText);
-                      console.debug(data.message);
+                      $('#post-error').html(data.message);
                     },
                   });
                 }
@@ -242,7 +245,7 @@
           },
           error: function(response) {
             var data = JSON.parse(response.responseText);
-            console.log(data.message);
+            $('#post-error').html(data.message);
           },
         });
       }
