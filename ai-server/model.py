@@ -34,6 +34,15 @@ class Database(object):
 		conn.commit()
 
 	@staticmethod
+	def latest_round():
+		conn = sqlite3.connect('data.db')
+		sql = 'SELECT MAX(round) FROM scores'
+		result = conn.execute(sql).fetchone()[0]
+		if result == None:
+			result = 0
+		return result
+
+	@staticmethod
 	def get_team(team_name):
 		conn = sqlite3.connect('data.db')
 		sql = 'SELECT * FROM teams WHERE team_name="%s"' % team_name
