@@ -7,8 +7,7 @@ var competition = {
         team_name: $.cookie('team_name'),
         password: $.cookie('password'),
       },
-      function(json) {
-        var data = JSON.parse(json);
+      function(data) {
         var empty = true;
         for (var team in data.boards) {
           $('#boards').append('<div id="' + team + '-container"></div>');
@@ -48,8 +47,7 @@ var competition = {
         team_name: $.cookie('team_name'),
         password: $.cookie('password'),
       },
-      function(json) {
-        var data = JSON.parse(json);
+      function(data) {
         for (var team in data.boards) {
           competition.boards[team].setBoardState(data.boards[team]);
         }
