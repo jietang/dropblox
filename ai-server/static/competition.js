@@ -49,9 +49,10 @@ var competition = {
           if (!competition.boards.hasOwnProperty(team)) {
             $('#boards').append('<div id="' + team + '-container"></div>');
             competition.boards[team] = competition.create_board(team + '-container', team, team);
-            competition.boards[team].setBoardState(data.boards[team]);
+          } else {
+            var board_json = JSON.stringify(data.boards[team]);
+            competition.boards[team].setBoardState(board_json);
           }
-          competition.boards[team].setBoardState(data.boards[team]);
         }
         for (var team in competition.boards) {
           if (!data.boards.hasOwnProperty(team)) {
