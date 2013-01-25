@@ -26,6 +26,8 @@ class DropbloxWebSocketHandler(WebSocket):
             CURRENT_COMPETITION.register_team(team_name, self)
         elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
             CURRENT_COMPETITION.make_move(team_name, self, msg['move_list'])
+            if CURRENT_COMPETITION.check_competition_over():
+                CURRENT_COMPETITION = competition.Competition()
 
     def handle_testing_msg_from_team(self, msg, team):
         team_name = team[model.Database.TEAM_TEAM_NAME]
@@ -75,12 +77,6 @@ class DropbloxGameServer(object):
         return wrapped
 
     @cherrypy.expose
-    @admin_only
-    def start_competition(self):        
-        CURRENT_COMPETITION.start_competition()
-        return json.dumps({'status': 200, 'message': 'Success!'})
-
-    @cherrypy.expose
     #@admin_only
     def list_teams(self):
         response = {}
@@ -99,18 +95,36 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     #@admin_only
-    def prepare_next_round(self):
+    def start_next_round(self):
         cl = cherrypy.request.headers['Content-Length']
         rawbody = cherrypy.request.body.read(int(cl))
         body = json.loads(rawbody)
 
-        CURRENT_COMPETITION = competition.Competition()
         for team_name in body['next_round_teams']:
-            team = model.Database.get_team(team_name)
-            if not team:
-                raise cherrypy.HTTPError(400, "Team name specified does not exist!")
-            CURRENT_COMPETITION.whitelist_team(team_name)
+            if not CURRENT_COMPETITION.is_team_connected(team_name):
+                raise cherrypy.HTTPError(400, "Not all teams are connected!")
 
+        CURRENT_COMPETITION.start_competition()
+        return json.dumps({'status': 200, 'message': 'Success!'})
+
+    @cherrypy.expose
+    #@admin_only
+    def whitelist_team(self):
+        cl = cherrypy.request.headers['Content-Length']
+        rawbody = cherrypy.request.body.read(int(cl))
+        body = json.loads(rawbody)
+
+        CURRENT_COMPETITION.whitelist_team(body['team_name'])
+        return json.dumps({'status': 200, 'message': 'Success!'})
+
+    @cherrypy.expose
+    #@admin_only
+    def blacklist_team(self):
+        cl = cherrypy.request.headers['Content-Length']
+        rawbody = cherrypy.request.body.read(int(cl))
+        body = json.loads(rawbody)
+
+        CURRENT_COMPETITION.blacklist_team(body['team_name'])
         return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose

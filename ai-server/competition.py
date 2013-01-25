@@ -57,6 +57,9 @@ class Competition(object):
 		else:
 			# We must be resuming a broken connection.
 			Competition.request_next_move(self.team_to_game[team], sock)
+
+	def is_team_connected(self, team):
+		return team in self.sock_to_team.values()
 		
 	@staticmethod
 	def notify_game_created(sock, game_id=None):
@@ -92,6 +95,14 @@ class Competition(object):
 	def start_competition(self):
 		for sock in self.sock_to_team:
 			Competition.request_next_move(self.team_to_game[self.sock_to_team[sock]], sock)
+
+	def check_competition_over(self):
+		if self.is_test_run:
+			return False
+		for game in self.team_to_game.values():
+			if game.state == 'playing':
+				return False
+		return True
 
 	def make_move(self, team, sock, commands):
 		if not team in self.team_to_game:
