@@ -1,0 +1,44 @@
+body {
+  font-family: verdana, arial, sans-serif;
+  font-size: 14px;
+}
+
+#top-bar {
+  background-color: #39F;
+  color: white;
+  font-size: 28px;
+  padding: 4px;
+}
+
+#top-bar .login-bar {
+  float: right;
+  font-size: 14px;
+  margin: 7px;
+}
+
+#top-bar .login-bar a {
+  color: white;
+  margin-left: 7px;
+}
+
+#left-bar {
+  background-color: #CCC;
+  float: left;
+}
+
+#left-bar div {
+  margin: 8px;
+}
+
+#left-bar a {
+  color: #444;
+}
+
+#left-bar a.active {
+  color: black;
+}
+
+#content {
+  float: left;
+  margin: 14px;
+}
