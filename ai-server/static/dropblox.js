@@ -124,8 +124,7 @@ var dropblox = {
       '</div>'
     );
     $('#' + target).append(html);
-    b = board.initialize(id);
-    return b;
+    return board.initialize(id);
   },
 
   load_game_history: function(game_id) {
@@ -194,14 +193,17 @@ var dropblox = {
               }
               window.event.preventDefault();
             });
-            $('#copy-state').click(function() {
-              var index = dropblox.cur_game.index;
-              if (index !== undefined) {
-                window.prompt('Copy the text with ctrl-C: ',
-                    JSON.stringify(dropblox.cur_game.states[index]));
-              }
-              window.event.preventDefault();
-            });
+            setTimeout(function() {
+              $('#copy-state').zclip({
+                path: 'ZeroClipboard.swf',
+                copy: function() {
+                  var index = dropblox.cur_game.index;
+                  if (index !== undefined) {
+                    return "'" + dropblox.cur_game.states[index].board + "'";
+                  }
+                },
+              });
+            }, 100);
 
             if (index === undefined) {
               var index = dropblox.cur_game.states.length - 1;
