@@ -11,12 +11,13 @@
 
 import threading
 import cherrypy
+import config
 import json
+import sys
 import os
 
 from ws4py.client.threadedclient import WebSocketClient
 from subprocess import Popen, PIPE, STDOUT
-from optparse import OptionParser
 
 # Remote server to connect to:
 #SERVER_URL = 'http://ec2-107-20-18-153.compute-1.amazonaws.com/'
@@ -89,12 +90,15 @@ class Subscriber(WebSocketClient):
         self._th.start()
         self._th.join()
 
+    def send_msg(self, msg):
+        msg['team_name'] = config.team_name
+        msg['team_password'] = config.team_password
+        self.send(json.dumps(msg))
+
     def opened(self):
         msg = {
             'type' : CREATE_NEW_GAME_MSG,
         }
-        if team_name:
-            msg['team_name'] = team_name
 
         if self.game_id != -1:
             # We must be reconnecting to a prior game
@@ -102,12 +106,12 @@ class Subscriber(WebSocketClient):
                 'type' : CONNECT_TO_EXISTING_GAME_MSG,
                 'game_id' : self.game_id,
             }
-        self.send(json.dumps(msg))
+        self.send_msg(msg)
 
     def received_message(self, msg):
         msg = json.loads(str(msg))
         if msg['type'] == NEW_GAME_CREATED_MSG:
-            if not team_name:
+            if 'game_id' in msg:
                 self.game_id = msg['game_id']
                 print colorgrn.format("New game started at %sgame.html#%s" % (SERVER_URL, msg['game_id']))
             else:
@@ -120,7 +124,7 @@ class Subscriber(WebSocketClient):
                 'type' : SUBMIT_MOVE_MSG,
                 'move_list' : ai_cmds,
             }
-            self.send(json.dumps(response))
+            self.send_msg(response)
         else:
             print colorred.format("Received unsupported message type")
 
@@ -136,12 +140,15 @@ class Subscriber(WebSocketClient):
             os._exit(0)
 
 if __name__ == '__main__':
-    parser = OptionParser()
-    parser.add_option("-c", "--compete", dest="team_name",
-                      help="Enter competition with TEAM_NAME",
-                      metavar="TEAM_NAME")
-    (options, _) = parser.parse_args()
-    team_name = options.team_name
+    if config.team_name == "TEAM_NAME_HERE" or config.team_password == "TEAM_PASSWORD_HERE":
+        print colorred.format("Please specify a team name and password in config.py")
+        sys.exit(0)
+
+    if len(sys.argv) != 2:
+        print colorred.format("Usage: client.py [compete|test]")
+
+    if sys.argv[1] != "compete" and sys.argv[1] != "test":
+        print colorred.format("Usage: client.py [compete|test]")        
 
     subscriber = SubscriberThread()
     subscriber.daemon = True
