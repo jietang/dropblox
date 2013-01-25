@@ -146,7 +146,7 @@ class Subscriber(WebSocketClient):
             if 'game_id' in msg:
                 self.game_id = msg['game_id']
                 self.logger = GameStateLogger(self.game_id)
-                print colorgrn.format("New game started at %sgame.html#%s" % (SERVER_URL, msg['game_id']))
+                print colorgrn.format("New game started. Watch at %s#submission_history" % (SERVER_URL,))
             else:
                 print colorgrn.format("Waiting for competition to begin")
         elif msg['type'] == AWAITING_NEXT_MOVE_MSG:

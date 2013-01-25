@@ -16,11 +16,17 @@ var dropblox = {
         window.event.preventDefault();
       });
     });
-    if ($.cookie('active-link')) {
+
+    if (window.location.hash) {
+      var hash = window.location.hash;
+      window.location.hash = '';
+      $(hash).trigger('click');
+    } else if ($.cookie('active-link')) {
       $('#' + $.cookie('active-link')).trigger('click');
     } else {
       $('#getting_started').trigger('click');
     }
+
     if ($.cookie('team_name')) {
       this.set_team_cookie($.cookie('team_name'), $.cookie('password'));
     }
