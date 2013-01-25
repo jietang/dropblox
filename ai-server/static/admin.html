@@ -51,6 +51,7 @@
         max-width: 680px;
       }
       .container .credit {
+        text-align: right;
         margin: 20px 0;
       }
     </style>
@@ -66,14 +67,14 @@
         </div>
         <p class="lead">Prepare your team for competition by running <code>python client.py compete</code></p>
 
-        <table class="table table-striped">
+        <table id="result-table" class="table table-striped">
           <thead>
-            <tr><th>First name</th><th>Last name</th></tr>
+            <tr><th></th><th></th></tr>
           </thead>
-          <tbody data-bind="foreach: people">
+          <tbody>
             <tr>
-              <td data-bind="text: firstName"></td>
-              <td data-bind="text: lastName"></td>
+              <td></td>
+              <td></td>
             </tr>
           </tbody>
         </table>
@@ -85,33 +86,117 @@
 
     <div id="footer">
       <div class="container">
-        <p class="muted credit">Currently playing: <a href="#">round 1</a></p>
+        <p class="muted credit"><a href='#' id="next-round-btn">Prepare game server for next round</a></p>
       </div>
     </div>
 
     <script src="http://code.jquery.com/jquery-latest.js"></script>
     <script src="bootstrap.min.js"></script>
-    <script src="http://cdnjs.cloudflare.com/ajax/libs/knockout/2.2.0/knockout-min.js"></script>
+    
 
     <script type="text/javascript">
     $(document).ready(function() {
-      $.ajax({
-        type: 'GET',
-        url: '/list_teams',
-        success: function(response) {
-          alert(response);
-        },
-        error: function(request, status, error) {
+      var next_round_teams = {};
 
-        },
+      $("#next-round-btn").click(function(){
+        var teams = [];
+        for (team in next_round_teams) {
+          teams.push(team);
+        }
+        var params = {
+          'next_round_teams':teams,
+        };
+
+        $.ajax({
+          type: 'POST',
+          url: '/prepare_next_round',
+          data: JSON.stringify(params),
+          contentType: "application/json",
+          dataType: "json",
+          success: function(response) {
+            location.reload();
+          },
+          error: function(request, status, error) {
+            alert(error);
+          },
+        });
+        return false;
       });
-      ko.applyBindings({
-        people: [
-            { firstName: 'Bert', lastName: 'Bertington' },
-            { firstName: 'Charles', lastName: 'Charlesforth' },
-            { firstName: 'Denise', lastName: 'Dentiste' }
-        ]
-      });
+
+      function refresh_table() {
+        $.ajax({
+          type: 'GET',
+          url: '/list_teams',
+          success: function(response) {
+            // (1) Find how many columns will be in the table.
+            var score_dict = JSON.parse(response);
+            var biggest_round = 0;
+            var teams = [];
+            for (var team in score_dict) {
+              teams.push(team);
+              for (var i=0; i < score_dict[team].length; i++) {
+                round = score_dict[team][i]['round'];
+                if (round > biggest_round) {
+                  biggest_round = round;
+                }
+              }
+            }
+
+            // (2) Build the HTML for the header of the table.
+            var thead = "<thead><tr><th>Team Name</th>";
+            for (var i=1; i <= biggest_round; i++) {
+              thead += "<th>Round " + i + "</th>";
+            }
+            thead += "<th>Include?</th></tr></thead>"
+
+            // (3) Iterate over each team in the response dict to fill in the per-round scores.
+            var tbody = "<tbody>"
+            $(teams).each(function(j, team) {
+              tbody += "<tr><td>" + team + "</td>";
+
+              var filled_rounds = 1;
+              for (var i=0; i < score_dict[team].length; i++) {
+                var current_round = score_dict[team][i]['round'];
+                while (filled_rounds < current_round) {
+                  tbody += "<td>" + 0 + "</td>";
+                  filled_rounds++;
+                }
+                tbody += "<td>" + score_dict[team][i]['score'];
+                filled_rounds++;
+              }
+              while (filled_rounds <= biggest_round) {
+                tbody += "<td>" + 0 + "</td>";
+                filled_rounds++;
+              }
+              tbody += "<td><input type='checkbox'></td>"
+              tbody += "</tr>"
+            });
+            tbody += "</tbody>"
+            $("#result-table").html(thead + tbody);
+
+            $("#result-table input").each(function(i, checkbox) {
+              var selected_team = teams[i];
+              if (selected_team in next_round_teams) {
+                $(checkbox).attr('checked', true);
+              }
+
+              $(checkbox).click(function() {
+                if ($(checkbox).is(':checked')) {
+                  next_round_teams[selected_team] = true;
+                } else {
+                  delete next_round_teams[selected_team];
+                }
+              });
+            });
+          },
+          error: function(request, status, error) {
+            alert(error);
+          },
+        });
+      }
+
+      refresh_table();
+      setInterval(refresh_table, 5000);
     });
     </script>
   </body>
