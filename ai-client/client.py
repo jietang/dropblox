@@ -51,7 +51,7 @@ colorred = "\033[01;31m{0}\033[00m"
 colorgrn = "\033[1;36m{0}\033[00m"
 
 # Logging AI actions for debug webserver
-LOGGING_DIR = "%s/%s" % (os.getcwd(), 'history')
+LOGGING_DIR = os.path.join(os.getcwd(), 'history')
 
 class Command(object):
     def __init__(self, cmd):
@@ -93,17 +93,17 @@ class GameStateLogger(object):
     turn_num = 0
 
     def __init__(self, game_id):
-        self.log_dir = "%s/%s_%s" % (LOGGING_DIR, game_id, int(time.time()))
+        self.log_dir = os.path.join(LOGGING_DIR, '%s_%s' % (game_id, int(time.time())))
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
 
     def log_game_state(self, game_state):
-        fname = "%s/%s%s" % (self.log_dir, "state", self.turn_num)
+        fname = os.path.join(self.log_dir, 'state%s' % (self.turn_num,))
         with open(fname, 'w+') as f:
             f.write(game_state)
 
     def log_ai_move(self, move_list):
-        fname = "%s/%s%s" % (self.log_dir, "move", self.turn_num)
+        fname = os.path.join(self.log_dir, 'move%s' % (self.turn_num,))
         with open(fname, 'w+') as f:
             f.write(move_list)
         self.turn_num += 1

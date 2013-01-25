@@ -1,4 +1,7 @@
 import cherrypy
+import os
+
+LOGGING_DIR = os.path.join(os.getcwd(), 'history')
 
 class DropbloxDebugServer(object):
   @cherrypy.expose
