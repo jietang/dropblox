@@ -4,12 +4,15 @@
 # our Dropblox AI programming competition.
 #
 
+import competition
+import messaging
 import cherrypy
 import random
 import bcrypt
 import model
 import time
 import json
+import util
 import os
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
@@ -19,15 +22,6 @@ from logic.Board import Board
 
 # Admin
 ADMIN_HASHED_PW = "$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy"
-AI_CLIENT_TIMEOUT = 11 # Allow 1 second extra for latency
-
-# Messaging protocol
-CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
-CONNECT_TO_EXISTING_GAME_MSG = 'CONNECT_TO_EXISTING_GAME'
-NEW_GAME_CREATED_MSG = 'NEW_GAME_CREATED'
-AWAITING_NEXT_MOVE_MSG = 'AWAITING_NEXT_MOVE'
-SUBMIT_MOVE_MSG = 'SUBMIT_MOVE'
-DO_NOT_RECONNECT = 1001
 
 # Global variables (in-memory state)
 GAME_ID_TO_WEBSOCKET = {}
@@ -40,54 +34,66 @@ def start_game(game_id):
     conn = GAME_ID_TO_WEBSOCKET[game_id]
     if not conn.started:
       msg = {
-          'type' : AWAITING_NEXT_MOVE_MSG,
+          'type' : messaging.AWAITING_NEXT_MOVE_MSG,
           'game_state' : GAMES[game_id].to_dict(),
       }
       conn.send(json.dumps(msg))
       conn.move_requested_at = time.time()
       conn.started = True
 
-def generate_game_id():
-    choices = 'abcdefghijklmnopqrstuvwxyz'
-    choices += choices.upper()
-    choices += '0123456789'
-    while True:
-        candidate = ''.join([random.choice(choices) for i in xrange(12)])
-        break
-    return candidate
+CURRENT_COMPETITION = competition.Competition()
 
 class DropbloxWebSocketHandler(WebSocket):
     game_id = -1
     started = False
     move_requested_at = None
     
+    def handle_competition_msg_from_team(self, msg, team):
+        team_name = team[model.Database.TEAM_TEAM_NAME]
+        if msg['type'] == messaging.CREATE_NEW_GAME_MSG:
+            CURRENT_COMPETITION.register_team(team_name, self)
+        elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
+            CURRENT_COMPETITION.make_move(team_name, self, msg['move_list'])
+
+    def handle_testing_msg_from_team(self, msg, team):
+        pass
+
     def received_message(self, msg):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
+        team = model.Database.authenticate_team(msg['team_name'], msg['team_password'])
+        if not team:
+            self.close(code=messaging.DO_NOT_RECONNECT, reason="Incorrect team name or password")
+
+        if msg['entry_mode'] == 'compete':
+            self.handle_competition_msg_from_team(msg, team)
+            return
+
+        self.handle_testing_msg_from_team(msg, team)
 
         #if COMPETITION_IN_PROGRESS:
         #    if msg['type'] != SUBMIT_MOVE_MSG:
         #        self.close(code=DO_NOT_RECONNECT, reason='A competition is currently in progress')
         #        return
 
-        if msg['type'] == CREATE_NEW_GAME_MSG:
+        if msg['type'] == messaging.CREATE_NEW_GAME_MSG:
             #if COMPETITION_SEED and 'team_name' not in msg:
             #    self.close(code=DO_NOT_RECONNECT, reason='A team name must be provided to enter the competition')
             #    return
 
-            self.game_id = generate_game_id()
+            self.game_id = util.generate_game_id()
             GAME_ID_TO_WEBSOCKET[self.game_id] = self
             GAMES[self.game_id] = Board(seed=COMPETITION_SEED)
             print "GAME_ID_TO_WEBSOCKET: %s" % GAME_ID_TO_WEBSOCKET
             response = {
-                'type' : NEW_GAME_CREATED_MSG,
+                'type' : messaging.NEW_GAME_CREATED_MSG,
             }
             #if 'team_name' not in msg:
                 # Game IDs are hidden during competition
             response['game_id'] = self.game_id
             print "sending " + str(response)
             self.send(json.dumps(response))
-        elif msg['type'] == CONNECT_TO_EXISTING_GAME_MSG:
+        elif msg['type'] == messaging.CONNECT_TO_EXISTING_GAME_MSG:
             if msg['game_id'] in GAMES:
                 self.game_id = msg['game_id']
                 GAME_ID_TO_WEBSOCKET[self.game_id] = self
@@ -96,14 +102,14 @@ class DropbloxWebSocketHandler(WebSocket):
                 game = GAMES[self.game_id]
                 if game.state == 'playing':
                     response = {
-                        'type': AWAITING_NEXT_MOVE_MSG,
+                        'type': messaging.AWAITING_NEXT_MOVE_MSG,
                         'game_state': game.to_dict(),
                     }
                     self.send(json.dumps(response))
                     self.move_requested_at = time.time()
             else:
-                self.close(code=DO_NOT_RECONNECT, reason='Game no longer exists')
-        elif msg['type'] == SUBMIT_MOVE_MSG:
+                self.close(code=messaging.DO_NOT_RECONNECT, reason='Game no longer exists')
+        elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
             game = GAMES[self.game_id]
 
             commands = msg['move_list']
@@ -112,7 +118,7 @@ class DropbloxWebSocketHandler(WebSocket):
             game.send_commands(commands)
             if game.state == 'playing':
               response = {
-                  'type': AWAITING_NEXT_MOVE_MSG,
+                  'type': messaging.AWAITING_NEXT_MOVE_MSG,
                   'game_state': game.to_dict(),
               }
               self.send(json.dumps(response))
@@ -152,7 +158,7 @@ class DropbloxGameServer(object):
             COMPETITION_SEED = None
             COMPETITION_IN_PROGRESS = False
             for conn in GAME_ID_TO_WEBSOCKET.values():
-                conn.close(code=DO_NOT_RECONNECT, reason="Clearing all games")
+                conn.close(code=messaging.DO_NOT_RECONNECT, reason="Clearing all games")
             GAMES.clear()
         else:
             return 'Incorrect password!'
@@ -161,7 +167,7 @@ class DropbloxGameServer(object):
     def open_competition(self, password, seed):
         if bcrypt.hashpw(password, ADMIN_HASHED_PW) == ADMIN_HASHED_PW:
             for conn in GAME_ID_TO_WEBSOCKET.values():
-                conn.close(code=DO_NOT_RECONNECT, reason="Clearing all games")
+                conn.close(code=messaging.DO_NOT_RECONNECT, reason="Clearing all games")
             GAMES.clear()
 
             global COMPETITION_SEED

@@ -28,7 +28,7 @@ class Database(object):
 	@staticmethod
 	def add_score(team_name, game_id, seed, score, round_num):
 		conn = sqlite3.connect('data.db')
-		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES("%s", "%s", "%s", "%s", "%s");' % (team_name, game_id, seed, score, round_num)
+		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES("%s", "%s", %s, %s, %s);' % (team_name, game_id, seed, score, round_num)
 		conn.execute(sql)
 		conn.commit()
 
