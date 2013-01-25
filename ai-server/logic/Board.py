@@ -18,8 +18,17 @@ R_INTERVAL = 480
 PREVIEW = 5
 
 class Board(object):
-  def __init__(self, seed=None):
-    self.start_game(seed)
+  def __init__(self, seed):
+    assert(seed is not None)
+    self.seed = seed
+    random.seed(seed)
+    self.bitmap = [[0 for j in range(COLS)] for i in range(ROWS)]
+    self.score = 0
+
+    self.block = self.get_block()
+    self.held_block = self.get_block()
+    self.preview = [self.get_block() for i in range(PREVIEW)]
+    self.state = 'playing'
 
   def __repr__(self):
     return self.__str__()
@@ -53,17 +62,6 @@ class Board(object):
       if i < 0 or i >= ROWS or j < 0 or j >= COLS or self.bitmap[i][j]:
         return False
     return True
-
-  def start_game(self, seed=None):
-    self.seed = int(time.time()) if seed is None else seed
-    random.seed(seed)
-    self.bitmap = [[0 for j in range(COLS)] for i in range(ROWS)]
-    self.score = 0
-
-    self.block = self.get_block()
-    self.held_block = self.get_block()
-    self.preview = [self.get_block() for i in range(PREVIEW)]
-    self.state = 'playing'
 
   def get_block(self):
     level = len(types) - 1
