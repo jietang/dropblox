@@ -38,11 +38,11 @@ var competition = {
 
         if (data.waiting_for_players) {
           plural = (data.waiting_for_players == 1 ? ' player...' : ' players...');
-          $('#login-bar').html('Waiting for ' + data.waiting_for_players + plural);
+          $('#login-status').html('Waiting for ' + data.waiting_for_players + plural);
         } else if (data.started) {
-          $('#login-bar').html('Competition started!');
+          $('#login-status').html('Competition started!');
         } else {
-          $('#login-bar').html('Ready to start!');
+          $('#login-status').html('Ready to start!');
         }
 
         for (var team in data.boards) {

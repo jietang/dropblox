@@ -15,7 +15,7 @@ class DropbloxDebugServer(object):
       response['code'] = 401
       response['error'] = (
         '<div>The history directory does not exist yet.<div>'
-        '<div class="spaced">It will be created when you test an AI with '
+        '<div class="spacer">It will be created when you test an AI with '
         '<span class="code">python client.py test</span>.<div>'
       )
       return json.dumps(response)
@@ -36,7 +36,7 @@ class DropbloxDebugServer(object):
       response['code'] = 401
       response['error'] = (
         '<div>The history directory exists, but there are no games in it.<div>'
-        '<div class="spaced">You can make your AI play a game by running '
+        '<div class="spacer">You can make your AI play a game by running '
         '<span class="code">python client.py test</span>.<div>'
       )
       return json.dumps(response)

@@ -34,15 +34,18 @@ var dropblox = {
 
   getting_started: function() {
     $('#content').html(
-      '<div>' +
-      '  This is a placeholder for the getting started page!' +
+      '<h3>Getting started</h3>' +
+      '<div id=subcontent>' +
+      '  Welcome to Dropblox! The goal of this competition is to write a ' +
+      '  program that will autonomously play a Tetris variant.' +
       '</div>'
     );
   },
 
   documentation: function() {
     $('#content').html(
-      '<div>' +
+      '<h3>Documentation</h3>' +
+      '<div id=subcontent>' +
       '  This is a placeholder for the documentation!' +
       '</div>'
     );
@@ -277,6 +280,7 @@ var dropblox = {
     $('#content').html(
       '<h3>Log in</h3>' + this.login_form
     );
+    $('#team-name').focus();
     $('#submit').click(function() {
       dropblox.submit_login('/login', $('#team-name').val(), $('#password').val());
       window.event.preventDefault();
@@ -287,6 +291,7 @@ var dropblox = {
     $('#content').html(
       '<div><h3>Sign up</h3> ' + this.login_form + '</div>'
     );
+    $('#team-name').focus();
     $('#submit').click(function() {
       dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val());
       window.event.preventDefault();
@@ -307,6 +312,13 @@ var dropblox = {
       var verb = (url == '/login' ? 'logged in' : 'signed up');
       $('#login-error').html('Successfully ' + verb + '!');
       dropblox.set_team_cookie(team_name, password);
+      setTimeout(function() {
+        if (team_name == 'admin') {
+          window.location.href = '/admin.html';
+        } else {
+          $('#' + $.cookie('last-active-link')).trigger('click');
+        }
+      }, 500);
     },
     function(response) {
       var data = JSON.parse(response.responseText);
@@ -333,6 +345,9 @@ var dropblox = {
 
   set_active_link: function(link) {
     $.cookie('active-link', link);
+    if (link != 'log_in' && link != 'sign_up') {
+      $.cookie('last-active-link', link);
+    }
     $('#left-bar a, #top-bar a').removeClass('active');
     $('#' + link).addClass('active');
   },

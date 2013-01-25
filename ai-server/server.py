@@ -70,18 +70,20 @@ class DropbloxGameServer(object):
         def wrapped(*args, **kwargs):
             cl = cherrypy.request.headers['Content-Length']
             rawbody = cherrypy.request.body.read(int(cl))
+
             body = json.loads(rawbody)
 
             team = model.Database.authenticate_team(body['team_name'], body['password'])
             if not team or not team[model.Database.TEAM_IS_ADMIN]:
                 raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
             else:
+                kwargs['body'] = body
                 return f(*args, **kwargs)
         return wrapped
 
     @cherrypy.expose
     @admin_only
-    def list_teams(self):
+    def list_teams(self, body):
         response = {}
         response['team_scores'] = {}
         response['team_connect'] = {}
@@ -94,7 +96,7 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @admin_only
-    def competition_state(self):
+    def competition_state(self, body):
         response = {}
         response['boards'] = {}
         for team in CURRENT_COMPETITION.team_to_game:
@@ -109,7 +111,7 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @admin_only
-    def start_next_round(self):
+    def start_next_round(self, body):
         if not len(CURRENT_COMPETITION.team_whitelist):
             raise cherrypy.HTTPError(400, "Can't start a game with no participants!")
 
@@ -122,21 +124,13 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @admin_only
-    def whitelist_team(self):
-        cl = cherrypy.request.headers['Content-Length']
-        rawbody = cherrypy.request.body.read(int(cl))
-        body = json.loads(rawbody)
-
+    def whitelist_team(self, body):
         CURRENT_COMPETITION.whitelist_team(body['target_team'])
         return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
     @admin_only
-    def blacklist_team(self):
-        cl = cherrypy.request.headers['Content-Length']
-        rawbody = cherrypy.request.body.read(int(cl))
-        body = json.loads(rawbody)
-
+    def blacklist_team(self, body):
         CURRENT_COMPETITION.blacklist_team(body['target_team'])
         return json.dumps({'status': 200, 'message': 'Success!'})
 
