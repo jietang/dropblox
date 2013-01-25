@@ -86,7 +86,7 @@
 
     <div id="footer">
       <div class="container">
-        <p class="muted credit"><a href='#'>Proceed to the next round!</a></p>
+        <p class="muted credit"><a href='#' id="next-round-btn">Prepare game server for next round</a></p>
       </div>
     </div>
 
@@ -97,6 +97,31 @@
     <script type="text/javascript">
     $(document).ready(function() {
       var next_round_teams = {};
+
+      $("#next-round-btn").click(function(){
+        var teams = [];
+        for (team in next_round_teams) {
+          teams.push(team);
+        }
+        var params = {
+          'next_round_teams':teams,
+        };
+
+        $.ajax({
+          type: 'POST',
+          url: '/prepare_next_round',
+          data: JSON.stringify(params),
+          contentType: "application/json",
+          dataType: "json",
+          success: function(response) {
+            location.reload();
+          },
+          error: function(request, status, error) {
+            alert(error);
+          },
+        });
+        return false;
+      });
 
       function refresh_table() {
         $.ajax({
