@@ -46,9 +46,11 @@ class Competition(object):
 	def register_team(self, team, sock):
 		if not team in self.team_whitelist:
 			sock.close(code=messaging.DO_NOT_RECONNECT, reason="This team is not registered for the competition.")
+			return
 
 		if team in self.sock_to_team.values():
 			sock.close(code=messaging.DO_NOT_RECONNECT, reason="This team already has a connection to the game server.")
+			return
 		self.sock_to_team[sock] = team
 
 		# All games in a given competition will use the same seed.
@@ -121,6 +123,7 @@ class Competition(object):
 	def make_move(self, team, sock, commands):
 		if not team in self.team_to_game:
 			sock.close(code=messaging.DO_NOT_RECONNECT, reason="This team is not active.")
+			return
 
 		game = self.team_to_game[team]
 		if time.time() - game.move_requested_at > util.AI_CLIENT_TIMEOUT:

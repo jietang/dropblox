@@ -96,16 +96,8 @@
 
     <script type="text/javascript">
     $(document).ready(function() {
-      var next_round_teams = {};
-
       $("#next-round-btn").click(function(){
-        var teams = [];
-        for (team in next_round_teams) {
-          teams.push(team);
-        }
-        var params = {
-          'next_round_teams':teams,
-        };
+        var params = {};
 
         $.ajax({
           type: 'POST',
