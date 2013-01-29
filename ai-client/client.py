@@ -32,10 +32,8 @@ UP_CMD = 'up'
 DOWN_CMD = 'down'
 DROP_CMD = 'drop'
 ROTATE_CMD = 'rotate'
-HOLD_CMD = 'hold'
-VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, DROP_CMD, ROTATE_CMD, HOLD_CMD]
+VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, DROP_CMD, ROTATE_CMD]
 AI_PROCESS_PATH = './dropblox_ai'
-AI_PROCESS_TIMEOUT = 10 # This is enforced server-side so don't change ;)
 
 # Messaging protocol
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
@@ -154,7 +152,7 @@ class Subscriber(WebSocketClient):
             if self.logger:
                 self.logger.log_game_state(ai_arg_one)
             command = Command(AI_PROCESS_PATH + (" '%s' %s" % (ai_arg_one, ai_arg_two)))
-            ai_cmds = command.run(timeout=ai_arg_two)
+            ai_cmds = command.run(timeout=float(ai_arg_two))
             if self.logger:
                 self.logger.log_ai_move(json.dumps(ai_cmds))
             response = {
