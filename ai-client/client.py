@@ -12,7 +12,6 @@
 import traceback
 import threading
 import cherrypy
-import config
 import time
 import json
 import sys
@@ -124,8 +123,8 @@ class Subscriber(WebSocketClient):
 
     @catch_exceptions
     def send_msg(self, msg):
-        msg['team_name'] = config.team_name
-        msg['team_password'] = config.team_password
+        msg['team_name'] = team_name
+        msg['team_password'] = team_password
         msg['entry_mode'] = entry_mode
         self.send(json.dumps(msg))
 
@@ -180,8 +179,11 @@ class Subscriber(WebSocketClient):
             os._exit(0)
 
 if __name__ == '__main__':
-    if config.team_name == "TEAM_NAME_HERE" or config.team_password == "TEAM_PASSWORD_HERE":
-        print colorred.format("Please specify a team name and password in config.py")
+    with open('config.txt', 'r') as f:
+        team_name = f.readline().rstrip('\n')
+        team_password = f.readline().rstrip('\n')
+    if team_name == "TEAM_NAME_HERE" or team_password == "TEAM_PASSWORD_HERE":
+        print colorred.format("Please specify a team name and password in config.txt")
         sys.exit(0)
 
     if len(sys.argv) != 2:
