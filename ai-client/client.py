@@ -22,8 +22,8 @@ from ws4py.client.threadedclient import WebSocketClient
 from subprocess import Popen, PIPE, STDOUT
 
 # Remote server to connect to:
-SERVER_URL = 'http://ec2-50-19-157-160.compute-1.amazonaws.com/'
-WEBSOCKET_URL = 'ws://ec2-50-19-157-160.compute-1.amazonaws.com/ws'
+SERVER_URL = 'https://playdropblox.com/'
+WEBSOCKET_URL = 'wss://playdropblox.com/ws'
 
 # Subprocess
 LEFT_CMD = 'left'
@@ -149,11 +149,12 @@ class Subscriber(WebSocketClient):
             else:
                 print colorgrn.format("Waiting for competition to begin")
         elif msg['type'] == AWAITING_NEXT_MOVE_MSG:
-            ai_arg = json.dumps(msg['game_state'])
+            ai_arg_one = json.dumps(msg['game_state'])
+            ai_arg_two = json.dumps(msg['seconds_remaining'])
             if self.logger:
-                self.logger.log_game_state(ai_arg)
-            command = Command(AI_PROCESS_PATH + (" '%s'" % ai_arg))
-            ai_cmds = command.run(timeout=AI_PROCESS_TIMEOUT)
+                self.logger.log_game_state(ai_arg_one)
+            command = Command(AI_PROCESS_PATH + (" '%s' %s" % (ai_arg_one, ai_arg_two)))
+            ai_cmds = command.run(timeout=ai_arg_two)
             if self.logger:
                 self.logger.log_ai_move(json.dumps(ai_cmds))
             response = {

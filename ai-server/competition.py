@@ -87,12 +87,14 @@ class Competition(object):
 
 	@staticmethod
 	def request_next_move(game, sock):
+		seconds_remaining = util.AI_CLIENT_TIMEOUT - (time.time() - game.game_started_at)
+		seconds_remaining -= 1 # Tell the client it has one second less than it actually has to account for latency.
 		response = {
 			'type': messaging.AWAITING_NEXT_MOVE_MSG,
 			'game_state': game.to_dict(),
+			'seconds_remaining': seconds_remaining,
 		}
 		sock.send(json.dumps(response))
-		game.move_requested_at = time.time()
 
 	@staticmethod
 	def send_game_over(game, sock):
@@ -110,7 +112,9 @@ class Competition(object):
 	def start_competition(self):
 		self.started = True
 		for sock in self.sock_to_team:
-			Competition.request_next_move(self.team_to_game[self.sock_to_team[sock]], sock)
+			game = self.team_to_game[self.sock_to_team[sock]]
+			game.game_started_at = time.time()
+			Competition.request_next_move(game, sock)
 
 	def check_competition_over(self):
 		if self.is_test_run:
@@ -126,7 +130,7 @@ class Competition(object):
 			return
 
 		game = self.team_to_game[team]
-		if time.time() - game.move_requested_at > util.AI_CLIENT_TIMEOUT:
+		if time.time() - game.game_started_at > util.AI_CLIENT_TIMEOUT:
 			commands = ['drop']
 		game.send_commands(commands)
 
