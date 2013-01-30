@@ -187,11 +187,11 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if len(sys.argv) != 2:
-        print colorred.format("Usage: client.py [compete|test]")
+        print colorred.format("Usage: client.py [compete|practice]")
         sys.exit(0)
 
-    if sys.argv[1] != "compete" and sys.argv[1] != "test":
-        print colorred.format("Usage: client.py [compete|test]")
+    if sys.argv[1] != "compete" and sys.argv[1] != "practice":
+        print colorred.format("Usage: client.py [compete|practice]")
         sys.exit(0)
 
     entry_mode = sys.argv[1]
