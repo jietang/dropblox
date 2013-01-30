@@ -39,7 +39,7 @@ var dropblox = {
       '  Welcome to Dropblox! The goal of this competition is to write a ' +
       '  program that will autonomously play a Tetris variant.' +
       ' <div id=get-started> ' +
-      ' <a href="https://www.dropbox.com/sh/vmik81v24zfrr0l/XOoKs6mRSU">Get Started Here!</a>' +
+      ' <a href="/dropblox_intro.html">Get Started Here!</a>' +
       ' </div>' +
       '</div>'
     );
