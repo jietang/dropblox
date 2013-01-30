@@ -3,7 +3,7 @@ import json
 import os
 import time
 
-ACTIVE_TIMEOUT = 30
+ACTIVE_TIMEOUT = 305
 LOGGING_DIR = os.path.join(os.getcwd(), 'history')
 
 class DropbloxDebugServer(object):
@@ -30,7 +30,7 @@ class DropbloxDebugServer(object):
       response['games'].append({
         'timestamp': timestamp,
         'id': game_dir,
-        'active': os.path.getmtime(os.path.join(LOGGING_DIR, game_dir)) > active_time,
+        'active': os.path.getctime(os.path.join(LOGGING_DIR, game_dir)) > active_time,
       })
     if not response['games']:
       response['code'] = 401
@@ -66,7 +66,7 @@ class DropbloxDebugServer(object):
       response['code'] = 401
       response['error'] = 'Malformed state file found: %s' % (state_files,)
       return json.dumps(response)
-    response['active'] = os.path.getmtime(game_dir) > int(time.time()) - ACTIVE_TIMEOUT
+    response['active'] = os.path.getctime(game_dir) > int(time.time()) - ACTIVE_TIMEOUT
     return json.dumps(response)
 
   def read(self, filename, default=None):
