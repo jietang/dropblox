@@ -699,6 +699,7 @@ package {
       }
 
       // Draw the held block.
+      /*
       xOffset = xPos + SQUAREWIDTH*COLS + 3*SQUAREWIDTH/4;
       yOffset = yPos + 5*SQUAREWIDTH/2*(PREVIEW + 2) + 1;
       var lambda:Number = (held ? 3*Color.LAMBDA : 0.0);
@@ -712,6 +713,7 @@ package {
         drawFreeBlock(canvasBD, Block.prototypes[heldBlockType], xOffset,
                       yOffset, SQUAREWIDTH/2, lambda);
       }
+      */
 
       // Draw the score and framerate. If the game is paused or over, draw text.
       scoreText.text = "" + score;
@@ -867,8 +869,7 @@ package {
       }
 
       curBlock = reconstructBlock(vals.block);
-      heldBlock = reconstructBlock(vals.held_block);
-      heldBlockType = vals.held_block.type;
+      heldBlockType = -1;
       preview.length = 0;
       for (i = 0; i < PREVIEW; i++) {
         preview.push(vals.preview[i].type);

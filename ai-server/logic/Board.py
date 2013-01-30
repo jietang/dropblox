@@ -52,7 +52,6 @@ class Board(object):
       'state': self.state,
       'bitmap': self.bitmap,
       'block': self.block,
-      'held_block': self.held_block,
       'preview': self.preview,
       'score': self.score,
     }
@@ -102,12 +101,13 @@ class Board(object):
         if self.check(block):
           self.block = block
       elif command == 'hold':
-        block = deepcopy(self.held_block)
-        block['center']['i'] = self.block['center']['i']
-        block['center']['j'] = self.block['center']['j']
-        if self.check(block):
-          self.held_block = self.block
-          self.block = block
+        continue
+        #block = deepcopy(self.held_block)
+        #block['center']['i'] = self.block['center']['i']
+        #block['center']['j'] = self.block['center']['j']
+        #if self.check(block):
+        #  self.held_block = self.block
+        #  self.block = block
       elif command == 'drop':
         self.place()
         break
