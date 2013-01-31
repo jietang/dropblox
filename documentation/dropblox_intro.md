@@ -59,7 +59,7 @@ At all times, the board state includes six blocks:
 
 ### Commands
 
-There are six commands that you can issue to move the active block: `left`, `right`, `up`, `down`, and `rotate`. We define their behavior here. First, we specify what it means for a block to be in a legal position, given by the `check` function.
+There are five commands that you can issue to move the active block: `left`, `right`, `up`, `down`, and `rotate`. We define their behavior here. First, we specify what it means for a block to be in a legal position, given by the `check` function.
 
 	boolean check(bitmap, block)
 		for (offset in block.offsets)
