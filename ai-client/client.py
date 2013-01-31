@@ -32,7 +32,7 @@ DOWN_CMD = 'down'
 DROP_CMD = 'drop'
 ROTATE_CMD = 'rotate'
 VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, DROP_CMD, ROTATE_CMD]
-AI_PROCESS_PATH = './dropblox_ai'
+AI_PROCESS_PATH = os.path.join(os.getcwd(), 'dropblox_ai')
 
 # Messaging protocol
 CREATE_NEW_GAME_MSG = 'CREATE_NEW_GAME'
@@ -50,14 +50,15 @@ colorgrn = "\033[1;36m{0}\033[00m"
 LOGGING_DIR = os.path.join(os.getcwd(), 'history')
 
 class Command(object):
-    def __init__(self, cmd):
+    def __init__(self, cmd, *args):
         self.cmd = cmd
+        self.args = list(args)
         self.process = None
 
     def run(self, timeout):
         cmds = []
         def target():
-            self.process = Popen(self.cmd, stdout=PIPE, shell=True)
+            self.process = Popen([self.cmd] + self.args, stdout=PIPE)
             for line in iter(self.process.stdout.readline, ''):
                 line = line.rstrip('\n')
                 if line not in VALID_CMDS:
@@ -150,7 +151,7 @@ class Subscriber(WebSocketClient):
             ai_arg_two = json.dumps(msg['seconds_remaining'])
             if self.logger:
                 self.logger.log_game_state(ai_arg_one)
-            command = Command(AI_PROCESS_PATH + (" '%s' %s" % (ai_arg_one, ai_arg_two)))
+            command = Command(AI_PROCESS_PATH, ai_arg_one, ai_arg_two)
             ai_cmds = command.run(timeout=float(ai_arg_two))
             if self.logger:
                 self.logger.log_ai_move(json.dumps(ai_cmds))
