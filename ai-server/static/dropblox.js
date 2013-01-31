@@ -35,7 +35,7 @@ var dropblox = {
   getting_started: function() {
     $('#content').html(
       '<div id=subcontent><div id="get-started-content">' +
-      ' <div class="get-started-title">Welcome to Dropblox!</div>' +
+      ' <img src="/images/logo-big.png" />' +
       ' <div class="get-started-desc">The goal of this competition is to write a ' +
       '  program that will autonomously play a Tetris variant.</div>' +
       ' <div id=get-started> ' +

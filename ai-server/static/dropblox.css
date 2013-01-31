@@ -27,9 +27,11 @@ h3 {
 #page-title {
   display: inline-block;
   vertical-align: middle;
-  margin-top: -3px;
-  font-weight: bold;
   margin-left: 12px;
+}	    
+
+#page-title img {
+  height: 32px;
 }	    
 
 #top-bar #nav-items {
@@ -247,6 +249,10 @@ input:focus {
 
 #get-started-content {
   text-align: center;
+}
+
+#get-started-content img {
+  margin: 10px 0px 25px;
 }
 
 .get-started-title {
