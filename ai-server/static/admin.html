@@ -58,6 +58,10 @@
       #next-round-btn {
         margin-right: 20px;
       }
+
+      #end-round-btn {
+        margin-right: 20px;
+      }
     </style>
   </head>
   <body>
@@ -94,6 +98,7 @@
       <div class="container">
         <p class="muted credit">
           <a href='#' id="next-round-btn">Start the next round!</a>
+          <a href='#' id="end-round-btn">End the current round</a>
           <a href='/competition.html'>See the round played</a>
         </p>
       </div>
@@ -122,6 +127,29 @@
           dataType: "json",
           success: function(response) {
             window.open('/competition.html');
+            location.reload();
+          },
+          error: function(response) {
+            var data = JSON.parse(response.responseText);
+            $('#post-error').html(data.message);
+          },
+        });
+        return false;
+      });
+
+      $("#end-round-btn").click(function(){
+        var params = {
+          team_name: $.cookie('team_name'),
+          password: $.cookie('password'),
+        };
+
+        $.ajax({
+          type: 'POST',
+          url: '/end_round',
+          data: JSON.stringify(params),
+          contentType: "application/json",
+          dataType: "json",
+          success: function(response) {
             location.reload();
           },
           error: function(response) {

@@ -135,6 +135,11 @@ class DropbloxGameServer(object):
         return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
+    @admin_only
+    def end_round(self, body):
+        CURRENT_COMPETITION = competition.Competition()
+
+    @cherrypy.expose
     def signup(self):
         cl = cherrypy.request.headers['Content-Length']
         rawbody = cherrypy.request.body.read(int(cl))
