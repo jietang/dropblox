@@ -57,7 +57,7 @@ class Command(object):
     def run(self, timeout):
         cmds = []
         def target():
-            self.process = Popen([self.cmd] + self.args, stdout=PIPE)
+            self.process = Popen([self.cmd] + self.args, stdout=PIPE, universal_newlines=True, shell=True)
             for line in iter(self.process.stdout.readline, ''):
                 line = line.rstrip('\n')
                 if line not in VALID_CMDS:
