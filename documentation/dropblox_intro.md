@@ -59,7 +59,7 @@ At all times, the board state includes six blocks:
 
 ### Commands
 
-There are six commands that you can issue to move the active block: `left`, `right`, `up`, `down`, `rotate`, and `drop`. We define their behavior here. First, we specify what it means for a block to be in a legal position, given by the `check` function.
+There are five commands that you can issue to move the active block: `left`, `right`, `up`, `down`, and `rotate`. We define their behavior here. First, we specify what it means for a block to be in a legal position, given by the `check` function.
 
 	boolean check(bitmap, block)
 		for (offset in block.offsets)
@@ -84,7 +84,7 @@ The `rotate` command rotates a block 90 deg. around its center. Code for rotate 
 		for (offset in block.offsets) 
 			(offset.i, offset.j) = (offset.j, -offset.i);
 
-When you wish to end your turn, your AI process should terminate. Note that if you do not include the `drop` command in your list of moves, it will be appended to the end. If you do append a `drop`, any moves after it will be ignored.
+When you wish to end your turn, your AI process should terminate. At the end of your list of moves, a `drop` command will be issued.
 
 Code for the `drop` command is as follows (note that it assumes the block is initially in a valid position, and that it mutates both the bitmap and the block):
 
@@ -115,12 +115,14 @@ Building Your AI
 
 ### dropblox_ai Program Specification
 
+For each turn in the game, your `dropblox_ai` process will be spawned and given the state of the game. It will then be expected to print a list of commands to stdout. When the `dropblox_ai` process finishes, the turn will be considered over. The game server will execute the commands provided, then drop the block into its final position. The game server will then request the next move and a new instance of your AI process will be spawned with the new game state. This will continue until the 5 minute time period for the game is over. When the 5 minutes expires, your AI process will be terminated and any moves printed to stdout will be accepted as your final turn.
+
 
 #### Input
-Your `dropblox_ai` program should accept a two command-line arguments: 
+Your `dropblox_ai` program should accept two command-line arguments: 
 
 1. A JSON-encoded string modeling the game state. Here is an example of the input:
-> {"bitmap": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], "held_block": {"type": 1, "center": {"i": 9, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}]}, "state": "playing", "score": 0, "preview": [{"type": 5, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 1, "j": -1}]}, {"type": 22, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 0, "j": -1}, {"i": 1, "j": 1}]}, {"type": 3, "center": {"i": 9, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 0, "j": 1}]}, {"type": 4, "center": {"i": 7, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 2, "j": 0}]}, {"type": 12, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": -2, "j": 0}, {"i": 1, "j": 0}, {"i": 1, "j": -1}]}], "block": {"type": 4, "center": {"i": 7, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 2, "j": 0}]}}
+> {"bitmap": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], "state": "playing", "score": 0, "preview": [{"type": 5, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 1, "j": -1}]}, {"type": 22, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 0, "j": -1}, {"i": 1, "j": 1}]}, {"type": 3, "center": {"i": 9, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 0, "j": 1}]}, {"type": 4, "center": {"i": 7, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 2, "j": 0}]}, {"type": 12, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": -2, "j": 0}, {"i": 1, "j": 0}, {"i": 1, "j": -1}]}], "block": {"type": 4, "center": {"i": 7, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 2, "j": 0}]}}
 
 2. The number of seconds remaining in the game.
 
@@ -133,9 +135,10 @@ We are expecting your AI program to print its moves to standard out. The followi
 3. `up`
 4. `down`
 5. `rotate`
-6. `drop`
 
 Your AI must print one of these strings, immediately followed by a newline character, in order to be sent to our server. We recommend you flush stdout after printing, to ensure the move is sent to the server immediately. This will allow you to submit moves in a streaming fashion, so that if you hit the timeout, you'll at least have made some move with the current block.
+
+If you print anything else to stdout, our `client` program will simply print it to stdout itself.
 
 Sample AIs
 ----
