@@ -1,6 +1,7 @@
 body, table {
-  font-family: 'Lucida Sans Unicode','Lucida Grande', 'Lucida Sans', 'DejaVu Sans Condensed', sans-serif;
+  font-family: 'Lucida Sans', 'Lucida Sans Unicode','Lucida Grande', 'DejaVu Sans Condensed', sans-serif;
   font-size: 14px;
+  margin: 0;
 }
 
 fieldset {
@@ -12,16 +13,49 @@ h3 {
 }
 
 #top-bar {
-  background-color: #39F;
+  background-color: #1f75cc;
   color: white;
   font-size: 28px;
-  padding: 4px;
+}
+
+#top-bar a {
+  display: inline-block;
+  padding: 8px;
+  cursor: pointer;
+}
+
+#page-title {
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: -3px;
+  font-weight: bold;
+  margin-left: 12px;
+}	    
+
+#top-bar #nav-items {
+  margin-left: 10px;
+}
+
+#top-bar #nav-items .nav-item {
+  font-size: 20px;
+}
+
+#top-bar #nav-items .nav-item:hover {
+  background: #1f65cc;
+  background: -moz-linear-gradient(#1e55cc, #1f65cc);
+  background: -webkit-linear-gradient(#1e55cc, #1f65cc);
+}
+
+#top-bar #nav-items .nav-item.active {
+  background: #1c45cc;
+  background: -moz-linear-gradient(#1f65cc, #1e55cc);
+  background: -webkit-linear-gradient(#1f65cc, #1e55cc);
 }
 
 #top-bar #login-bar {
   float: right;
   font-size: 14px;
-  margin: 7px;
+  margin: 2px;
 }
 
 #top-bar #login-bar a {
@@ -29,26 +63,9 @@ h3 {
   margin-left: 7px;
 }
 
-#left-bar {
-  background-color: #DDD;
-  float: left;
-}
-
-#left-bar div {
-  margin: 8px;
-}
-
-#left-bar a {
-  color: #666;
-}
-
-#left-bar a.active {
-  color: black;
-}
-
 #content {
-  float: left;
-  margin: 14px;
+  width: 800px;
+  margin: 20px auto;
 }
 
 #subcontent {
@@ -83,43 +100,82 @@ h3 {
 
 #leftcontent, #rightcontent {
   float: left;
+  background: #e5ebff;
+  border: 1px solid #ccdbeb;
+  margin-bottom: 15px;
+}
+
+#leftcontent {
+  border-radius: 2px 0px 0px 2px;
+  border-right: none;
+  padding: 0;
+  height: 587px;
 }
 
 #rightcontent {
-  margin: 6px 21px;
+  border-radius: 0px 2px 2px 0px;
+  text-align: center;
+  padding: 10px;
+  height: 567px;
 }
 
 .game-link {
-  background-color: #DDD;
   cursor: pointer;
-  margin: 2px;
-  padding: 4px;
-  text-align: center;
-  width: 160px;
+  padding: 6px;
+  color: #666;
 }
 
 .game-link:hover {
-  background-color: #BBB;
+  background-color: #3f95dd;
+  color: #fff;
 }
 
 .game-link.active {
-  background-color: #39F;
-  color: white;
+  background-color: #1f75cc;
+  color: #fff;
 }
 
 .container {
-  float: left;
-  margin: 16px 14px 7px;
+  width: 280px;
+  margin: 16px auto 7px;
 }
 
 .header {
-  background-color: #DDD;
+  background-color: #1f75cc;
   border: 1px solid black; 
-  padding: 2px;
+  padding: 7px;
+  border-radius: 5px 5px 0px 0px;
+  text-align: center;
+  color: #fff;
+}
+
+.section-content {
+  width: 305px;
+  margin: 0 auto;
+}	       
+
+.content-header {
+  font-size: 20px;
+  margin-bottom: 5px;
 }
 
 form {
   float: left;
+}
+
+input {
+  display: block;
+  margin: 10px 0px;
+  border: none;
+  box-shadow: 0px 0px 0px 1px #ddd;
+  font-size: 20px;
+  border-radius: 2px;
+  padding: 6px;
+  width: 300px;
+}
+
+input:focus {
+  box-shadow: 0px 0px 0px 1px #aaa;
 }
 
 #login-error {
@@ -132,17 +188,79 @@ form {
 }
 
 .col-header {
-  margin: 6px 4px;
+  margin: 10px 6px 6px;
 }
 
 .col-header.spacer {
-  margin-top: 18px;
+  margin-top: 25px;
 }
 
-#animate, #copy-state {
+.no-games {
+  color: #666;
+  margin: 0px 6px;
+}
+
+#animate {
+  font-size: 14px;
+  padding: 4px 9px;
+}
+
+#copy-state {
   color: black;
 }
 
 .big-spacer {
   margin-top: 8px;
+}
+
+.bloxbutton {
+  font-size: 16px;
+  padding: 6px 15px;
+  color: #fff;
+  border: 1px #217dbd solid;
+  background: #37a2eb;
+  background: -moz-linear-gradient(#37a2eb, #2283d0);
+  background: -webkit-linear-gradient(#37a2eb, #2283d0);
+  cursor: pointer;
+  border-radius: 3px;
+  text-shadow: #11629e 0 1px 0;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  margin: 0;
+}
+
+.bloxbutton:hover {
+  border: 1px #1dba3 solid;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.bloxbutton:active {
+  border: 1px #113d5d solid;
+  background: #1c95e8;
+  background: -moz-linear-gradient(#1c95e8, #1e75bb);
+  background: -webkit-linear-gradient(#1c95e8, #1e75bb);
+  box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.4);
+}
+
+#submit {
+  margin-top: 5px;
+}
+
+#get-started-content {
+  text-align: center;
+}
+
+.get-started-title {
+  font-size: 28px;
+  margin: 11px;
+}
+
+.get-started-desc {
+  color: #444;
+  font-size: 16px;
+  margin-bottom: 30px;
+}
+
+#get-started-button {
+  text-decoration: none;
+  font-size: 24px;
 }

@@ -7,7 +7,7 @@ var dropblox = {
   history_board: undefined,
 
   initialize: function() {
-    $('#left-bar a, #top-bar a').each(function() {
+    $('#top-bar a').each(function() {
       var link = this.id;
       $(this).click(function() {
         if (!dropblox[link]()) {
@@ -34,20 +34,19 @@ var dropblox = {
 
   getting_started: function() {
     $('#content').html(
-      '<h3>Getting started</h3>' +
-      '<div id=subcontent>' +
-      '  Welcome to Dropblox! The goal of this competition is to write a ' +
-      '  program that will autonomously play a Tetris variant.' +
+      '<div id=subcontent><div id="get-started-content">' +
+      ' <div class="get-started-title">Welcome to Dropblox!</div>' +
+      ' <div class="get-started-desc">The goal of this competition is to write a ' +
+      '  program that will autonomously play a Tetris variant.</div>' +
       ' <div id=get-started> ' +
-      ' <a href="/dropblox_intro.html">Get Started Here!</a>' +
+      ' <a id="get-started-button" href="/dropblox_intro.html" class="bloxbutton">Get Started Here!</a>' +
       ' </div>' +
-      '</div>'
+      '</div></div>'
     );
   },
 
   documentation: function() {
     $('#content').html(
-      '<h3>Documentation</h3>' +
       '<div id=subcontent>' +
       '  This is a placeholder for the documentation!' +
       '</div>'
@@ -58,7 +57,6 @@ var dropblox = {
     dropblox.games = undefined;
     dropblox.cur_game = undefined;
     $('#content').html(
-      '<h3>Submission history</h3>' +
       '<div id="subcontent">Loading...</div>'
     );
     $.ajax('http://localhost:9000', {
@@ -67,7 +65,7 @@ var dropblox = {
           var response = JSON.parse(json);
           if (response.code == 200) {
             dropblox.games = {};
-            var left_content = '<div class="col-header">Current games:</div>';
+            var left_content = '<div class="col-header">Current games</div>';
             var in_active_section = true;
             for (var i = response.games.length - 1; i >= 0; i--) {
               dropblox.games[response.games[i].id] = response.games[i];
@@ -75,9 +73,9 @@ var dropblox = {
               if (in_active_section && !game.active) {
                 in_active_section = false;
                 if (i == response.games.length - 1) {
-                  left_content += '<div class="col-header">There are no current games.</div>';
+                  left_content += '<div class="no-games">There are no current games.</div>';
                 }
-                left_content += '<div class="col-header spacer">Older games:</div>';
+                left_content += '<div class="col-header spacer">Older games</div>';
               }
               var date_str = dropblox.format_timestamp(game.timestamp);
               left_content += '<div id="' + game.id + '" class="game-link">';
@@ -91,7 +89,7 @@ var dropblox = {
               '  <div id="post-history-boards"></div>' +
               '</div>'
             );
-            dropblox.history_board = dropblox.create_board('history-boards', 'history_board', 'Board at this turn:');
+            dropblox.history_board = dropblox.create_board('history-boards', 'history_board', 'Current Board');
             $('#leftcontent .game-link').click(function() {
               dropblox.load_game_history(this.id);
             });
@@ -177,7 +175,7 @@ var dropblox = {
               '<table><tr>' +
               '<td id="select-a-move">Game progress:</td>' +
               '<td><div id="move-slider"></td>' +
-              '<td><a id="animate" href="#">Animate</a></td>' +
+              '<td><button id="animate" class="bloxbutton">Animate</button></td>' +
               '</tr></table>' +
               '<div id="cur-state-label"></div>' +
               '<div class="big-spacer"><a id="copy-state" href="#">Get game state JSON for debugging</a></div>'
@@ -271,17 +269,17 @@ var dropblox = {
   },
 
   login_form: (
-    '<div><form><fieldset><table>' +
-    ' <tr><td>Team name:</td><td><input type="text" id="team-name"></td>' +
-    ' <tr><td>Password:</td><td><input type="password" id="password"></td>' +
-    ' <tr><td><button id="submit">Submit</button></td>' +
-    '</table></fieldset></form></div>' +
+    '<div><form>' +
+    ' <input type="text" id="team-name" placeholder="Team name" />' +
+    ' <input type="password" id="password" placeholder="Password" />' +
+    ' <button id="submit" class="bloxbutton">Submit</button>' +
+    '</form></div>' +
     '<div id="login-error"></div>'
   ),
 
   log_in: function() {
     $('#content').html(
-      '<h3>Log in</h3>' + this.login_form
+      '<div class="section-content"><div class="content-header">Log in</div>' + this.login_form + '</div>'
     );
     $('#team-name').focus();
     $('#submit').click(function() {
@@ -292,7 +290,7 @@ var dropblox = {
 
   sign_up: function() {
     $('#content').html(
-      '<div><h3>Sign up</h3> ' + this.login_form + '</div>'
+      '<div class="section-content"><div class="content-header">Sign up</div> ' + this.login_form + '</div>'
     );
     $('#team-name').focus();
     $('#submit').click(function() {
@@ -357,9 +355,21 @@ var dropblox = {
 
   format_timestamp: function(ts) {
     var date = new Date(1000*ts);
-    return (date.getHours() +
+    var hours = date.getHours();
+    var am_pm;
+    if (hours < 12) {
+	am_pm = ' AM';
+    } else {
+	am_pm = ' PM';
+	hours -= 12
+    }
+    if (hours === 0) {
+	hours += 12
+    }
+    return (hours +
             (date.getMinutes() < 10 ? ':0' : ':') + date.getMinutes() +
-            (date.getSeconds() < 10 ? ':0' : ':') + date.getSeconds())
+            (date.getSeconds() < 10 ? ':0' : ':') + date.getSeconds() +
+	    am_pm)
   },
 
   post: function(url, data, success, error) {

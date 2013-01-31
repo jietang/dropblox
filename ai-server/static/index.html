@@ -11,7 +11,17 @@
 
 <body onload="dropblox.initialize()">
   <div id="top-bar">
-    Dropblox
+    <div id="page-title">
+      Dropblox
+    </div>
+    <span id="nav-items">
+      <a id="getting_started" class="nav-item">
+	Get started
+      </a>
+      <a id="submission_history" class="nav-item">
+	My games
+      </a>
+    </span>
     <span id="login-bar">
       <span id="login-status">
         Logged out.
@@ -20,11 +30,6 @@
       <a id="sign_up" href="#">Sign up</a>
       <a id="log_out" class="hidden" href="#">Log out</a>
     </span>
-  </div>
-  <div id="left-bar">
-    <div><a id="getting_started" href="#">Getting started</a></div>
-    <!--<div><a id="documentation" href="#">Documentation</a></div>-->
-    <div><a id="submission_history" href="#">Submission history</a></div>
   </div>
   <div id="content"></div>
 </body>
