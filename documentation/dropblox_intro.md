@@ -21,6 +21,8 @@ The first thing you want to do is go to the main [Dropblox site](https://playdro
 
 Before you start, you may need to `chmod +x` the files `history_server`, `client` and `dropblox_ai`, to make sure they're all executable.
 
+Windows users: You'll also need to set two environment variables (ask for help or look online if you're not sure how): `PYTHONPATH` and `PYTHONHOME`. These should both be set to `.`
+
 Open up a terminal and run `./history_server`. You should just keep the history server running for the next few hours. It will allow you to view your game history from [https://playdropblox.com#submission_history](https://playdropblox.com#submission_history).
 
 Next, run `./client practice`. It should connect to the game server, read your login info from `config.txt`, spawn the `dropblox_ai` process and start a new game! Head over to [https://playdropblox.com#submission_history](https://playdropblox.com#submission_history) and see the game being played!
