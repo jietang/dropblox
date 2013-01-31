@@ -12,6 +12,7 @@
 import traceback
 import threading
 import cherrypy
+import platform
 import time
 import json
 import sys
@@ -57,7 +58,8 @@ class Command(object):
     def run(self, timeout):
         cmds = []
         def target():
-            self.process = Popen([self.cmd] + self.args, stdout=PIPE, universal_newlines=True, shell=True)
+            is_windows = platform.system() == "Windows"
+            self.process = Popen([self.cmd] + self.args, stdout=PIPE, universal_newlines=True, shell=is_windows)
             for line in iter(self.process.stdout.readline, ''):
                 line = line.rstrip('\n')
                 if line not in VALID_CMDS:
