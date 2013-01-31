@@ -29,9 +29,8 @@ LEFT_CMD = 'left'
 RIGHT_CMD = 'right'
 UP_CMD = 'up'
 DOWN_CMD = 'down'
-DROP_CMD = 'drop'
 ROTATE_CMD = 'rotate'
-VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, DROP_CMD, ROTATE_CMD]
+VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, ROTATE_CMD]
 AI_PROCESS_PATH = os.path.join(os.getcwd(), 'dropblox_ai')
 
 # Messaging protocol
@@ -63,7 +62,7 @@ class Command(object):
                 line = line.rstrip('\n')
                 if line not in VALID_CMDS:
                     print line # Forward debug output to terminal
-                elif line != DROP_CMD:
+                else:
                     cmds.append(line)
 
         thread = threading.Thread(target=target)
