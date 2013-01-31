@@ -22,15 +22,15 @@ class Database(object):
 	@staticmethod
 	def add_team(team_name, password):
 		conn = sqlite3.connect('data.db')
-		sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES(%s, %s, %s);'
-		conn.execute(sql, team_name, password, 0)
+		sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES(?, ?, ?);'
+		conn.execute(sql, [team_name, password, 0])
 		conn.commit()
 
 	@staticmethod
 	def add_score(team_name, game_id, seed, score, round_num):
 		conn = sqlite3.connect('data.db')
-		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES(%s, %s, %s, %s, %s);'
-		conn.execute(sql, team_name, game_id, seed, score, round_num)
+		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES(?, ?, ?, ?, ?);'
+		conn.execute(sql, [team_name, game_id, seed, score, round_num])
 		conn.commit()
 
 	@staticmethod
@@ -45,8 +45,8 @@ class Database(object):
 	@staticmethod
 	def scores_by_team(team_name):
 		conn = sqlite3.connect('data.db')
-		sql = 'SELECT * FROM scores WHERE team_name=%s ORDER BY round ASC'
-		scores = conn.execute(sql, team_name).fetchall()
+		sql = 'SELECT * FROM scores WHERE team_name=? ORDER BY round ASC'
+		scores = conn.execute(sql, [team_name]).fetchall()
 
 		result = []
 		for score in scores:
@@ -59,8 +59,8 @@ class Database(object):
 	@staticmethod
 	def get_team(team_name):
 		conn = sqlite3.connect('data.db')
-		sql = 'SELECT * FROM teams WHERE team_name=%s'
-		return conn.execute(sql, team_name).fetchone()
+		sql = 'SELECT * FROM teams WHERE team_name=?'
+		return conn.execute(sql, [team_name]).fetchone()
 
 	@staticmethod
 	def list_all_teams():
@@ -97,8 +97,8 @@ class Database(object):
 			if not Database.get_team('admin'):
 				conn = sqlite3.connect('data.db')
 				admin_pw = '$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy'
-				sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES(%s, %s, %s);'
-				conn.execute(sql, 'admin', admin_pw, 1)
+				sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES(?, ?, ?);'
+				conn.execute(sql, ['admin', admin_pw, 1])
 				conn.commit()
 
 		create_team_table()
