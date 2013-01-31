@@ -89,13 +89,14 @@ dd{margin-left:2em;margin-bottom:1em;}
 
 <h2>Getting Started</h2>
 
-<p>Download our <a href="https://www.dropbox.com/sh/vmik81v24zfrr0l/XOoKs6mRSU">getting started materials</a> to get the code you'll need to connect to our game server and test out your AI. Inside the getting started folder, you'll find the following files:</p>
+<p>Download our <a href="https://www.dropbox.com/sh/vmik81v24zfrr0l/XOoKs6mRSU">getting started materials</a> to get the code you'll need to connect to our game server and test out your AI. Inside the getting started folder, you'll find the following:</p>
 
 <ol>
-<li><code>client</code>: The program that communicates with our centralized game server. It will spawn your AI process and forward moves that you generate to our remote server.</li>
+<li><code>client(.exe)</code>: The program that communicates with our centralized game server. It will spawn your AI process and forward moves that you generate to our remote server.</li>
 <li><code>config.txt</code>: Specifies the team name and password to use when authing with the game server.</li>
-<li><code>history_server</code>: A program you can run to view the history of games you've played and view move-by-move playback of your AI's decisions.</li>
+<li><code>history_server(.exe)</code>: A program you can run to view the history of games you've played and view move-by-move playback of your AI's decisions.</li>
 <li><code>dropblox_ai</code>: The executable program you will be writing to make Dropblox moves. We've provided a small sample written in Python.</li>
+<li><code>samples/</code>: A directory of helper code and sample AIs to help you understand the game logic and I/O specification for your AI.</li>
 </ol>
 
 
@@ -104,6 +105,8 @@ dd{margin-left:2em;margin-bottom:1em;}
 <p>The first thing you want to do is go to the main <a href="https://playdropblox.com">Dropblox site</a> and register a new team with a team name and password. Then fill out <code>config.txt</code> with your credentials so we can identify you when you connect to the game server.</p>
 
 <h3>Connect to the Game Server</h3>
+
+<p>Before you start, you may need to <code>chmod +x</code> the files <code>history_server</code>, <code>client</code> and <code>dropblox_ai</code>, to make sure they're all executable.</p>
 
 <p>Open up a terminal and run <code>./history_server</code>. You should just keep the history server running for the next few hours. It will allow you to view your game history from <a href="https://playdropblox.com#submission_history">https://playdropblox.com#submission_history</a>.</p>
 
@@ -125,7 +128,7 @@ dd{margin-left:2em;margin-bottom:1em;}
 
 <h3>Definitions</h3>
 
-<p>The <code>board</code> is the grid on which you move the active block. This grid has 33 rows and 12 columns, although only the bottom 24 rows are visualized. When we refer to coordinates on this board, we will always use <code>i</code> to refer to the rows and <code>j</code> to the columns. The top-left corner of the board is where <code>i</code> and <code>j</code> equal 0.</p>
+<p>The board is the grid on which you move the active block. This grid has 33 rows and 12 columns, although only the bottom 24 rows are visualized. When we refer to coordinates on this board, we will always use <code>i</code> to refer to the rows and <code>j</code> to the columns. The top-left corner of the board is where <code>i</code> and <code>j</code> equal 0.</p>
 
 <p>The <code>bitmap</code> is the current state of the board. <code>bitmap[i][j]</code> is non-zero if and only if that square is occupied.</p>
 
@@ -159,7 +162,7 @@ dd{margin-left:2em;margin-bottom:1em;}
 
 <p>Basically, whenever all the components of a block are within the bounds of the board and don't overlap an already occupied slot, the block is in a legal position!</p>
 
-<p>All of the following movement function assume that the block begins and ends in a valid position! If you are implementing this logic in your AI, you may want to check before and after each command that your block is in a valid position. Alternatively, you may be able to optimize away many of the validity checks.</p>
+<p>All of the following movement functions assume that the block begins and ends in a valid position! If you are implementing this logic in your AI, you may want to check before and after each command that your block is in a valid position. Alternatively, you may be able to optimize away many of the validity checks.</p>
 
 <p>The <code>left</code>, <code>right</code>, <code>up</code>, and <code>down</code> commands are translations with <code>(i, j)</code> offsets of <code>(0, -1)</code>, <code>(0, 1)</code>, <code>(-1, 0)</code>, <code>(1, 0)</code>, respectively. The general code for a translation is:</p>
 
@@ -232,5 +235,9 @@ dd{margin-left:2em;margin-bottom:1em;}
 
 
 <p>Your AI must print one of these strings, immediately followed by a newline character, in order to be sent to our server. We recommend you flush stdout after printing, to ensure the move is sent to the server immediately. This will allow you to submit moves in a streaming fashion, so that if you hit the timeout, you'll at least have made some move with the current block.</p>
+
+<h2>Sample AIs</h2>
+
+<p>Coming soon...</p>
 </body>
 </html>

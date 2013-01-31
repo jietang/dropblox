@@ -5,18 +5,21 @@ In the next few hours, you'll write an AI to play a Tetris variant called Dropbl
 
 Getting Started
 ----
-Download our [getting started materials](https://www.dropbox.com/sh/vmik81v24zfrr0l/XOoKs6mRSU) to get the code you'll need to connect to our game server and test out your AI. Inside the getting started folder, you'll find the following files:
+Download our [getting started materials](https://www.dropbox.com/sh/vmik81v24zfrr0l/XOoKs6mRSU) to get the code you'll need to connect to our game server and test out your AI. Inside the getting started folder, you'll find the following:
 
-1. `client`: The program that communicates with our centralized game server. It will spawn your AI process and forward moves that you generate to our remote server.
+1. `client(.exe)`: The program that communicates with our centralized game server. It will spawn your AI process and forward moves that you generate to our remote server.
 2. `config.txt`: Specifies the team name and password to use when authing with the game server.
-3. `history_server`: A program you can run to view the history of games you've played and view move-by-move playback of your AI's decisions.
-5. `dropblox_ai`: The executable program you will be writing to make Dropblox moves. We've provided a small sample written in Python.
+3. `history_server(.exe)`: A program you can run to view the history of games you've played and view move-by-move playback of your AI's decisions.
+4. `dropblox_ai`: The executable program you will be writing to make Dropblox moves. We've provided a small sample written in Python.
+5. `samples/`: A directory of helper code and sample AIs to help you understand the game logic and I/O specification for your AI.
 
 ### Create an Account
 
 The first thing you want to do is go to the main [Dropblox site](https://playdropblox.com) and register a new team with a team name and password. Then fill out `config.txt` with your credentials so we can identify you when you connect to the game server.
 
 ### Connect to the Game Server
+
+Before you start, you may need to `chmod +x` the files `history_server`, `client` and `dropblox_ai`, to make sure they're all executable.
 
 Open up a terminal and run `./history_server`. You should just keep the history server running for the next few hours. It will allow you to view your game history from [https://playdropblox.com#submission_history](https://playdropblox.com#submission_history).
 
@@ -40,7 +43,7 @@ We’ve simplified the rules of the game to make it easier to write an AI. The f
 
 ### Definitions
 
-The `board` is the grid on which you move the active block. This grid has 33 rows and 12 columns, although only the bottom 24 rows are visualized. When we refer to coordinates on this board, we will always use `i` to refer to the rows and `j` to the columns. The top-left corner of the board is where `i` and `j` equal 0.
+The board is the grid on which you move the active block. This grid has 33 rows and 12 columns, although only the bottom 24 rows are visualized. When we refer to coordinates on this board, we will always use `i` to refer to the rows and `j` to the columns. The top-left corner of the board is where `i` and `j` equal 0.
 
 The `bitmap` is the current state of the board. `bitmap[i][j]` is non-zero if and only if that square is occupied.
 
@@ -67,7 +70,7 @@ There are six commands that you can issue to move the active block: `left`, `rig
 			
 Basically, whenever all the components of a block are within the bounds of the board and don't overlap an already occupied slot, the block is in a legal position!
 
-All of the following movement function assume that the block begins and ends in a valid position! If you are implementing this logic in your AI, you may want to check before and after each command that your block is in a valid position. Alternatively, you may be able to optimize away many of the validity checks.
+All of the following movement functions assume that the block begins and ends in a valid position! If you are implementing this logic in your AI, you may want to check before and after each command that your block is in a valid position. Alternatively, you may be able to optimize away many of the validity checks.
 
 The `left`, `right`, `up`, and `down` commands are translations with `(i, j)` offsets of `(0, -1)`, `(0, 1)`, `(-1, 0)`, `(1, 0)`, respectively. The general code for a translation is:
 
@@ -133,3 +136,8 @@ We are expecting your AI program to print its moves to standard out. The followi
 6. `drop`
 
 Your AI must print one of these strings, immediately followed by a newline character, in order to be sent to our server. We recommend you flush stdout after printing, to ensure the move is sent to the server immediately. This will allow you to submit moves in a streaming fashion, so that if you hit the timeout, you'll at least have made some move with the current block.
+
+Sample AIs
+----
+
+Coming soon...
