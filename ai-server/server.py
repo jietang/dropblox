@@ -28,8 +28,6 @@ class DropbloxWebSocketHandler(WebSocket):
             CURRENT_COMPETITION.register_team(team_name, self)
         elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
             CURRENT_COMPETITION.make_move(team_name, self, msg['move_list'])
-            if CURRENT_COMPETITION.check_competition_over():
-                CURRENT_COMPETITION = competition.Competition()
 
     def handle_testing_msg_from_team(self, msg, team):
         team_name = team[model.Database.TEAM_TEAM_NAME]
@@ -147,8 +145,11 @@ class DropbloxGameServer(object):
     @admin_only
     def end_round(self, body):
         global CURRENT_COMPETITION
+        if CURRENT_COMPETITION.started():
+          return json.dumps({'status': 400, 'message': "This competition hasn't been started yet!"})
         CURRENT_COMPETITION.record_remaining_games()
         CURRENT_COMPETITION = competition.Competition()
+        return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
     def signup(self):
