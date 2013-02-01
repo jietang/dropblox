@@ -94,9 +94,13 @@ class DropbloxGameServer(object):
         response = {}
         response['team_scores'] = {}
         response['team_connect'] = {}
+        scores_by_team = model.Database.scores_by_team()
         for team in model.Database.list_all_teams():
             team_name = team[model.Database.TEAM_TEAM_NAME]
-            response['team_scores'][team_name] = model.Database.scores_by_team(team_name)
+            scores = []
+            if team_name in scores_by_team:
+                scores = scores_by_team[team_name]
+            response['team_scores'][team_name] = scores
             response['team_connect'][team_name] = CURRENT_COMPETITION.is_team_connected(team_name)
 
         return json.dumps(response)

@@ -49,20 +49,22 @@ class Database(object):
 		return result
 
 	@staticmethod
-	def scores_by_team(team_name):
+	def scores_by_team():
 		conn = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
-		sql = 'SELECT * FROM scores WHERE team_name=%s ORDER BY round ASC'
+		sql = 'SELECT * FROM scores ORDER BY team_name ASC, round ASC'
 		cursor = conn.cursor()
-		cursor.execute(sql, team_name)
+		cursor.execute(sql)
 		scores = cursor.fetchall()
 
-		result = []
+		team_to_scores = {}
 		for score in scores:
-			result.append({
+			if score[Database.SCORE_TEAM_NAME] not in team_to_scores:
+				team_to_scores[score[Database.SCORE_TEAM_NAME]] = []
+			team_to_scores[score[Database.SCORE_TEAM_NAME]].append({
 				'score' : score[Database.SCORE_SCORE],
 				'round' : score[Database.SCORE_ROUND],
 			})
-		return result
+		return team_to_scores
 
 	@staticmethod
 	def get_team(team_name):
