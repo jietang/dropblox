@@ -143,6 +143,7 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @admin_only
     def end_round(self, body):
+        CURRENT_COMPETITION.record_remaining_games()
         CURRENT_COMPETITION = competition.Competition()
 
     @cherrypy.expose

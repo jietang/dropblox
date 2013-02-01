@@ -145,6 +145,15 @@ class Competition(object):
 		elif game.state == 'playing':
 			Competition.request_next_move(game, sock)
 
+	# Called when the competition is forcibly ended. Records all games IF any game has ended.
+	def record_remaining_games(self, sock):
+		if (not self.is_test_run and
+		    any(game.state == 'failed' for game in self.team_to_game.itervalues())):
+			for (team, game) in self.team_to_game.iteritems():
+				if game.state == 'playing':
+					game.state = 'failed'
+					Competition.record_game(team, game, self.round)
+
 	# Called when a socket is closed.
 	def disconnect_sock(self, sock):
 		if sock in self.sock_to_team:
