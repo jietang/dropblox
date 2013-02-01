@@ -130,8 +130,9 @@ class Competition(object):
 
 		game = self.team_to_game[team]
 		if time.time() - game.game_started_at > util.AI_CLIENT_TIMEOUT:
-			commands = ['drop']
-		game.send_commands(commands)
+			game.state = 'failed'
+		else:
+			game.send_commands(commands)
 
 		if game.state == 'failed':
 			if not self.is_test_run:
@@ -144,4 +145,4 @@ class Competition(object):
 	def disconnect_sock(self, sock):
 		if sock in self.sock_to_team:
 			del self.sock_to_team[sock]
-		
+
