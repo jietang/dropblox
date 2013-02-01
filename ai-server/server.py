@@ -14,14 +14,12 @@ import os
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
-from profilehooks import profile
 
 model.Database.initialize_db()
 CURRENT_COMPETITION = competition.Competition()
 TESTING_COMPETITIONS = {} # Socket -> Practice competition instance
 
 class DropbloxWebSocketHandler(WebSocket):
-    @profile(filename='profile.stats') 
     def handle_competition_msg_from_team(self, msg, team):
         global CURRENT_COMPETITION
         team_name = team[model.Database.TEAM_TEAM_NAME]
@@ -32,7 +30,6 @@ class DropbloxWebSocketHandler(WebSocket):
             if CURRENT_COMPETITION.check_competition_over():
                 CURRENT_COMPETITION = competition.Competition()
 
-    @profile(filename='profile.stats')
     def handle_testing_msg_from_team(self, msg, team):
         team_name = team[model.Database.TEAM_TEAM_NAME]
         if msg['type'] == messaging.CREATE_NEW_GAME_MSG:
@@ -44,7 +41,6 @@ class DropbloxWebSocketHandler(WebSocket):
         elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
             TESTING_COMPETITIONS[self].make_move(team_name, self, msg['move_list'])
 
-    @profile(filename='profile.stats')
     def received_message(self, msg):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
@@ -58,7 +54,6 @@ class DropbloxWebSocketHandler(WebSocket):
         else:
             self.handle_testing_msg_from_team(msg, team)
 
-    @profile(filename='profile.stats')
     def closed(self, code, reason=None):
         model.Database.report_session_ended(self)
         CURRENT_COMPETITION.disconnect_sock(self)
@@ -89,7 +84,6 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @admin_only
-    @profile(filename='profile.stats')
     def list_teams(self, body):
         response = {}
         response['team_scores'] = {}
@@ -107,7 +101,6 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @admin_only
-    @profile(filename='profile.stats')
     def competition_state(self, body):
         response = {}
         response['boards'] = {}
@@ -123,7 +116,6 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @admin_only
-    @profile(filename='profile.stats')
     def start_next_round(self, body):
         if not len(CURRENT_COMPETITION.team_whitelist):
             raise cherrypy.HTTPError(400, "Can't start a game with no participants!")
@@ -137,21 +129,18 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @admin_only
-    @profile(filename='profile.stats')
     def whitelist_team(self, body):
         CURRENT_COMPETITION.whitelist_team(body['target_team'])
         return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
     @admin_only
-    @profile(filename='profile.stats')
     def blacklist_team(self, body):
         CURRENT_COMPETITION.blacklist_team(body['target_team'])
         return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
     @admin_only
-    @profile(filename='profile.stats')
     def end_round(self, body):
         CURRENT_COMPETITION = competition.Competition()
 

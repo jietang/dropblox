@@ -5,7 +5,6 @@
 # same seed.
 #
 
-from profilehooks import profile
 from logic.Board import Board
 
 import messaging
@@ -27,13 +26,11 @@ class Competition(object):
 		if not self.is_test_run:
 			self.round = model.Database.latest_round() + 1
 
-	@profile(filename='profile.stats')
 	def whitelist_team(self, team):
 		if self.started:
 			return
 		self.team_whitelist.add(team)
 
-	@profile(filename='profile.stats')
 	def blacklist_team(self, team):
 		if self.started:
 			return
@@ -46,7 +43,6 @@ class Competition(object):
 		self.team_whitelist.remove(team)
 
 	# Called when a team connects via client.py
-	@profile(filename='profile.stats')
 	def register_team(self, team, sock):
 		if not team in self.team_whitelist:
 			sock.close(code=messaging.DO_NOT_RECONNECT, reason="This team is not registered for the competition.")
@@ -76,12 +72,10 @@ class Competition(object):
 		else:
 			Competition.notify_game_created(sock)
 
-	@profile(filename='profile.stats')
 	def is_team_connected(self, team):
 		return team in self.sock_to_team.values()
 		
 	@staticmethod
-	@profile(filename='profile.stats')
 	def notify_game_created(sock, game_id=None):
 		response = {
 			'type' : messaging.NEW_GAME_CREATED_MSG,
@@ -91,7 +85,6 @@ class Competition(object):
 		sock.send(json.dumps(response))
 
 	@staticmethod
-	@profile(filename='profile.stats')
 	def request_next_move(game, sock):
 		seconds_remaining = util.AI_CLIENT_TIMEOUT - (time.time() - game.game_started_at)
 		seconds_remaining -= 1 # Tell the client it has one second less than it actually has to account for latency.
@@ -103,7 +96,6 @@ class Competition(object):
 		sock.send(json.dumps(response))
 
 	@staticmethod
-	@profile(filename='profile.stats')
 	def send_game_over(game, sock):
 		response = {
 			'type': messaging.GAME_OVER_MSG,
@@ -113,11 +105,9 @@ class Competition(object):
 		sock.send(json.dumps(response))
 
 	@staticmethod
-	@profile(filename='profile.stats')
 	def record_game(team, game, round_num):
 		model.Database.add_score(team, game.game_id, game.seed, game.score, round_num)
 
-	@profile(filename='profile.stats')
 	def start_competition(self):
 		self.started = True
 		for sock in self.sock_to_team:
@@ -125,7 +115,6 @@ class Competition(object):
 			game.game_started_at = time.time()
 			Competition.request_next_move(game, sock)
 
-	@profile(filename='profile.stats')
 	def check_competition_over(self):
 		if self.is_test_run:
 			return False
@@ -134,7 +123,6 @@ class Competition(object):
 				return False
 		return True
 
-	@profile(filename='profile.stats')
 	def make_move(self, team, sock, commands):
 		if not team in self.team_to_game:
 			sock.close(code=messaging.DO_NOT_RECONNECT, reason="This team is not active.")
