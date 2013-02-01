@@ -56,14 +56,14 @@ h3 {
 
 #top-bar #nav-items .nav-item:hover {
   background: #1f65cc;
-  background: -moz-linear-gradient(#1e55cc, #1f65cc);
-  background: -webkit-linear-gradient(#1e55cc, #1f65cc);
+  background: -moz-linear-gradient(#159, #16A);
+  background: -webkit-linear-gradient(#159, #16A);
 }
 
 #top-bar #nav-items .nav-item.active {
   background: #1c45cc;
-  background: -moz-linear-gradient(#1f65cc, #1e55cc);
-  background: -webkit-linear-gradient(#1f65cc, #1e55cc);
+  background: -moz-linear-gradient(#148, #159);
+  background: -webkit-linear-gradient(#148, #159);
 }
 
 #top-bar #login-bar {
