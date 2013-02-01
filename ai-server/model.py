@@ -105,12 +105,6 @@ class Database(object):
 			del Database.AUTHENTICATED_SOCKETS[session_sock]
 
 	@staticmethod
-	def setup_test_users():
-		for i in range(0, 40):
-			team_name = 'team%s' % i
-			Database.add_team(team_name, '$2a$12$zF8T/F5S0sHt90rBbvfW9.6atxwMzsNvWvesxLy5uYj1gJr28/OqO')
-
-	@staticmethod
 	def initialize_db():
 		conn = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
 
