@@ -145,7 +145,7 @@ class DropbloxGameServer(object):
     @admin_only
     def end_round(self, body):
         global CURRENT_COMPETITION
-        if CURRENT_COMPETITION.started():
+        if CURRENT_COMPETITION.started:
           return json.dumps({'status': 400, 'message': "This competition hasn't been started yet!"})
         CURRENT_COMPETITION.record_remaining_games()
         CURRENT_COMPETITION = competition.Competition()
