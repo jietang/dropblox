@@ -44,7 +44,7 @@ var competition = {
       function(data) {
         if (competition.round === undefined) {
           competition.round = data.round;
-          $('#round-text').html('Dropblox - Round ' + data.round);
+          $('#round-text').html('Round ' + data.round);
         } else if (competition.round != data.round) {
           return;
         }

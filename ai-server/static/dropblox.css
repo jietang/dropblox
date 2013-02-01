@@ -42,6 +42,10 @@ h3 {
   height: 32px;
 }	    
 
+#round-text {
+  font-size: 20px;
+}
+
 #top-bar #nav-items {
   margin-left: 10px;
 }
