@@ -414,7 +414,7 @@ package {
           } else {
             block.y++;
           }
-        } else if (keysFired[i] == Key.HOLD && block.rotates) {
+        } else if (keysFired[i] == Key.ROTATE && block.rotates) {
           turn = 1;
         } else if (keysFired[i] == Key.DROP) {
           block.y += block.rowsFree;

@@ -160,9 +160,6 @@ class DropbloxGameServer(object):
         if not re.match("^[A-Za-z0-9]*$", body['team_name']):
             raise cherrypy.HTTPError(400, "Team name can only contain letters (A-Za-z) and numbers (0-9)!")
 
-        if not re.match("^[A-Za-z0-9]*$", body['password']):
-            raise cherrypy.HTTPError(400, "Password can only contain letters (A-Za-z) and numbers (0-9)!")
-        
         team = model.Database.get_team(body['team_name'])
         if team:
             raise cherrypy.HTTPError(400, "Team name already taken!")
