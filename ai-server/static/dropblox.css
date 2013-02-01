@@ -18,6 +18,10 @@ h3 {
   font-size: 28px;
 }
 
+#top-bar.competition {
+  height: 39px;
+}
+
 #top-bar a {
   display: inline-block;
   padding: 8px;
@@ -29,6 +33,10 @@ h3 {
   vertical-align: middle;
   margin-left: 12px;
 }	    
+
+#page-title.competition {
+  margin-top: 4px;
+}
 
 #page-title img {
   height: 32px;
