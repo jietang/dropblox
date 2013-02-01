@@ -407,7 +407,14 @@ package {
           shift--;
         } else if (keysFired[i] == Key.DOWN) {
           drop = true;
-        } else if (keysFired[i] == Key.UP && block.rotates) {
+        } else if (keysFired[i] == Key.UP) {
+          block.y--;
+          if (checkBlock(block)) {
+            block.rowsFree++;
+          } else {
+            block.y++;
+          }
+        } else if (keysFired[i] == Key.HOLD && block.rotates) {
           turn = 1;
         } else if (keysFired[i] == Key.DROP) {
           block.y += block.rowsFree;
