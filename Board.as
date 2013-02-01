@@ -25,7 +25,7 @@ package {
 
   public class Board extends MovieClip {
     // Variables read from flashVars.
-    private static var human:Boolean;
+    private static var playable:Boolean;
     private static var gravity:Boolean;
 
     // Board size constants.
@@ -128,7 +128,7 @@ package {
     private var optimize:Boolean;
 
     public function Board() {
-      human = false;
+      playable = (flashVars().playable == 'true');
       gravity = false;
 
       setSquareWidth(flashVars().squareWidth);
@@ -149,7 +149,7 @@ package {
       data.fixed = true;
       binaryData.fixed = true;
 
-      if (human) {
+      if (playable) {
         repeater = new KeyRepeater(PAUSE, REPEAT);
         stage.addEventListener(KeyboardEvent.KEY_DOWN, repeater.keyPressed);
         stage.addEventListener(KeyboardEvent.KEY_UP, repeater.keyReleased);
@@ -162,12 +162,14 @@ package {
       lastPos = new Point();
       optimize = false;
 
-      ExternalInterface.addCallback('setBoardState', setBoardState);
-      ExternalInterface.addCallback('issueCommand', issueCommand);
-      ExternalInterface.addCallback('draw', drawBoard);
-      ExternalInterface.addCallback('failed', failed);
-      //ExternalInterface.addCallback('getBoardState', getBoardState);
-      //startTimer();
+      if (playable) {
+        startTimer();
+      } else {
+        ExternalInterface.addCallback('setBoardState', setBoardState);
+        ExternalInterface.addCallback('issueCommand', issueCommand);
+        ExternalInterface.addCallback('draw', drawBoard);
+        ExternalInterface.addCallback('failed', failed);
+      }
     }
 
     private function flashVars():Object {
@@ -328,27 +330,18 @@ package {
 //-------------------------------------------------------------------------
     private function update():void {
       keysFired.length = 0;
-      if (human) {
+      if (playable) {
         repeater.query(keysFired);
-      }
-      // Execute commands in the commands list, up to one per frame.
-      if (commands.length && keysFired.indexOf(commands[0]) < 0) {
-        keysFired.push(commands.shift());
+      } else {
+        if (commands.length && keysFired.indexOf(commands[0]) < 0) {
+          keysFired.push(commands.shift());
+        }
       }
 
       if (state == PLAYING) {
         curFrame = (curFrame + 1) % MAXFRAME;
 
-        if (keysFired.indexOf(Key.PAUSE) >= 0) {
-          if (human) {
-            state = PAUSED;
-            optimize = false;
-            return;
-          }
-        }
-        if (!held && keysFired.indexOf(Key.HOLD) >= 0) {
-          curBlock = getNextBlock(curBlock);
-        } else if (curBlock == null || moveBlock(curBlock)) {
+        if (curBlock == null || moveBlock(curBlock)) {
           curBlock = getNextBlock();
         }
 

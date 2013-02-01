@@ -41,9 +41,9 @@ var dropblox = {
       ' <div id=get-started> ' +
       ' <a id="get-started-button" href="/dropblox_intro.html" class="bloxbutton">Get Started Here!</a>' +
       ' </div>' +
-      ' <object data="PlayableBoard.swf" type="application/x-shockwave-flash" width="280" height="416">' +
-      '   <param name="movie" value="PlayableBoard.swf" />' +
-      '   <param name="flashVars" value="squareWidth=16" />' +
+      ' <object data="Board.swf" type="application/x-shockwave-flash" width="280" height="416">' +
+      '   <param name="movie" value="Board.swf" />' +
+      '   <param name="flashVars" value="playable=true&squareWidth=16" />' +
       ' </object>' +
       '</div></div>'
     );
@@ -128,7 +128,7 @@ var dropblox = {
       '  <div class="header">' + header + '</div>' +
       '  <object id="' + id + '" data="Board.swf" type="application/x-shockwave-flash" width="280" height="416">' +
       '    <param name="movie" value="Board.swf" />' +
-      '    <param name="flashVars" value="squareWidth=16" />' +
+      '    <param name="flashVars" value="playable=false&squareWidth=16" />' +
       '  </object>' +
       '</div>'
     );
