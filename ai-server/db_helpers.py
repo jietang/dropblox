@@ -26,7 +26,7 @@ class DatabaseHelpers(object):
 		conn = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'DROP DATABASE dropblox;'
 		cursor = conn.cursor()
-		cursor.execute()
+		cursor.execute(sql)
 		conn.commit()
 
 if __name__ == '__main__':
