@@ -2,6 +2,9 @@
 #
 # Database utility functions
 
+import MySQLdb as mdb
+import sys
+
 class DatabaseHelpers(object):
 
 	@staticmethod
