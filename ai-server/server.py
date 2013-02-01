@@ -48,7 +48,7 @@ class DropbloxWebSocketHandler(WebSocket):
     def received_message(self, msg):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
-        team = model.Database.authenticate_team(msg['team_name'], msg['team_password'])
+        team = model.Database.authenticate_team(msg['team_name'], msg['team_password'], session_sock=self)
         if not team:
             self.close(code=messaging.DO_NOT_RECONNECT, reason="Incorrect team name or password")
             return
@@ -60,6 +60,7 @@ class DropbloxWebSocketHandler(WebSocket):
 
     @profile(filename='profile.stats')
     def closed(self, code, reason=None):
+        model.Database.report_session_ended(self)
         CURRENT_COMPETITION.disconnect_sock(self)
         if self in TESTING_COMPETITIONS:
             TESTING_COMPETITIONS[self].disconnect_sock(self)
