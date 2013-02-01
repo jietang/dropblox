@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #
-# Provides persistence to sqlite3
+# Provides persistence to MySQL
 
-import sqlite3
+import MySQLdb as mdb
 import bcrypt
 
 class Database(object):
@@ -19,34 +19,38 @@ class Database(object):
 	SCORE_SCORE = 3
 	SCORE_ROUND = 4
 
+	CONN = None
+
 	@staticmethod
 	def add_team(team_name, password):
-		conn = sqlite3.connect('data.db')
-		sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES(?, ?, ?);'
-		conn.execute(sql, [team_name, password, 0])
-		conn.commit()
+		sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES(%s, %s, %s);'
+		cursor = CONN.cursor()
+		cursor.execute(sql, (team_name, password, 0))
+		CONN.commit()
 
 	@staticmethod
 	def add_score(team_name, game_id, seed, score, round_num):
-		conn = sqlite3.connect('data.db')
-		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES(?, ?, ?, ?, ?);'
-		conn.execute(sql, [team_name, game_id, seed, score, round_num])
-		conn.commit()
+		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES(%s, %s, %s, %s, %s);'
+		cursor = CONN.cursor()
+		cursor.execute(sql, (team_name, game_id, seed, score, round_num))
+		CONN.commit()
 
 	@staticmethod
 	def latest_round():
-		conn = sqlite3.connect('data.db')
 		sql = 'SELECT MAX(round) FROM scores'
-		result = conn.execute(sql).fetchone()[0]
+		cursor = CONN.cursor()
+		cursor.execute(sql)
+		result = cursor.fetchone()[0]
 		if result == None:
 			result = 0
 		return result
 
 	@staticmethod
 	def scores_by_team(team_name):
-		conn = sqlite3.connect('data.db')
-		sql = 'SELECT * FROM scores WHERE team_name=? ORDER BY round ASC'
-		scores = conn.execute(sql, [team_name]).fetchall()
+		sql = 'SELECT * FROM scores WHERE team_name=%s ORDER BY round ASC'
+		cursor = CONN.cursor()
+		cursor.execute(sql, team_name)
+		scores = cursor.fetchall()
 
 		result = []
 		for score in scores:
@@ -58,15 +62,17 @@ class Database(object):
 
 	@staticmethod
 	def get_team(team_name):
-		conn = sqlite3.connect('data.db')
-		sql = 'SELECT * FROM teams WHERE team_name=?'
-		return conn.execute(sql, [team_name]).fetchone()
+		sql = 'SELECT * FROM teams WHERE team_name=%s'
+		cursor = CONN.cursor()
+		cursor.execute(sql, team_name)
+		return cursor.fetchone()
 
 	@staticmethod
 	def list_all_teams():
-		conn = sqlite3.connect('data.db')
 		sql = 'SELECT * FROM teams'
-		return conn.execute(sql).fetchall()		
+		cursor = CONN.cursor()
+		cursor.execute(sql)
+		return cursor.fetchall()		
 
 	@staticmethod
 	def authenticate_team(team_name, password):
@@ -81,25 +87,28 @@ class Database(object):
 
 	@staticmethod
 	def initialize_db():
-		conn = sqlite3.connect('data.db')
+		global CONN
+		CONN = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
 
 		def create_team_table():
-			sql = 'CREATE TABLE IF NOT EXISTS teams (team_id INTEGER PRIMARY KEY NOT NULL, team_name VARCHAR(64), password CHAR(64), is_admin INTEGER);'
-			conn.execute(sql)
-			conn.commit()
+			sql = 'CREATE TABLE IF NOT EXISTS teams (team_id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT, team_name VARCHAR(64), password CHAR(64), is_admin INTEGER);'
+			cursor = CONN.cursor()
+			cursor.execute(sql)
+			CONN.commit()
 
 		def create_score_table():
 			sql = 'CREATE TABLE IF NOT EXISTS scores (team_name VARCHAR(64), game_id VARCHAR(64), seed INTEGER, score INTEGER, round INTEGER, PRIMARY KEY (team_name, round));'
-			conn.execute(sql)
-			conn.commit()
+			cursor = CONN.cursor()
+			cursor.execute(sql)
+			CONN.commit()
 
 		def create_admin_user():
 			if not Database.get_team('admin'):
-				conn = sqlite3.connect('data.db')
 				admin_pw = '$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy'
-				sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES(?, ?, ?);'
-				conn.execute(sql, ['admin', admin_pw, 1])
-				conn.commit()
+				sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES(%s, %s, %s);'
+				cursor = CONN.cursor()
+				cursor.execute(sql, ('admin', admin_pw, 1))
+				CONN.commit()
 
 		create_team_table()
 		create_score_table()
