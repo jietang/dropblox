@@ -721,8 +721,14 @@ package {
         drawTextField(canvasBD, stateText);
       } else if (state == GAMEOVER) {
         canvasBD.colorTransform(new Rectangle(0, 0, WIDTH, HEIGHT), redTint);
-        stateText.text = "Your AI scored " + score + " points.\nYou can still try again!";
-        //drawTextField(canvasBD, stateText);
+        if (playable) {
+          stateText.text = "You scored " + score + " points.\nPress ENTER to try again!";
+        } else {
+          stateText.text = "Your AI scored " + score + " points.\nYou can still try again!";
+        }
+        if (SQUAREWIDTH > 10) {
+          drawTextField(canvasBD, stateText);
+        }
       }
 
       canvasBD.unlock();

@@ -41,9 +41,11 @@ var dropblox = {
       ' <div id=get-started> ' +
       ' <a id="get-started-button" href="/dropblox_intro.html" class="bloxbutton">Get Started Here!</a>' +
       ' </div>' +
+      ' <div>You can try the game yourself right here! Use left, right and down ' +
+      '  to move the block, up to rotate, and space to drop.</div>' +
       ' <object data="Board.swf" type="application/x-shockwave-flash" width="280" height="416">' +
       '   <param name="movie" value="Board.swf" />' +
-      '   <param name="flashVars" value="playable=true&squareWidth=16" />' +
+      '   <param name="flashVars" value="playable=true&squareWidth=12" />' +
       ' </object>' +
       '</div></div>'
     );
