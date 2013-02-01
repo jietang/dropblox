@@ -41,6 +41,18 @@ var dropblox = {
       ' <div id=get-started> ' +
       ' <a id="get-started-button" href="/dropblox_intro.html" class="bloxbutton">Get Started Here!</a>' +
       ' </div>' +
+      ' <div id="instructions">' +
+      '  You can try the game yourself right here! The controls are:' +
+      '  <table id="instructions-table">' +
+      '  <tr><td><b>Arrow keys:</b></td><td>move</td>' +
+      '  <tr><td><b>Shift:</b></td><td>rotate</td>' +
+      '  <tr><td><b>Space bar:</b></td><td>drop</td>' +
+      '  </table>' +
+      ' </div>' +
+      ' <object data="Board.swf" type="application/x-shockwave-flash" width="210" height="312">' +
+      '   <param name="movie" value="Board.swf" />' +
+      '   <param name="flashVars" value="playable=true&squareWidth=12" />' +
+      ' </object>' +
       '</div></div>'
     );
   },
@@ -124,7 +136,7 @@ var dropblox = {
       '  <div class="header">' + header + '</div>' +
       '  <object id="' + id + '" data="Board.swf" type="application/x-shockwave-flash" width="280" height="416">' +
       '    <param name="movie" value="Board.swf" />' +
-      '    <param name="flashVars" value="squareWidth=16" />' +
+      '    <param name="flashVars" value="playable=false&squareWidth=16" />' +
       '  </object>' +
       '</div>'
     );

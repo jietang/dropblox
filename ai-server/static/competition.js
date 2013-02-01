@@ -14,7 +14,7 @@ var competition = {
       '  <div class="header">' + header + '</div>' +
       '  <object id="' + id + '" data="Board.swf" type="application/x-shockwave-flash" width="175" height="260">' +
       '    <param name="movie" value="Board.swf" />' +
-      '    <param name="flashVars" value="squareWidth=10" />' +
+      '    <param name="flashVars" value="playable=false&squareWidth=10" />' +
       '  </object>' +
       '</div>'
     );

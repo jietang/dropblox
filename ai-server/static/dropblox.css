@@ -79,6 +79,17 @@ h3 {
   margin-top: 20px;
 }
 
+#instructions {
+  color: #444;
+  font-size: 16px;
+  margin: 20px 0px 5px;
+}
+
+#instructions-table {
+  text-align: center;
+  margin: 5px auto;
+}
+
 .spacer {
   margin-top: 4px;
 }
@@ -263,7 +274,7 @@ input:focus {
 .get-started-desc {
   color: #444;
   font-size: 16px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 #get-started-button {
