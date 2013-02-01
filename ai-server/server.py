@@ -11,6 +11,7 @@ import bcrypt
 import model
 import json
 import os
+import re
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
@@ -154,7 +155,13 @@ class DropbloxGameServer(object):
             raise cherrypy.HTTPError(400, "Team name must be at least 5 characters long!")
 
         if len(body['password']) < 5:
-            raise cherrypy.HTTPError(400, "Password must be at least 5 characters long!") 
+            raise cherrypy.HTTPError(400, "Password must be at least 5 characters long!")
+
+        if not re.match("^[A-Za-z0-9]*$", body['team_name']):
+            raise cherrypy.HTTPError(400, "Team name can only contain letters (A-Za-z) and numbers (0-9)!")
+
+        if not re.match("^[A-Za-z0-9]*$", body['password']):
+            raise cherrypy.HTTPError(400, "Password can only contain letters (A-Za-z) and numbers (0-9)!")
         
         team = model.Database.get_team(body['team_name'])
         if team:
