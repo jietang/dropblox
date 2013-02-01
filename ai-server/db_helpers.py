@@ -28,6 +28,10 @@ class DatabaseHelpers(object):
 		cursor = conn.cursor()
 		cursor.execute(sql)
 		conn.commit()
+		sql = 'CREATE DATABASE dropblox;'
+		cursor = conn.cursor()
+		cursor.execute(sql)
+		conn.commit()
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
