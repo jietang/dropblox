@@ -86,6 +86,12 @@ class Database(object):
 		return team
 
 	@staticmethod
+	def setup_test_users():
+		for i in range(0, 40):
+			team_name = 'team%s' % i
+			Database.add_team(team_name, 'password')
+
+	@staticmethod
 	def initialize_db():
 		global CONN
 		CONN = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
