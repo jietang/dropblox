@@ -145,8 +145,8 @@ class DropbloxGameServer(object):
     @admin_only
     def end_round(self, body):
         global CURRENT_COMPETITION
-        if CURRENT_COMPETITION.started:
-          return json.dumps({'status': 400, 'message': "This competition hasn't been started yet!"})
+        if not CURRENT_COMPETITION.started:
+          raise cherrypy.HTTPError(400, "This competition hasn't been started yet!")
         CURRENT_COMPETITION.record_remaining_games()
         CURRENT_COMPETITION = competition.Competition()
         return json.dumps({'status': 200, 'message': 'Success!'})
