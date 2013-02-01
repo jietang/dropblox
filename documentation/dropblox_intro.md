@@ -145,4 +145,4 @@ If you print anything else to stdout, our `client` program will simply print it 
 Sample AIs
 ----
 
-Coming soon...
+We have provided reference implementations in 3 different languages to help you get started quickly. Inside the samples/ directory, you'll find these implementations.  Each one has a readme file explaining how to compile (if necessary) and run.  There reference implementations take care of a lot of the hairy setup (parsing the JSON, generating reasonable objects that represent the current game state, and writing helper methods for handling pieces, making moves, and generating new boards) so we recommend that you use them!  Right now, the reference implementations simply move a piece as far left as it can go and that's it.
