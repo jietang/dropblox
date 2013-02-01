@@ -41,6 +41,10 @@ var dropblox = {
       ' <div id=get-started> ' +
       ' <a id="get-started-button" href="/dropblox_intro.html" class="bloxbutton">Get Started Here!</a>' +
       ' </div>' +
+      ' <object data="PlayableBoard.swf" type="application/x-shockwave-flash" width="280" height="416">' +
+      '   <param name="movie" value="PlayableBoard.swf" />' +
+      '   <param name="flashVars" value="squareWidth=16" />' +
+      ' </object>' +
       '</div></div>'
     );
   },
