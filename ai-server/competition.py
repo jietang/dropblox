@@ -129,6 +129,10 @@ class Competition(object):
 			return
 
 		game = self.team_to_game[team]
+		if game.state == 'failed':
+			Competition.send_game_over(game, sock)
+			return
+
 		if time.time() - game.game_started_at > util.AI_CLIENT_TIMEOUT:
 			game.state = 'failed'
 		else:
