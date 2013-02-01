@@ -302,7 +302,9 @@ var dropblox = {
 
   sign_up: function() {
     $('#content').html(
-      '<div class="section-content"><div class="content-header">Sign up</div> ' + this.login_form + '</div>'
+      '<div class="section-content"><div class="content-header">Sign up</div> ' + this.login_form + 
+      "<div>Don't use any personal passwords here! You'll share one password for your " +
+      "whole team, stored in a config file on each of your computers.</div>"
     );
     $('#team-name').focus();
     $('#submit').click(function() {
