@@ -146,7 +146,7 @@ class Competition(object):
 			Competition.request_next_move(game, sock)
 
 	# Called when the competition is forcibly ended.
-	def record_remaining_games(self, sock):
+	def record_remaining_games(self):
 		if not self.is_test_run:
 			for (team, game) in self.team_to_game.iteritems():
 				if game.state == 'playing':

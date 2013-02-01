@@ -118,12 +118,15 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @admin_only
     def start_next_round(self, body):
+        if CURRENT_COMPETITION.started:
+            raise cherrypy.HTTPError(400, "Can't restart a competition!")
+
         if not len(CURRENT_COMPETITION.team_whitelist):
-            raise cherrypy.HTTPError(400, "Can't start a game with no participants!")
+            raise cherrypy.HTTPError(400, "Can't start a competition with no participants!")
 
         for team_name in CURRENT_COMPETITION.team_whitelist:
             if not CURRENT_COMPETITION.is_team_connected(team_name):
-                raise cherrypy.HTTPError(400, "Not all teams are connected!")
+                raise cherrypy.HTTPError(400, "Team %s is not connected!" % (team_name,))
 
         CURRENT_COMPETITION.start_competition()
         return json.dumps({'status': 200, 'message': 'Success!'})
@@ -143,6 +146,7 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @admin_only
     def end_round(self, body):
+        global CURRENT_COMPETITION
         CURRENT_COMPETITION.record_remaining_games()
         CURRENT_COMPETITION = competition.Competition()
 
