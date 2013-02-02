@@ -11,6 +11,7 @@ import bcrypt
 import model
 import json
 import os
+import re
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
@@ -27,8 +28,6 @@ class DropbloxWebSocketHandler(WebSocket):
             CURRENT_COMPETITION.register_team(team_name, self)
         elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
             CURRENT_COMPETITION.make_move(team_name, self, msg['move_list'])
-            if CURRENT_COMPETITION.check_competition_over():
-                CURRENT_COMPETITION = competition.Competition()
 
     def handle_testing_msg_from_team(self, msg, team):
         team_name = team[model.Database.TEAM_TEAM_NAME]
@@ -117,12 +116,15 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @admin_only
     def start_next_round(self, body):
+        if CURRENT_COMPETITION.started:
+            raise cherrypy.HTTPError(400, "Can't restart a competition!")
+
         if not len(CURRENT_COMPETITION.team_whitelist):
-            raise cherrypy.HTTPError(400, "Can't start a game with no participants!")
+            raise cherrypy.HTTPError(400, "Can't start a competition with no participants!")
 
         for team_name in CURRENT_COMPETITION.team_whitelist:
             if not CURRENT_COMPETITION.is_team_connected(team_name):
-                raise cherrypy.HTTPError(400, "Not all teams are connected!")
+                raise cherrypy.HTTPError(400, "Team %s is not connected!" % (team_name,))
 
         CURRENT_COMPETITION.start_competition()
         return json.dumps({'status': 200, 'message': 'Success!'})
@@ -142,7 +144,12 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @admin_only
     def end_round(self, body):
+        global CURRENT_COMPETITION
+        if not CURRENT_COMPETITION.started:
+          raise cherrypy.HTTPError(400, "This competition hasn't been started yet!")
+        CURRENT_COMPETITION.record_remaining_games()
         CURRENT_COMPETITION = competition.Competition()
+        return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
     def signup(self):
@@ -154,8 +161,11 @@ class DropbloxGameServer(object):
             raise cherrypy.HTTPError(400, "Team name must be at least 5 characters long!")
 
         if len(body['password']) < 5:
-            raise cherrypy.HTTPError(400, "Password must be at least 5 characters long!") 
-        
+            raise cherrypy.HTTPError(400, "Password must be at least 5 characters long!")
+
+        if not re.match("^[A-Za-z0-9]*$", body['team_name']):
+            raise cherrypy.HTTPError(400, "Team name can only contain letters (A-Za-z) and numbers (0-9)!")
+
         team = model.Database.get_team(body['team_name'])
         if team:
             raise cherrypy.HTTPError(400, "Team name already taken!")

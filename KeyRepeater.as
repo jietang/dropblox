@@ -52,7 +52,7 @@ package {
             if (Key.doesKeyRepeat[key]) {
               keysFired.push(key);
             }
-            fireFrames[key] = (key == Key.DOWN ? 0 : repeat);
+            fireFrames[key] = repeat;
           } else {
             fireFrames[key]--;
           }

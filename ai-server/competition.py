@@ -129,20 +129,32 @@ class Competition(object):
 			return
 
 		game = self.team_to_game[team]
+		if game.state == 'failed':
+			Competition.send_game_over(game, sock)
+			return
+
 		if time.time() - game.game_started_at > util.AI_CLIENT_TIMEOUT:
-			commands = ['drop']
-		game.send_commands(commands)
+			game.state = 'failed'
+		else:
+			game.send_commands(commands)
 
 		if game.state == 'failed':
 			if not self.is_test_run:
 				Competition.record_game(team, game, self.round)
 			Competition.send_game_over(game, sock)
 		elif game.state == 'playing':
-			time.sleep(1)
 			Competition.request_next_move(game, sock)
+
+	# Called when the competition is forcibly ended.
+	def record_remaining_games(self):
+		if not self.is_test_run:
+			for (team, game) in self.team_to_game.iteritems():
+				if game.state == 'playing':
+					game.state = 'failed'
+					Competition.record_game(team, game, self.round)
 
 	# Called when a socket is closed.
 	def disconnect_sock(self, sock):
 		if sock in self.sock_to_team:
 			del self.sock_to_team[sock]
-		
+

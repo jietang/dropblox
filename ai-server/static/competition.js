@@ -3,15 +3,28 @@ var competition = {
   round: undefined,
 
   initialize: function() {
+    competition.resize();
+    $(window).resize(function() {
+      competition.resize();
+    });
+
     setInterval(function() {
       competition.update();
     }, 1000);
   },
 
+  resize: function() {
+    var width = $(window).width();
+    var board_width = 199;
+    var boards_per_row = Math.max(Math.floor(width/board_width), 1);
+    $('#boards').width(board_width*boards_per_row);
+    $('#boards').css('margin-left', (width - board_width*boards_per_row)/2 - 12);
+  },
+
   create_board: function(target, id, header) {
     var html = (
-      '<div class="container">' +
-      '  <div class="header">' + header + '</div>' +
+      '<div class="competition container">' +
+      '  <div class="competition header">' + header + '</div>' +
       '  <object id="' + id + '" data="Board.swf" type="application/x-shockwave-flash" width="175" height="260">' +
       '    <param name="movie" value="Board.swf" />' +
       '    <param name="flashVars" value="playable=false&squareWidth=10" />' +
@@ -31,7 +44,7 @@ var competition = {
       function(data) {
         if (competition.round === undefined) {
           competition.round = data.round;
-          $('#round-text').html('Dropblox - Round ' + data.round);
+          $('#round-text').html('Round ' + data.round);
         } else if (competition.round != data.round) {
           return;
         }
