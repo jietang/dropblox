@@ -46,6 +46,7 @@ var competition = {
           competition.round = data.round;
           $('#round-text').html('Round ' + data.round);
         } else if (competition.round != data.round) {
+          location.reload(true);
           return;
         }
 
