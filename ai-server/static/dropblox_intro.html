@@ -89,16 +89,17 @@ dd{margin-left:2em;margin-bottom:1em;}
 
 <h2>Getting Started</h2>
 
-<p>Download our <a href="https://www.dropbox.com/sh/vmik81v24zfrr0l/XOoKs6mRSU">getting started materials</a> to get the code you'll need to connect to our game server and test out your AI. Inside the getting started folder, you'll find the following:</p>
+<p>Download our <a href="https://www.dropbox.com/sh/vmik81v24zfrr0l/XOoKs6mRSU">getting started materials</a> to get the code you'll need to connect to our game server and test out your AI. Inside the subfolder for your operating system, you'll find the following files:</p>
 
 <ol>
 <li><code>client(.exe)</code>: The program that communicates with our centralized game server. It will spawn your AI process and forward moves that you generate to our remote server.</li>
 <li><code>config.txt</code>: Specifies the team name and password to use when authing with the game server.</li>
 <li><code>history_server(.exe)</code>: A program you can run to view the history of games you've played and view move-by-move playback of your AI's decisions.</li>
 <li><code>dropblox_ai</code>: The executable program you will be writing to make Dropblox moves. We've provided a small sample written in Python.</li>
-<li><code>samples/</code>: A directory of helper code and sample AIs to help you understand the game logic and I/O specification for your AI.</li>
 </ol>
-
+The getting-started folder also contains a <code>samples/</code> folder.
+This directory contains helper code and sample AIs in several languages that you can use as a starting point.
+We've taken care of dealing with I/O and duplicating the game logic for you!
 
 <h3>Create an Account</h3>
 
