@@ -89,17 +89,16 @@ dd{margin-left:2em;margin-bottom:1em;}
 
 <h2>Getting Started</h2>
 
-<p>Download our <a href="https://www.dropbox.com/sh/vmik81v24zfrr0l/XOoKs6mRSU">getting started materials</a> to get the code you'll need to connect to our game server and test out your AI. Inside the subfolder for your operating system, you'll find the following files:</p>
+<p>Start by downloading our <a href="https://www.dropbox.com/sh/vmik81v24zfrr0l/XOoKs6mRSU">getting started materials</a>! You'll use these materials to connect to our game server and test out your AI. In the getting-started subfolder for your operating system, you'll find the following files:</p>
 
 <ol>
-<li><code>client(.exe)</code>: The program that communicates with our centralized game server. It will spawn your AI process and forward moves that you generate to our remote server.</li>
-<li><code>config.txt</code>: Specifies the team name and password to use when authing with the game server.</li>
-<li><code>history_server(.exe)</code>: A program you can run to view the history of games you've played and view move-by-move playback of your AI's decisions.</li>
-<li><code>dropblox_ai</code>: The executable program you will be writing to make Dropblox moves. We've provided a small sample written in Python.</li>
+<li><code>client(.exe)</code>: The program that communicates with our centralized game server. It will spawn your AI process and forward the moves that you generate to the server.</li>
+<li><code>config.txt</code>: A file in which you'll specify your team name and password. Used to authenticate the client.</li>
+<li><code>history_server(.exe)</code>: A program you can run to review the games you've played and watch games you're playing in real-time. Running this server will make your games visible on the <a href="https://playdropblox.com#submission_history">the submission history page</a>.</li>
+<li><code>dropblox_ai</code>: The executable that the client calls to make Dropblox moves. We've provided a sample AI in Python. To run your AI, replace this file with your program.</li>
 </ol>
-The getting-started folder also contains a <code>samples/</code> folder.
-This directory contains helper code and sample AIs in several languages that you can use as a starting point.
-We've taken care of dealing with I/O and duplicating the game logic for you!
+
+<p>The getting-started folder also contains a <code>samples/</code> folder. This directory contains helper code and sample AIs in several languages that you can use as a starting point. We've taken care of dealing with I/O and duplicating the game logic for you!</p>
 
 <h3>Create an Account</h3>
 
@@ -107,15 +106,15 @@ We've taken care of dealing with I/O and duplicating the game logic for you!
 
 <h3>Connect to the Game Server</h3>
 
-<p>Before you start, you may need to <code>chmod +x</code> the files <code>history_server</code>, <code>client</code> and <code>dropblox_ai</code>, to make sure they're all executable.</p>
+<p>If you're on Mac or Linux, you may need to <code>chmod +x</code> the files <code>history_server</code>, <code>client</code> and <code>dropblox_ai</code> to make sure they're executable.</p>
 
-<p>Windows users: You'll also need to set two environment variables (ask for help or look online if you're not sure how): <code>PYTHONPATH</code> and <code>PYTHONHOME</code>. These should both be set to <code>.</code></p>
+<p>If you're on Windows, you'll need to set two environment variables: <code>PYTHONPATH</code> and <code>PYTHONHOME</code>. Set them both to <code>.</code>. (If you're not sure how to do this, look online or ask for help.)</p>
 
-<p>Open up a terminal and run <code>./history_server</code>. You should just keep the history server running for the next few hours. It will allow you to view your game history from <a href="https://playdropblox.com#submission_history">https://playdropblox.com#submission_history</a>.</p>
+<p>Open up a terminal and run <code>./history_server</code>. You should keep the history server running for the next few hours. It will allow you to view your AI's games at <a href="https://playdropblox.com#submission_history">the submission history page</a>.</p>
 
-<p>Next, run <code>./client practice</code>. It should connect to the game server, read your login info from <code>config.txt</code>, spawn the <code>dropblox_ai</code> process and start a new game! Head over to <a href="https://playdropblox.com#submission_history">https://playdropblox.com#submission_history</a> and see the game being played!</p>
+<p>Next, run <code>./client practice</code>. It should connect to the game server, read your login info from <code>config.txt</code>, spawn the <code>dropblox_ai</code> process and start a new game! Head over to <a href="https://playdropblox.com#submission_history">the submission history page</a> and watch the game play out!</p>
 
-<p>Every time you run <code>./client practice</code>, a new game will be created and your AI will be invoked to ask for moves. At the end of the allotted time when we actually start the competition, you'll run <code>./client compete</code>, which will actually enter you into the competition rounds, but don't worry about that for now.</p>
+<p>Every time you run <code>./client practice</code>, a new game will be created and your AI will be invoked to make moves. At the end of the allotted time, when we start official competition rounds, you'll run <code>./client compete</code>, which will enter you into these rounds. Don't worry about that for now, though. </p>
 
 <p>If you have any issues getting <code>./client practice</code> to work, please talk to a Dropboxer.</p>
 
@@ -123,11 +122,11 @@ We've taken care of dealing with I/O and duplicating the game logic for you!
 
 <p>Dropblox plays much like Tetris. You control one block at a time, and you can translate and rotate it to position it on the board. When you have made your moves, the block will drop as far as it can fall unobstructed, then lock in place. Any rows that are then full are removed from the board.</p>
 
-<p>The main twist introduced in Dropblox are the types of blocks in the game. In addition to tetrominoes, Dropblox includes blocks of arbitrary size. The higher your score, the larger the expected size of the blocks you get!</p>
+<p>The main twist introduced in Dropblox are the types of blocks in the game. In addition to tetrominoes, Dropblox includes blocks of arbitrary sizes. The higher your score, the larger the expected size of the blocks that you'll get!</p>
 
-<p>The goal of the game is to score as many points as possible in a 5 minute time limit.</p>
+<p>The goal of the game is to score as many points as possible within a 5 minute time limit.</p>
 
-<p>We’ve simplified the rules of the game to make it easier to write an AI. The following is a complete description of all the rules other than the block generation algorithm.</p>
+<p>We’ve simplified the rules of the game to make it easier to write an AI. The following is a complete description of all the rules, other than the block generation algorithm.</p>
 
 <h3>Definitions</h3>
 
@@ -139,9 +138,8 @@ We've taken care of dealing with I/O and duplicating the game logic for you!
 
 <ol>
 <li>A <code>center</code>, a square on the board, given by an <code>i</code> and a <code>j</code>. The center is the square about which the block rotates. It is <em>not</em> necessarily a square occupied by the block.</li>
-<li>A list of offsets, given by <code>i</code> and <code>j</code> coordinates. These are the positions of the block’s component squares, relative to its center.</li>
+<li>A list of offsets, also given by <code>i</code> and <code>j</code> coordinates. These are the positions of the block’s component squares, relative to its center.</li>
 </ol>
-
 
 <p>At all times, the board state includes six blocks:</p>
 
@@ -149,7 +147,6 @@ We've taken care of dealing with I/O and duplicating the game logic for you!
 <li>One active block, the <code>block</code>, which can be moved.</li>
 <li>A list of five <code>preview</code> blocks, which will be the next five active blocks, in order.</li>
 </ol>
-
 
 <h3>Commands</h3>
 
@@ -163,7 +160,7 @@ We've taken care of dealing with I/O and duplicating the game logic for you!
         return true;
 </code></pre>
 
-<p>Basically, whenever all the components of a block are within the bounds of the board and don't overlap an already occupied slot, the block is in a legal position!</p>
+<p>Basically, a block is in legal position whenever all of its the component squares are within the bounds of the board and none of them overlap with already occupied cells!</p>
 
 <p>All of the following movement functions assume that the block begins and ends in a valid position! If you are implementing this logic in your AI, you may want to check before and after each command that your block is in a valid position. Alternatively, you may be able to optimize away many of the validity checks.</p>
 
@@ -174,16 +171,16 @@ We've taken care of dealing with I/O and duplicating the game logic for you!
     block.center.j += j_offset;
 </code></pre>
 
-<p>The <code>rotate</code> command rotates a block 90 deg. around its center. Code for rotate is as follows:</p>
+<p>The <code>rotate</code> command rotates a block 90 degrees clockwise around its center. Code for rotate is as follows:</p>
 
 <pre><code>void rotate(block)
     for (offset in block.offsets) 
         (offset.i, offset.j) = (offset.j, -offset.i);
 </code></pre>
 
-<p>When you wish to end your turn, your AI process should terminate. At the end of your list of moves, a <code>drop</code> command will be issued.</p>
+<p>When you wish to end your turn, your AI process should terminate. A <code>drop</code> command will be append to the end of your list of moves.</p>
 
-<p>Code for the <code>drop</code> command is as follows (note that it assumes the block is initially in a valid position, and that it mutates both the bitmap and the block):</p>
+<p>Code for the <code>drop</code> command is as follows. Note that this code assumes that the block is initially in a valid position, and that it mutates both the bitmap and the block.</p>
 
 <pre><code>void drop(bitmap, block)
     while (check(bitmap, block))
@@ -211,19 +208,22 @@ We've taken care of dealing with I/O and duplicating the game logic for you!
 
 <h3>dropblox_ai Program Specification</h3>
 
-<p>For each turn in the game, your <code>dropblox_ai</code> process will be spawned and given the state of the game. It will then be expected to print a list of commands to stdout. When the <code>dropblox_ai</code> process finishes, the turn will be considered over. The game server will execute the commands provided, then drop the block into its final position. The game server will then request the next move and a new instance of your AI process will be spawned with the new game state. This will continue until the 5 minute time period for the game is over. When the 5 minutes expires, your AI process will be terminated and any moves printed to stdout will be accepted as your final turn.</p>
+<p>For each turn in the game, the client process will spawn your <code>dropblox_ai</code> executable, passing in the state of the game as a command line argument. Your executable should print a list of commands to stdout, each one on a new line. When the <code>dropblox_ai</code> executable terminates, the turn will be over. The game server will execute the given commands to move the block, then drop it into place on the board. The server will then request the next move, and the client will spawn a new AI process with the new game state.</p>
+
+<p>This loop will continue until you run out of space on the board or the 5 minute time period for the game is over. When the game ends on time, any commands your AI has printed to stdout for the current move will be ignored.</p>
 
 <h4>Input</h4>
 
-<p>Your <code>dropblox_ai</code> program should accept two command-line arguments:</p>
+<p>Your <code>dropblox_ai</code> program should accept two command-line arguments: </p>
 
 <ol>
 <li><p>A JSON-encoded string modeling the game state. Here is an example of the input:</p>
 
-<blockquote><p>{"bitmap": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], "state": "playing", "score": 0, "preview": [{"type": 5, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 1, "j": -1}]}, {"type": 22, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 0, "j": -1}, {"i": 1, "j": 1}]}, {"type": 3, "center": {"i": 9, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 0, "j": 1}]}, {"type": 4, "center": {"i": 7, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 2, "j": 0}]}, {"type": 12, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": -2, "j": 0}, {"i": 1, "j": 0}, {"i": 1, "j": -1}]}], "block": {"type": 4, "center": {"i": 7, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 2, "j": 0}]}}</p></blockquote></li>
-<li><p>The number of seconds remaining in the game.</p></li>
+<blockquote>
+  <p>{"bitmap": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], "state": "playing", "score": 0, "preview": [{"type": 5, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 1, "j": -1}]}, {"type": 22, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 0, "j": -1}, {"i": 1, "j": 1}]}, {"type": 3, "center": {"i": 9, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 0, "j": 1}]}, {"type": 4, "center": {"i": 7, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 2, "j": 0}]}, {"type": 12, "center": {"i": 8, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": -2, "j": 0}, {"i": 1, "j": 0}, {"i": 1, "j": -1}]}], "block": {"type": 4, "center": {"i": 7, "j": 6}, "offsets": [{"i": 0, "j": 0}, {"i": -1, "j": 0}, {"i": 1, "j": 0}, {"i": 2, "j": 0}]}}</p>
+</blockquote></li>
+<li><p>The number of seconds remaining in the game, a float.</p></li>
 </ol>
-
 
 <h4>Output</h4>
 
@@ -237,13 +237,14 @@ We've taken care of dealing with I/O and duplicating the game logic for you!
 <li><code>rotate</code></li>
 </ol>
 
-
 <p>Your AI must print one of these strings, immediately followed by a newline character, in order to be sent to our server. We recommend you flush stdout after printing, to ensure the move is sent to the server immediately. This will allow you to submit moves in a streaming fashion, so that if you hit the timeout, you'll at least have made some move with the current block.</p>
 
 <p>If you print anything else to stdout, our <code>client</code> program will simply print it to stdout itself.</p>
 
 <h2>Sample AIs</h2>
 
-<p>We have provided reference implementations in 3 different languages to help you get started quickly. You will find these implementations inside the <code>samples/</code> directory. Each one has a <code>README</code> file explaining how to compile (if necessary) and run.  These reference implementations take care of much of the hairy setup (parsing the JSON, generating reasonable objects to represent the current game state), and provide helper methods for handling pieces, making moves, and generating new boards. We recommend that you use them!  Right now, the reference implementations simply move a piece as far left as it can go -- that's it!</p>
+<p>We have provided reference implementations in 3 different languages to help you get started quickly. You will find these implementations inside the <code>samples/</code> directory of the getting-started materials. Each sample comes with a <code>README</code> file explaining how to compile (if necessary) and run the code.</p>
+
+<p>These reference implementations take care of a lot of the details of setup, including parsing the JSON and generating reasonable objects to represent the current game state. They also provide helper methods for handling pieces, making moves, and computing the new board after a drop. We recommend that you start with them! However, these AIs won't score many points. The reference implementations simply move the piece as far left as it can go -- that's it!</p>
 </body>
 </html>
