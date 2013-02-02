@@ -20,6 +20,10 @@ Block::Block(Object& raw_block) {
     offsets[i].i = (Number&)raw_offsets[i]["i"];
     offsets[i].j = (Number&)raw_offsets[i]["j"];
   }
+
+  translation.i = 0;
+  translation.j = 0;
+  rotation = 0;
 }
 
 void Block::left() {
