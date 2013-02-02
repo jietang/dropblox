@@ -40,7 +40,10 @@ class Competition(object):
 				if t == team:
 					sock.close(code=messaging.DO_NOT_RECONNECT, reason="You have been blacklisted by the competition organizer.")
 					del self.sock_to_team[sock]
-		self.team_whitelist.remove(team)
+		self.team_whitelist.discard(team)
+
+        def is_team_whitelisted(self, team):
+                return team in self.team_whitelist
 
 	# Called when a team connects via client.py
 	def register_team(self, team, sock):
