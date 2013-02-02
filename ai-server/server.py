@@ -12,6 +12,7 @@ import model
 import json
 import os
 import re
+import sys
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
@@ -191,28 +192,44 @@ def jsonify_error(status, message, traceback, version):
     response.headers['Content-Type'] = 'application/json'
     return json.dumps({'status': status, 'message': message})
 
-if __name__ == '__main__':
+def main(argv):
     WebSocketPlugin(cherrypy.engine).subscribe()
     cherrypy.tools.websocket = WebSocketTool()
 
-    cherrypy.quickstart(DropbloxGameServer(), config={
-        'global': {
+    if len(argv) > 1:
+        # read info from a config file
+        with open(argv[1]) as f:
+            global_config = json.load(f)
+            global_config = {k: (str(v) if type(v) is unicode else v)
+                             for (k, v) in global_config.iteritems()}
+    else:
+        global_config = {
             'server.socket_host': '0.0.0.0',
             'server.socket_port': 443,
             'server.ssl_module': 'pyopenssl',
-            'server.ssl_certificate':'/home/ubuntu/keys/myserver.crt',
-            'server.ssl_private_key':'/home/ubuntu/keys/myserver.key',
-            'server.ssl_certificate_chain':'/home/ubuntu/keys/sslchain.crt',
-        },
+            'server.ssl_certificate': '/home/ubuntu/keys/myserver.crt',
+            'server.ssl_private_key': '/home/ubuntu/keys/myserver.key',
+            'server.ssl_certificate_chain': '/home/ubuntu/keys/sslchain.crt',
+            }
+
+    config = {
+        'global': global_config,
         '/ws': {
             'tools.websocket.on': True,
             'tools.websocket.handler_cls': DropbloxWebSocketHandler
-        },
+            },
         '/': {
             'tools.staticdir.root': os.getcwd(),
             'tools.staticdir.on': True,
             'tools.staticdir.dir': 'static',
             'tools.staticdir.index': 'index.html',
             'error_page.default': jsonify_error,
-        },
-    })
+            },
+        }
+
+    cherrypy.quickstart(DropbloxGameServer(), config=config)
+
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
