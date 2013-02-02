@@ -246,6 +246,8 @@ Board* Board::place() {
   for (int i = 1; i < preview.size(); i++) {
     new_board->preview.push_back(preview[i]);
   }
+
+  return new_board;
 }
 
 // A static method that takes in a new_bitmap and removes any full rows from it.
