@@ -34,7 +34,7 @@ class Block {
   Point translation;
   int rotation;
 
-  Block(const Object& raw_block);
+  Block(Object& raw_block);
   void left();
   void right();
   void up();
@@ -70,7 +70,7 @@ class Board {
   Block* block;
   vector<Block*> preview;
 
-  Board(const Object& state);
+  Board(Object& state);
 
   // Returns true if the `query` block is in valid position - that is, if all of
   // its squares are in bounds and are currently unoccupied.

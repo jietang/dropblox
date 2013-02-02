@@ -7,12 +7,12 @@ using namespace std;
 // Block implementation starts here!
 //----------------------------------
 
-Block::Block(const Object& raw_block) {
+Block::Block(Object& raw_block) {
   center.i = (int)(Number&)raw_block["center"]["i"];
   center.j = (int)(Number&)raw_block["center"]["j"];
   size = 0;
 
-  Array& raw_offsets = (Array&)raw_block["offsets"];
+  Array& raw_offsets = raw_block["offsets"];
   for (Array::const_iterator it = raw_offsets.Begin(); it < raw_offsets.End(); it++) {
     size += 1;
   }
@@ -133,7 +133,7 @@ Board::Board() {
   cols = COLS;
 }
 
-Board::Board(const Object& state) {
+Board::Board(Object& state) {
   rows = ROWS;
   cols = COLS;
 
@@ -149,9 +149,9 @@ Board::Board(const Object& state) {
   // There's a memory leak here, but it's okay: blocks are only constructed
   // when you construct a board from a JSON Object, which should only happen
   // for the very first board. The total memory leaked will only be ~10 kb.
-  block = new Block((Object&)state["block"]);
+  block = new Block(state["block"]);
   for (int i = 0; i < PREVIEW_SIZE; i++) {
-    preview.push_back(new Block((Object&)state["preview"][i]));
+    preview.push_back(new Block(state["preview"][i]));
   }
 }
 
