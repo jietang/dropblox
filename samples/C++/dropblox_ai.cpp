@@ -1,137 +1,174 @@
-#include "json/reader.h"
-#include "json/elements.h"
-
-//#include <fstream>
-#include <cmath>
-#include <sstream>
-#include <vector>
+#include "dropblox_ai.h"
 
 using namespace json;
 using namespace std;
 
-#define ROWS 33
-#define COLS 12
-#define PREVIEW_SIZE 5
+//----------------------------------
+// Block implementation starts here!
+//----------------------------------
 
-typedef int Bitmap[ROWS][COLS];
-typedef pair<const Bitmap*, float> ScoredBitmap;
+Block::Block(const Object& raw_block) {
+  center.i = (int)(Number&)raw_block["center"]["i"];
+  center.j = (int)(Number&)raw_block["center"]["j"];
+  size = 0;
 
-struct ScoredBitmap_comp {
-  bool operator()(ScoredBitmap const& left, ScoredBitmap const& right){
-    return left.second > right.second;
+  Array& raw_offsets = (Array&)raw_block["offsets"];
+  for (Array::const_iterator it = raw_offsets.Begin(); it < raw_offsets.End(); it++) {
+    size += 1;
   }
-};
+  for (int i = 0; i < size; i++) {
+    offsets[i].i = (Number&)raw_offsets[i]["i"];
+    offsets[i].j = (Number&)raw_offsets[i]["j"];
+  }
+}
 
-/*
-Move mapping:
-  0: drop,
-  1: rotate,
-  2: left,
-  3: right
-*/
+void Block::left() {
+  translation.j -= 1;
+}
 
-#define NUM_MOVES 44
-#define MOVE_SIZE 10
+void Block::right() {
+  translation.j += 1;
+}
 
-int moves[NUM_MOVES][MOVE_SIZE] = {
-{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-{2, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-{2, 2, 0, 0, 0, 0, 0, 0, 0, 0},
-{2, 2, 2, 0, 0, 0, 0, 0, 0, 0},
-{2, 2, 2, 2, 0, 0, 0, 0, 0, 0},
-{2, 2, 2, 2, 2, 0, 0, 0, 0, 0},
-{3, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-{3, 3, 0, 0, 0, 0, 0, 0, 0, 0},
-{3, 3, 3, 0, 0, 0, 0, 0, 0, 0},
-{3, 3, 3, 3, 0, 0, 0, 0, 0, 0},
-{3, 3, 3, 3, 3, 0, 0, 0, 0, 0},
-{1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-{1, 2, 0, 0, 0, 0, 0, 0, 0, 0},
-{1, 2, 2, 0, 0, 0, 0, 0, 0, 0},
-{1, 2, 2, 2, 0, 0, 0, 0, 0, 0},
-{1, 2, 2, 2, 2, 0, 0, 0, 0, 0},
-{1, 2, 2, 2, 2, 2, 0, 0, 0, 0},
-{1, 3, 0, 0, 0, 0, 0, 0, 0, 0},
-{1, 3, 3, 0, 0, 0, 0, 0, 0, 0},
-{1, 3, 3, 3, 0, 0, 0, 0, 0, 0},
-{1, 3, 3, 3, 3, 0, 0, 0, 0, 0},
-{1, 3, 3, 3, 3, 3, 0, 0, 0, 0},
-{1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-{1, 1, 2, 0, 0, 0, 0, 0, 0, 0},
-{1, 1, 2, 2, 0, 0, 0, 0, 0, 0},
-{1, 1, 2, 2, 2, 0, 0, 0, 0, 0},
-{1, 1, 2, 2, 2, 2, 0, 0, 0, 0},
-{1, 1, 2, 2, 2, 2, 2, 0, 0, 0},
-{1, 1, 3, 0, 0, 0, 0, 0, 0, 0},
-{1, 1, 3, 3, 0, 0, 0, 0, 0, 0},
-{1, 1, 3, 3, 3, 0, 0, 0, 0, 0},
-{1, 1, 3, 3, 3, 3, 0, 0, 0, 0},
-{1, 1, 3, 3, 3, 3, 3, 0, 0, 0},
-{1, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-{1, 1, 1, 2, 0, 0, 0, 0, 0, 0},
-{1, 1, 1, 2, 2, 0, 0, 0, 0, 0},
-{1, 1, 1, 2, 2, 2, 0, 0, 0, 0},
-{1, 1, 1, 2, 2, 2, 2, 0, 0, 0},
-{1, 1, 1, 2, 2, 2, 2, 2, 0, 0},
-{1, 1, 1, 3, 0, 0, 0, 0, 0, 0},
-{1, 1, 1, 3, 3, 0, 0, 0, 0, 0},
-{1, 1, 1, 3, 3, 3, 0, 0, 0, 0},
-{1, 1, 1, 3, 3, 3, 3, 0, 0, 0},
-{1, 1, 1, 3, 3, 3, 3, 3, 0, 0}
-};
+void Block::up() {
+  translation.i -= 1;
+}
 
-struct Point {
-  int i;
-  int j;
-};
+void Block::down() {
+  translation.i += 1;
+}
 
-struct Block {
-  Point center;
-  int num_squares;
-  Point squares[10];
-  // Mutable state used to place the block in various positions.
-  Point offset;
-  int angle;
-};
+void Block::rotate() {
+  rotation += 1;
+}
 
-void print_bitmap(const Bitmap& bitmap) {
+void Block::unrotate() {
+  rotation -= 1;
+}
+
+// The checked_* methods below perform an operation on the block
+// only if it's a legal move on the passed in board.  They
+// return true if the move succeeded.
+//
+// The block is still assumed to start in a legal position.
+bool Block::checked_left(const Board& board) {
+  left();
+  if (board.check(*this)) {
+    return true;
+  }
+  right();
+  return false;
+}
+
+bool Block::checked_right(const Board& board) {
+  right();
+  if (board.check(*this)) {
+    return true;
+  }
+  left();
+  return false;
+}
+
+bool Block::checked_up(const Board& board) {
+  up();
+  if (board.check(*this)) {
+    return true;
+  }
+  down();
+  return false;
+}
+
+bool Block::checked_down(const Board& board) {
+  down();
+  if (board.check(*this)) {
+    return true;
+  }
+  up();
+  return false;
+}
+
+bool Block::checked_rotate(const Board& board) {
+  rotate();
+  if (board.check(*this)) {
+    return true;
+  }
+  unrotate();
+  return false;
+}
+
+void Block::do_command(const string& command) {
+  if (command == "left") {
+    left();
+  } else if (command == "right") {
+    right();
+  } else if (command == "up") {
+    up();
+  } else if (command == "down") {
+    down();
+  } else if (command == "rotate") {
+    rotate();
+  } else {
+    throw Exception("Invalid command " + command);
+  }
+}
+
+void Block::do_commands(const vector<string>& commands) {
+  for (int i = 0; i < commands.size(); i++) {
+    do_command(commands[i]);
+  }
+}
+
+void Block::reset_position() {
+  translation.i = 0;
+  translation.j = 0;
+  rotation = 0;
+}
+
+//----------------------------------
+// Board implementation starts here!
+//----------------------------------
+
+Board::Board() {
+  rows = ROWS;
+  cols = COLS;
+}
+
+Board::Board(const Object& state) {
+  rows = ROWS;
+  cols = COLS;
+
   for (int i = 0; i < ROWS; i++) {
     for (int j = 0; j < COLS; j++) {
-      cout << (bitmap[i][j] ? "1 " : "0 ");
+      bitmap[i][j] = ((int)(Number&)state["bitmap"][i][j] ? 1 : 0);
     }
-    cout << endl;
+  }
+
+  // Note that these blocks are NEVER destructed! This is because calling
+  // place() on a board will create new boards which share these objects.
+  //
+  // There's a memory leak here, but it's okay: blocks are only constructed
+  // when you construct a board from a JSON Object, which should only happen
+  // for the very first board. The total memory leaked will only be ~10 kb.
+  block = new Block((Object&)state["block"]);
+  for (int i = 0; i < PREVIEW_SIZE; i++) {
+    preview.push_back(new Block((Object&)state["preview"][i]));
   }
 }
 
-void set_offsets(int* move, Block& block) {
-  block.offset.i = 0;
-  block.offset.j = 0;
-  block.angle = 0;
-  for (int i = 0; i < MOVE_SIZE; i++) {
-    if (move[i] == 0) {
-      break;
-    } else if (move[i] == 1) {
-      block.angle += 1;
-    } else if (move[i] == 2) {
-      block.offset.j -= 1;
-    } else if (move[i] == 3) {
-      block.offset.j += 1;
-    }
-  }
-}
-
-bool check(const Bitmap& bitmap, const Block& block) {
+// Returns true if the `query` block is in valid position - that is, if all of
+// its squares are in bounds and are currently unoccupied.
+bool Board::check(const Block& query) const {
   Point point;
-  for (int i = 0; i < block.num_squares; i++) {
-    if (block.angle % 2) {
-      point.i = block.center.i + (2 - block.angle)*block.squares[i].j;
-      point.j = block.center.j - (2 - block.angle)*block.squares[i].i;
+  for (int i = 0; i < query.size; i++) {
+    point.i = query.center.i + query.translation.i;
+    point.j = query.center.j + query.translation.j;
+    if (query.rotation % 2) {
+      point.i += (2 - query.rotation)*query.offsets[i].j;
+      point.j +=  -(2 - query.rotation)*query.offsets[i].i;
     } else {
-      point.i = block.center.i + (1 - block.angle)*block.squares[i].i;
-      point.j = block.center.j + (1 - block.angle)*block.squares[i].j;
+      point.i += (1 - query.rotation)*query.offsets[i].i;
+      point.j += (1 - query.rotation)*query.offsets[i].j;
     }
-    point.i += block.offset.i;
-    point.j += block.offset.j;
     if (point.i < 0 || point.i >= ROWS ||
         point.j < 0 || point.j >= COLS || bitmap[point.i][point.j]) {
       return false;
@@ -140,12 +177,81 @@ bool check(const Bitmap& bitmap, const Block& block) {
   return true;
 }
 
-void remove_rows(Bitmap& bitmap) {
+// Resets the block's position, moves it according to the given commands, then
+// drops it onto the board. Returns a pointer to the new board state object.
+//
+// Throws an exception if the block is ever in an invalid position.
+Board* Board::do_commands(const vector<string>& commands) {
+  block->reset_position();
+  if (!check(*block)) {
+    throw Exception("Block started in an invalid position");
+  }
+  for (int i = 0; i < commands.size(); i++) {
+    if (commands[i] == "drop") {
+      return place();
+    } else {
+      block->do_command(commands[i]);
+      if (!check(*block)) {
+        throw Exception("Block reached in an invalid position");
+      }
+    }
+  }
+  // If we've gotten here, there was no "drop" command. Drop anyway.
+  return place();
+}
+
+// Drops the block from whatever position it is currently at. Returns a
+// pointer to the new board state object, with the next block drawn from the
+// preview list.
+//
+// Assumes the block starts out in valid position.
+// This method translates the current block downwards.
+//
+// If there are no blocks left in the preview list, this method will fail badly!
+// This is okay because we don't expect to look ahead that far.
+Board* Board::place() {
+  Board* new_board = new Board();
+
+  while (check(*block)) {
+    block->down();
+  }
+  block->up();
+
+  for (int i = 0; i < ROWS; i++) {
+    for (int j = 0; j < COLS; j++) {
+      new_board->bitmap[i][j] = bitmap[i][j];
+    }
+  }
+
+  Point point;
+  for (int i = 0; i < block->size; i++) {
+    point.i = block->center.i + block->translation.i;
+    point.j = block->center.j + block->translation.j;
+    if (block->rotation % 2) {
+      point.i += (2 - block->rotation)*block->offsets[i].j;
+      point.j +=  -(2 - block->rotation)*block->offsets[i].i;
+    } else {
+      point.i += (1 - block->rotation)*block->offsets[i].i;
+      point.j += (1 - block->rotation)*block->offsets[i].j;
+    }
+    new_board->bitmap[point.i][point.j] = 1;
+  }
+  Board::remove_rows(&(new_board->bitmap));
+
+  new_board->block = preview[0];
+  for (int i = 1; i < preview.size(); i++) {
+    new_board->preview.push_back(preview[i]);
+  }
+}
+
+// A static method that takes in a new_bitmap and removes any full rows from it.
+// Mutates the new_bitmap in place.
+void Board::remove_rows(Bitmap* new_bitmap) {
   int rows_removed = 0;
   for (int i = ROWS - 1; i >= 0; i--) {
     bool full = true;
     for (int j = 0; j < COLS; j++) {
-      if (!bitmap[i][j]) {
+      if (!(*new_bitmap)[i][j]) {
         full = false;
         break;
       }
@@ -154,200 +260,35 @@ void remove_rows(Bitmap& bitmap) {
       rows_removed += 1;
     } else if (rows_removed) {
       for (int j = 0; j < COLS; j++) {
-        bitmap[i + rows_removed][j] = bitmap[i][j];
+        (*new_bitmap)[i + rows_removed][j] = (*new_bitmap)[i][j];
       }
     }
   }
   for (int i = 0; i < rows_removed; i++) {
     for (int j = 0; j < COLS; j++) {
-      bitmap[i][j] = 0;
+      (*new_bitmap)[i][j] = 0;
     }
-  }
-}
-
-// Assumes block is initially in a valid state.
-void place(const Bitmap& bitmap, Block& block, Bitmap& next_bitmap) {
-  block.offset.i += 1;
-  while (check(bitmap, block)) {
-    block.offset.i += 1;
-  }
-  block.offset.i -= 1;
-
-  for (int i = 0; i < ROWS; i++) {
-    for (int j = 0; j < COLS; j++) {
-      next_bitmap[i][j] = bitmap[i][j];
-    }
-  }
-
-  Point point;
-  for (int i = 0; i < block.num_squares; i++) {
-    if (block.angle % 2) {
-      point.i = block.center.i + (2 - block.angle)*block.squares[i].j;
-      point.j = block.center.j - (2 - block.angle)*block.squares[i].i;
-    } else {
-      point.i = block.center.i + (1 - block.angle)*block.squares[i].i;
-      point.j = block.center.j + (1 - block.angle)*block.squares[i].j;
-    }
-    point.i += block.offset.i;
-    point.j += block.offset.j;
-    next_bitmap[point.i][point.j] = 1;
-  }
-
-  remove_rows(next_bitmap);
-}
-
-float objective(const Bitmap& bitmap) {
-  int sum_heights = 0;
-  int max_height = 0;
-  int sum_squared_heights = 0;
-  int sum_squared_diffs = 0;
-
-  int height = 0;
-  int last_height = 0;
-
-  for (int j = 0; j < COLS; j++) {
-    for (int i = 0; i < ROWS; i++) {
-      if (bitmap[i][j]) {
-        height = ROWS - i - 1;
-        sum_heights += height;
-        if (height > max_height) {
-          max_height = height;
-        }
-        sum_squared_heights += (height*height);
-        if (j > 0) {
-          sum_squared_diffs += (height-last_height)*(height-last_height);
-        }
-        break;
-      }
-    }
-    last_height = height;
-  }
-
-  float var = (sum_squared_heights - (sum_heights*sum_heights)/COLS);
-  return -(0.8*sum_heights + max_height + 0.15*sqrt(var) + 0.15*sum_squared_diffs);
-}
-
-float lookahead(const Bitmap& bitmap, Block* preview, int width, int depth) {
-  vector<ScoredBitmap> bitmaps;
-  vector<ScoredBitmap> next_bitmaps;
-  bitmaps.push_back(ScoredBitmap(&bitmap, objective(bitmap)));
-
-  for (int d = 0; d < depth; d++) {
-    for (int i = 0; i < NUM_MOVES; i++) {
-      set_offsets(moves[i], preview[d]);
-      for (int j = 0; j < bitmaps.size(); j++) {
-        if (check(*bitmaps[j].first, preview[d])) {
-          Bitmap* next_bitmap = new Bitmap[1];
-          place(*bitmaps[j].first, preview[d], *next_bitmap);
-          next_bitmaps.push_back(ScoredBitmap(next_bitmap, objective(*next_bitmap)));
-          push_heap(next_bitmaps.begin(), next_bitmaps.end(), ScoredBitmap_comp());
-
-          if (next_bitmaps.size() > width) {
-            pop_heap(next_bitmaps.begin(), next_bitmaps.end(), ScoredBitmap_comp());
-            ScoredBitmap weakest_move = next_bitmaps.back();
-            next_bitmaps.pop_back();
-            delete[] weakest_move.first;
-          }
-        }
-      }
-    }
-
-    while (bitmaps.size()) {
-      if (d == 0) {
-        bitmaps.pop_back();
-        break;
-      }
-      ScoredBitmap old_bitmap = bitmaps.back();
-      bitmaps.pop_back();
-      delete[] old_bitmap.first;
-    }
-    while (next_bitmaps.size()) {
-      ScoredBitmap new_bitmap = next_bitmaps.back();
-      bitmaps.push_back(new_bitmap);
-      next_bitmaps.pop_back();
-    }
-  }
-
-  float score = -(1 << 30);
-  while (bitmaps.size()) {
-    ScoredBitmap old_bitmap = bitmaps.back();
-    bitmaps.pop_back();
-    if (old_bitmap.second > score) {
-      score = old_bitmap.second;
-    }
-    delete[] old_bitmap.first;
-  }
-  return score;
-}
-
-int search(const Bitmap& bitmap, Block& block, Block* preview) {
-  int best_move = 0;
-  float best_outcome = -(1 << 30);
-  int next_bitmap[ROWS][COLS];
-
-  for (int i = 0; i < NUM_MOVES; i++) {
-    set_offsets(moves[i], block);
-    if (check(bitmap, block)) {
-      place(bitmap, block, next_bitmap);
-      float outcome = lookahead(next_bitmap, preview, 10, 3);
-      if (outcome > best_outcome) {
-        best_move = i;
-        best_outcome = outcome;
-      }
-    }
-  }
-  return best_move;
-}
-
-void read_block(Object& raw_block, Block& block) {
-  block.center.i = (int)(Number&)raw_block["center"]["i"];
-  block.center.j = (int)(Number&)raw_block["center"]["j"];
-  block.num_squares = 0;
-
-  Array& offsets = raw_block["offsets"];
-  for (Array::const_iterator it = offsets.Begin(); it < offsets.End(); it++) {
-    block.num_squares += 1;
-  }
-  for (int i = 0; i < block.num_squares; i++) {
-    block.squares[i].i = (Number&)offsets[i]["i"];
-    block.squares[i].j = (Number&)offsets[i]["j"];
   }
 }
 
 int main(int argc, char** argv) {
-  //ifstream raw_state("state.json");
+  // Construct a JSON Object with the given game state.
   istringstream raw_state(argv[1]);
   Object state;
   Reader::Read(state, raw_state);
 
-  int bitmap[ROWS][COLS];
-  for (int i = 0; i < ROWS; i++) {
-    for (int j = 0; j < COLS; j++) {
-      bitmap[i][j] = ((int)(Number&)state["bitmap"][i][j] ? 1 : 0);
-    }
+  // Construct a board from this Object.
+  Board board(state);
+
+  // Make some moves!
+  vector<string> moves;
+  while (board.check(*board.block)) {
+    board.block->left();
+    moves.push_back("left");
   }
-
-  Block block, held_block;
-  read_block(state["block"], block);
-  read_block(state["held_block"], held_block);
-
-  Block preview[PREVIEW_SIZE];
-  for (int i = 0; i < PREVIEW_SIZE; i++) {
-    read_block(state["preview"][i], preview[i]);
-  }
-
-  int best_move = search(bitmap, block, preview);
-  int* move = moves[best_move];
-  for (int i = 0; i < MOVE_SIZE; i++) {
-    if (move[i] == 0) {
-      cout << "drop" << endl;
-      break;
-    } else if (move[i] == 1) {
-      cout << "rotate" << endl;
-    } else if (move[i] == 2) {
-      cout << "left" << endl;
-    } else if (move[i] == 3) {
-      cout << "right" << endl;
-    }
+  // Ignore the last move, because it moved the block into invalid
+  // position. Make all the rest.
+  for (int i = 0; i < moves.size() - 1; i++) {
+    cout << moves[i] << endl;
   }
 }
