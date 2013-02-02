@@ -5,6 +5,8 @@
 import MySQLdb as mdb
 import bcrypt
 
+DB_HOST = '10.35.9.6'
+
 class Database(object):
 
 	# Tuple indices for team objects
@@ -23,7 +25,7 @@ class Database(object):
 
 	@staticmethod
 	def add_team(team_name, password):
-		conn = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
+		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES(%s, %s, %s);'
 		cursor = conn.cursor()
 		cursor.execute(sql, (team_name, password, 0))
@@ -31,15 +33,23 @@ class Database(object):
 
 	@staticmethod
 	def add_score(team_name, game_id, seed, score, round_num):
-		conn = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
+		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES(%s, %s, %s, %s, %s);'
 		cursor = conn.cursor()
 		cursor.execute(sql, (team_name, game_id, seed, score, round_num))
 		conn.commit()
 
 	@staticmethod
+	def add_practice_score(team_name, game_id, seed, score):
+		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
+		sql = 'INSERT INTO practice_scores (team_name, game_id, seed, score) VALUES(%s, %s, %s, %s);'
+		cursor = conn.cursor()
+		cursor.execute(sql, (team_name, game_id, seed, score))
+		conn.commit()
+
+	@staticmethod
 	def latest_round():
-		conn = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
+		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'SELECT MAX(round) FROM scores'
 		cursor = conn.cursor()
 		cursor.execute(sql)
@@ -50,7 +60,7 @@ class Database(object):
 
 	@staticmethod
 	def scores_by_team():
-		conn = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
+		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'SELECT * FROM scores ORDER BY team_name ASC, round ASC'
 		cursor = conn.cursor()
 		cursor.execute(sql)
@@ -68,7 +78,7 @@ class Database(object):
 
 	@staticmethod
 	def get_team(team_name):
-		conn = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
+		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'SELECT * FROM teams WHERE team_name=%s'
 		cursor = conn.cursor()
 		cursor.execute(sql, team_name)
@@ -76,7 +86,7 @@ class Database(object):
 
 	@staticmethod
 	def list_all_teams():
-		conn = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
+		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'SELECT * FROM teams'
 		cursor = conn.cursor()
 		cursor.execute(sql)
@@ -106,7 +116,7 @@ class Database(object):
 
 	@staticmethod
 	def initialize_db():
-		conn = mdb.connect(host='localhost', user='dropblox', passwd='dropblox', db='dropblox')
+		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 
 		def create_team_table():
 			sql = 'CREATE TABLE IF NOT EXISTS teams (team_id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT, team_name VARCHAR(64), password CHAR(64), is_admin INTEGER);'
