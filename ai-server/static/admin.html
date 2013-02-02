@@ -229,14 +229,15 @@
               for (var i=0; i < score_dict[team].length; i++) {
                 var current_round = score_dict[team][i]['round'];
                 while (filled_rounds < current_round) {
-                  tbody += "<td>" + 0 + "</td>";
+                  tbody += "<td>" + "-" + "</td>";
                   filled_rounds++;
                 }
-                tbody += "<td>" + score_dict[team][i]['score'];
+                tbody += "<td>" + score_dict[team][i]['score'] + "</td>";
                 filled_rounds++;
               }
+
               while (filled_rounds <= biggest_round) {
-                tbody += "<td>" + 0 + "</td>";
+                tbody += "<td>" + "-" + "</td>";
                 filled_rounds++;
               }
 
@@ -244,7 +245,6 @@
               if (whitelisted_dict[team]) {
                   checked = " checked";
               }
-                                      
               tbody += "<td><input type='checkbox'" + checked + "></td>"
               tbody += "</tr>"
             });
