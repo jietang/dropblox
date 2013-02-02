@@ -107,9 +107,11 @@ class Competition(object):
 		}
 		sock.send(json.dumps(response))
 
-	@staticmethod
-	def record_game(team, game, round_num):
-		model.Database.add_score(team, game.game_id, game.seed, game.score, round_num)
+	def record_game(self, team, game):
+		if self.is_test_run:
+			model.Database.add_practice_score(team, game.game_id, game.seed, game.score)
+		else:
+			model.Database.add_score(team, game.game_id, game.seed, game.score, self.round)
 
 	def start_competition(self):
 		self.started = True
@@ -142,8 +144,7 @@ class Competition(object):
 			game.send_commands(commands)
 
 		if game.state == 'failed':
-			if not self.is_test_run:
-				Competition.record_game(team, game, self.round)
+			self.record_game(team, game)
 			Competition.send_game_over(game, sock)
 		elif game.state == 'playing':
 			Competition.request_next_move(game, sock)
@@ -154,7 +155,7 @@ class Competition(object):
 			for (team, game) in self.team_to_game.iteritems():
 				if game.state == 'playing':
 					game.state = 'failed'
-					Competition.record_game(team, game, self.round)
+					self.record_game(team, game)
 
 	# Called when a socket is closed.
 	def disconnect_sock(self, sock):

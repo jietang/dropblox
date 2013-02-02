@@ -207,11 +207,11 @@ def main(argv):
     else:
         global_config = {
             'server.socket_host': '0.0.0.0',
-            'server.socket_port': 443,
-            'server.ssl_module': 'pyopenssl',
-            'server.ssl_certificate': '/home/ubuntu/keys/myserver.crt',
-            'server.ssl_private_key': '/home/ubuntu/keys/myserver.key',
-            'server.ssl_certificate_chain': '/home/ubuntu/keys/sslchain.crt',
+            'server.socket_port': 8080,
+#            'server.ssl_module': 'pyopenssl',
+#            'server.ssl_certificate': '/home/ubuntu/keys/myserver.crt',
+#            'server.ssl_private_key': '/home/ubuntu/keys/myserver.key',
+#            'server.ssl_certificate_chain': '/home/ubuntu/keys/sslchain.crt',
             }
 
     config = {
