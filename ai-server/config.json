@@ -1,0 +1,8 @@
+{
+    "server.socket_host": "127.0.0.1",
+    "server.socket_port": 8443,
+    "server.ssl_module": "pyopenssl",
+    "_comment": "you must run the server in the same working directory",
+    "server.ssl_certificate": "server.crt",
+    "server.ssl_private_key": "server.key"
+}
