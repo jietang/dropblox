@@ -52,6 +52,8 @@ class Block {
   bool checked_down(const Board& board);
   bool checked_rotate(const Board& board);
 
+  // Performs a command or a list of commands to move a block. A command is one of
+  // "left", "right", "up", "down", "rotate".
   void do_command(const string& command);
   void do_commands(const vector<string>& commands);
 
@@ -80,6 +82,8 @@ class Board {
   // drops it onto the board. Returns a pointer to the new board state object.
   //
   // Throws an exception if the block is ever in an invalid position.
+  //
+  // A command is one of "left", "right", "up", "down", "rotate".
   Board* do_commands(const vector<string>& commands);
 
   // Drops the block from whatever position it is currently at. Returns a
