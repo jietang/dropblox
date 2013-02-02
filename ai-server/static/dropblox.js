@@ -71,7 +71,7 @@ var dropblox = {
     $('#content').html(
       '<div id="subcontent">Loading...</div>'
     );
-    $.ajax('http://localhost:9000', {
+    $.ajax('http://127.0.0.1:9000', {
       success: function(json) {
         if ($.cookie('active-link') == 'submission_history') {
           var response = JSON.parse(json);
@@ -154,7 +154,7 @@ var dropblox = {
     $('#' + game_id).addClass('active');
 
     $('#history-message').html('Loading game data...');
-    $.ajax('http://localhost:9000/details?game_id=' + game_id, {
+    $.ajax('http://127.0.0.1:9000/details?game_id=' + game_id, {
       success: function(json) {
         if (dropblox.cur_game.id == game_id) {
           var response = JSON.parse(json);

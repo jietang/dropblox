@@ -20,6 +20,7 @@ class Database(object):
 	SCORE_ROUND = 4
 
 	AUTHENTICATED_SOCKETS = {}
+	AUTHENTICATED_TEAMS = {}
 
 	@staticmethod
 	def add_team(team_name, password):
@@ -88,6 +89,8 @@ class Database(object):
 		if not team:
 			return None
 
+		if Database.AUTHENTICATED_TEAMS.get(team_name) == password:
+			return team
 		if session_sock and session_sock in Database.AUTHENTICATED_SOCKETS:
 			if Database.AUTHENTICATED_SOCKETS[session_sock] == team[Database.TEAM_TEAM_NAME]:
 				return team # This socket has already authenticated, no need to bcrypt password check again (since it is very slow)
@@ -95,6 +98,7 @@ class Database(object):
 		if not bcrypt.hashpw(password, team[Database.TEAM_PASSWORD]) == team[Database.TEAM_PASSWORD]:
 			return None
 
+		Database.AUTHENTICATED_TEAMS[team_name] = password
 		if session_sock:
 			Database.AUTHENTICATED_SOCKETS[session_sock] = team[Database.TEAM_TEAM_NAME]
 		return team
