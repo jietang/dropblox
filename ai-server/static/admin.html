@@ -160,7 +160,19 @@
         return false;
       });
 
+      var allow_refresh = true;
+      var is_refreshing = false;
       function refresh_table() {
+        if (!allow_refresh) {
+            return;
+        }
+
+        if (is_refreshing) {
+            return;
+        }
+
+        is_refreshing = true;
+
         var params = {
           team_name: $.cookie('team_name'),
           password: $.cookie('password'),
@@ -173,9 +185,18 @@
           contentType: "application/json",
           dataType: "json",
           success: function(response_dict) {
+            is_refreshing = false;
+
+            if (!allow_refresh) {
+                // someone clicked something while we were refreshing
+                // don't do anything
+                return;
+            }
+
             // (1) Find how many columns will be in the table.
             var score_dict = response_dict['team_scores']
             var connect_dict = response_dict['team_connect']
+            var whitelisted_dict = response_dict['team_whitelisted']
             var biggest_round = 0;
             var teams = [];
             for (var team in score_dict) {
@@ -218,7 +239,13 @@
                 tbody += "<td>" + 0 + "</td>";
                 filled_rounds++;
               }
-              tbody += "<td><input type='checkbox'></td>"
+
+              var checked = "";
+              if (whitelisted_dict[team]) {
+                  checked = " checked";
+              }
+                                      
+              tbody += "<td><input type='checkbox'" + checked + "></td>"
               tbody += "</tr>"
             });
             tbody += "</tbody>"
@@ -231,6 +258,8 @@
               }
 
               $(checkbox).click(function() {
+                allow_refresh = false;
+
                 if ($(checkbox).is(':checked')) {
                   next_round_teams[selected_team] = true;
 
@@ -239,6 +268,8 @@
                     password: $.cookie('password'),
                     'target_team' : selected_team,
                   };
+                  $('#post-error').html("Whitelisting team...")
+
                   $.ajax({
                     type: 'POST',
                     url: '/whitelist_team',
@@ -246,9 +277,11 @@
                     contentType: "application/json",
                     dataType: "json",
                     success: function(response) {
+                      allow_refresh = true;
                       $('#post-error').html('');
                     },
                     error: function(response) {
+                      allow_refresh = true;
                       var data = JSON.parse(response.responseText);
                       $('#post-error').html(data.message);
                     },
@@ -261,6 +294,7 @@
                     password: $.cookie('password'),
                     'target_team' : selected_team,
                   };
+                  $('#post-error').html("Blacklisting team...")
                   $.ajax({
                     type: 'POST',
                     url: '/blacklist_team',
@@ -268,9 +302,11 @@
                     contentType: "application/json",
                     dataType: "json",
                     success: function(response) {
+                      allow_refresh = true;
                       $('#post-error').html('');
                     },
                     error: function(response) {
+                      allow_refresh = true;
                       var data = JSON.parse(response.responseText);
                       $('#post-error').html(data.message);
                     },
@@ -280,6 +316,7 @@
             });
           },
           error: function(response) {
+            is_refreshing = false;
             var data = JSON.parse(response.responseText);
             $('#post-error').html(data.message);
           },

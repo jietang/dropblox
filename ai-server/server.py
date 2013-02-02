@@ -88,6 +88,7 @@ class DropbloxGameServer(object):
         response = {}
         response['team_scores'] = {}
         response['team_connect'] = {}
+        response['team_whitelisted'] = {}
         scores_by_team = model.Database.scores_by_team()
         for team in model.Database.list_all_teams():
             team_name = team[model.Database.TEAM_TEAM_NAME]
@@ -96,6 +97,7 @@ class DropbloxGameServer(object):
                 scores = scores_by_team[team_name]
             response['team_scores'][team_name] = scores
             response['team_connect'][team_name] = CURRENT_COMPETITION.is_team_connected(team_name)
+            response['team_whitelisted'][team_name] = CURRENT_COMPETITION.is_team_whitelisted(team_name)
 
         return json.dumps(response)
 
@@ -183,7 +185,7 @@ class DropbloxGameServer(object):
         
         team = model.Database.authenticate_team(body['team_name'], body['password'])
         if not team:
-            raise cherrypy.HTTPError(401, "Incorrect team name or password.")
+            raise cherrypy.HTTPError(401, "Incorrect team name or password. Please check your config.txt and that the credentials matched what you signed up with at https://www.playdropblox.com/")
 
         return json.dumps({'status': 200, 'message': 'Success!'})
                 
