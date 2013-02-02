@@ -49,11 +49,11 @@ var competition = {
           return;
         }
 
-        if (data.waiting_for_players) {
+        if (data.started) {
+          $('#login-status').html('Competition started!');
+        } else if (data.waiting_for_players) {
           plural = (data.waiting_for_players == 1 ? ' player...' : ' players...');
           $('#login-status').html('Waiting for ' + data.waiting_for_players + plural);
-        } else if (data.started) {
-          $('#login-status').html('Competition started!');
         } else {
           $('#login-status').html('Ready to start!');
         }
