@@ -3,19 +3,38 @@
 # Provides persistence to MySQL
 
 import contextlib
+import json
+import random
 import threading
 
 import MySQLdb as mdb
 import bcrypt
 
+from .logic.board import Board
+
 DB_HOST = '10.35.9.6'
 ADMIN_PW = '$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy'
+
+class Container(object):
+        def __init__(self, **kw):
+                for (k, v) in kw.iteritems():
+                        setattr(self, k, v)
+
+        def to_dict(self):
+                out = {}
+                for (k, v) in self.__dict__.iteritems():
+                        if hasattr(v, 'to_dict'):
+                                out[k] = v.to_dict()
+                        else:
+                                out[k] = v
+                return out
 
 class OurCursor(mdb.Cursor):
 	# Tuple indices for team objects
 	TEAM_TEAM_NAME = 1
 	TEAM_PASSWORD = 2
 	TEAM_IS_ADMIN = 3
+	TEAM_TOURNAMENT_ID = 4
 
 	# Tuple indices for score objects
 	SCORE_TEAM_NAME = 0
@@ -24,18 +43,13 @@ class OurCursor(mdb.Cursor):
 	SCORE_SCORE = 3
 	SCORE_ROUND = 4
 
-	AUTHENTICATED_SOCKETS = {}
-	AUTHENTICATED_TEAMS = {}
-
-	def add_team(self, team_name, password, is_admin=False):
-		sql = 'INSERT INTO teams (team_name, password, is_admin) VALUES(%s, %s, %s);'
-		self.execute(sql, (team_name, password, int(bool(is_admin))))
+	def add_team(self, tournament_id, team_name, password, is_admin=False):
+		sql = 'INSERT INTO teams (team_name, password, is_admin, tournament_id) VALUES(%s, %s, %s);'
+		self.execute(sql, (team_name, password, int(bool(is_admin)), tournament_id))
 
 	def add_score(self, team_name, game_id, seed, score, round_num):
 		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES(%s, %s, %s, %s, %s);'
-		cursor = conn.cursor()
-		cursor.execute(sql, (team_name, game_id, seed, score, round_num))
-		conn.commit()
+		self.execute(sql, (team_name, game_id, seed, score, round_num))
 
 	def add_practice_score(self, team_name, game_id, seed, score):
 		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
@@ -54,7 +68,7 @@ class OurCursor(mdb.Cursor):
 			result = 0
 		return result
 
-	def scores_by_team():
+	def scores_by_team(self):
 		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'SELECT * FROM scores ORDER BY team_name ASC, round ASC'
 		cursor = conn.cursor()
@@ -71,40 +85,88 @@ class OurCursor(mdb.Cursor):
 			})
 		return team_to_scores
 
-	@staticmethod
-	def get_team(team_name):
+	def get_team_by_name(self, team_name):
 		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
-		sql = 'SELECT * FROM teams WHERE team_name=%s'
+		sql = 'SELECT id, team_name, password, is_admin, tournament_id FROM teams WHERE team_name=%s'
 		cursor = conn.cursor()
 		cursor.execute(sql, team_name)
-		return cursor.fetchone()
+		t = cursor.fetchone()
+                if t is None:
+                        return None
+                return Container(id=t[0], name=t[1], password=t[2], is_admin=t[3],
+                                 tournament_id=t[4])
 
-	@staticmethod
-	def list_all_teams():
+	def list_all_teams(self):
 		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'SELECT * FROM teams'
 		cursor = conn.cursor()
 		cursor.execute(sql)
-		return cursor.fetchall()		
+		return cursor.fetchall()
 
-	def authenticate_team(self, team_name, password, session_sock=None):
-		team = Database.get_team(team_name)
-		if not team:
+	def authenticate_team(self, team_name, password):
+		team = self.get_team_by_name(team_name)
+		if team is None:
 			return None
 
-		if Database.AUTHENTICATED_TEAMS.get(team_name) == password:
-			return team
-		if session_sock and session_sock in Database.AUTHENTICATED_SOCKETS:
-			if Database.AUTHENTICATED_SOCKETS[session_sock] == team[Database.TEAM_TEAM_NAME]:
-				return team # This socket has already authenticated, no need to bcrypt password check again (since it is very slow)
-
-		if not bcrypt.hashpw(password, team[Database.TEAM_PASSWORD]) == team[Database.TEAM_PASSWORD]:
+		if bcrypt.hashpw(password, team.password) != team.password:
 			return None
 
-		Database.AUTHENTICATED_TEAMS[team_name] = password
-		if session_sock:
-			Database.AUTHENTICATED_SOCKETS[session_sock] = team[Database.TEAM_TEAM_NAME]
 		return team
+
+        def create_test_game(self, tournament_id, team_id):
+                game_seed = random.randint(-2**31, 2**31-1)
+                while True:
+                        # index is unimportant for practice competitions
+                        index = random.randint(-2**31, 2**31-1)
+
+                        try:
+                                comp = self._create_competition(tournament_id, index,
+                                                                game_seed, True)
+                        except self.connection.IntegrityError:
+                                continue
+                        else:
+                                break
+                return self._create_game(comp.id, team_id, game_seed)
+
+        def _create_game(self, competition_id, team_id, game_seed):
+                assert isinstance(competition_id, int), "bad competition id%r" % (competition_id,)
+                assert isinstance(team_id, int), "bad team id%r" % (team_id,)
+                assert isinstance(game_seed, int), "bad game seed id%r" % (game_seed,)
+                sql = """
+INSERT INTO game (
+number_moves_made,
+game_state,
+team_id,
+competition_id,
+)
+VALUES
+(?, ?, ?, ?)
+"""
+                gs = Board(game_seed)
+                self.execute(sql, (0, json.dumps(gs), team_id, competition_id))
+                game_id = self.connection.insert_id()
+                return Container(id=game_id,
+                                 number_moves_made=0,
+                                 game_state=gs,
+                                 team_id=team_id,
+                                 competition_id=competition_id)
+
+        def _create_competition(self, tournament_id, index, game_seed, is_practice):
+                # sorry we need hard types, mysql isn't duck-type friendly
+                assert isinstance(tournament_id, int), "tournament_id isn't int: %r" % (tournament_id,)
+                assert isinstance(index, int), "index isn't int: %r" % (index,)
+                assert isinstance(game_seed, int), "seed isn't int: %r" % (game_seed,)
+                assert isinstance(is_practice, bool), "is_practice isn't boolt : %r" % (is_practice,)
+                sql = """
+INSERT INTO competition (tournament_id, index, game_seed, is_pratice) VALUES(%s, %s, %s, %s)
+"""
+                self.execute(sql, (tournament_id, index, game_seed, int(is_practice)))
+                competition_id = self.connection.insert_id()
+                return Container(competition_id=competition_id,
+                                 tournament_id=tournament_id,
+                                 index=index,
+                                 game_seed=game_seed,
+                                 is_practice=is_practice)
 
 	def report_session_ended(self, session_sock):
 		if session_sock in Database.AUTHENTICATED_SOCKETS:
@@ -116,7 +178,8 @@ class OurCursor(mdb.Cursor):
 CREATE TABLE IF NOT EXISTS tournament (
  id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,
  school_name VARCHAR(255) NOT NULL,
- date INTEGER NOT NULL
+ date INTEGER NOT NULL,
+ UNIQUE (school_name)
 )
 ENGINE=InnoDB
 """
@@ -130,6 +193,7 @@ CREATE TABLE IF NOT EXISTS teams (
  password CHAR(64) NOT NULL,,
  is_admin INTEGER NOT NULL, ,
  tournament_id INTEGER NOT NULL,
+ UNIQUE (tournament_id, team_name)
 )
 ENGINE=InnoDB
 """
@@ -143,6 +207,7 @@ CREATE TABLE IF NOT EXISTS competition (
  index INTEGER NOT NULL,
  game_seed INTEGER NOT NULL,
  is_practice INTEGER NOT NULL,
+ UNIQUE (tournament_id, is_practice, index)
 )
 ENGINE=InnoDB
 """
@@ -156,7 +221,8 @@ CREATE TABLE IF NOT EXISTS game (
  game_state TEXT NOT NULL,
  team_id INTEGER NOT NULL,
  competition_id INTEGER NOT NULL,
- score INTEGER
+ score INTEGER,
+ UNIQUE (competition_id, team_id)
 )
 ENGINE=InnoDB
 """

@@ -20,36 +20,6 @@ from ws4py.websocket import WebSocket
 CURRENT_COMPETITION = competition.Competition()
 TESTING_COMPETITIONS = {} # Socket -> Practice competition instance
 
-class SingleServerEventRouter(object):
-    def __init__(self):
-        pass
-
-    def notify_game_created(self, game_id=None):
-            response = {
-                    'type' : messaging.NEW_GAME_CREATED_MSG,
-            }
-            if game_id:
-                    response['game_id'] = game_id
-            sock.send(json.dumps(response))
-
-    def request_next_move(self, game, team):
-            seconds_remaining = util.AI_CLIENT_TIMEOUT - (time.time() - game.game_started_at)
-            seconds_remaining -= 1 # Tell the client it has one second less than it actually has to account for latency.
-            response = {
-                    'type': messaging.AWAITING_NEXT_MOVE_MSG,
-                    'game_state': game.to_dict(),
-                    'seconds_remaining': seconds_remaining,
-            }
-            sock.send(json.dumps(response))
-
-    def send_game_over(self, game, team):
-            response = {
-                    'type': messaging.GAME_OVER_MSG,
-                    'game_state': game.to_dict(),
-                    'final_score': game.score,
-            }
-            sock.send(json.dumps(response))
-
 class DropbloxWebSocketHandler(WebSocket):
     def __init__(self):
         self.test_competition = None
@@ -130,6 +100,15 @@ class DropbloxGameServer(object):
                 kwargs['body'] = body
                 return f(*args, **kwargs)
         return wrapped
+
+    client = None
+
+    @client
+    def create_new_test_game(self, body):
+        with self.db.transaction() as trans:
+            team = trans.authenticate_team(body['team_name'], body['team_password'])
+            game = trans.create_test_game(team.tournament_id, team.id)
+            return json.dumps(game.to_dict())
 
     @cherrypy.expose
     @admin_only
