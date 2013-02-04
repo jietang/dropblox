@@ -24,6 +24,9 @@ from subprocess import Popen, PIPE, STDOUT
 # Remote server to connect to:
 SERVER_URL = 'https://playdropblox.com/'
 WEBSOCKET_URL = 'wss://playdropblox.com/ws'
+#SERVER_URL = 'https://ec2-23-20-109-136.compute-1.amazonaws.com/'
+#WEBSOCKET_URL = 'wss://ec2-23-20-109-136.compute-1.amazonaws.com/ws'
+
 
 # Subprocess
 LEFT_CMD = 'left'

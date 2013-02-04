@@ -14,6 +14,8 @@ import util
 import json
 import time
 
+class InvalidTeamError(Exception): pass
+
 class Competition(object):
 
 	def __init__(self, is_test_run=False):
@@ -88,7 +90,7 @@ class Competition(object):
 		sock.send(json.dumps(response))
 
 	@staticmethod
-	def request_next_move(game, sock):
+	def request_next_move(game):
 		seconds_remaining = util.AI_CLIENT_TIMEOUT - (time.time() - game.game_started_at)
 		seconds_remaining -= 1 # Tell the client it has one second less than it actually has to account for latency.
 		response = {
@@ -96,16 +98,16 @@ class Competition(object):
 			'game_state': game.to_dict(),
 			'seconds_remaining': seconds_remaining,
 		}
-		sock.send(json.dumps(response))
+                return response
 
 	@staticmethod
-	def send_game_over(game, sock):
+	def send_game_over(game):
 		response = {
 			'type': messaging.GAME_OVER_MSG,
 			'game_state': game.to_dict(),
 			'final_score': game.score,
 		}
-		sock.send(json.dumps(response))
+                return response
 
 	def record_game(self, team, game):
 		if self.is_test_run:
@@ -128,15 +130,13 @@ class Competition(object):
 				return False
 		return True
 
-	def make_move(self, team, sock, commands):
+	def make_move(self, game_id, team, commands):
 		if not team in self.team_to_game:
-			sock.close(code=messaging.DO_NOT_RECONNECT, reason="This team is not active.")
-			return
+                        raise InvalidTeamError()
 
 		game = self.team_to_game[team]
 		if game.state == 'failed':
-			Competition.send_game_over(game, sock)
-			return
+			return Competition.send_game_over(game)
 
 		if time.time() - game.game_started_at > util.AI_CLIENT_TIMEOUT:
 			game.state = 'failed'
@@ -145,9 +145,9 @@ class Competition(object):
 
 		if game.state == 'failed':
 			self.record_game(team, game)
-			Competition.send_game_over(game, sock)
+			return Competition.send_game_over(game)
 		elif game.state == 'playing':
-			Competition.request_next_move(game, sock)
+			return Competition.request_next_move(game)
 
 	# Called when the competition is forcibly ended.
 	def record_remaining_games(self):

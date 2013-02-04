@@ -17,12 +17,45 @@ import sys
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
 
-model.Database.initialize_db()
 CURRENT_COMPETITION = competition.Competition()
 TESTING_COMPETITIONS = {} # Socket -> Practice competition instance
 
+class SingleServerEventRouter(object):
+    def __init__(self):
+        pass
+
+    def notify_game_created(self, game_id=None):
+            response = {
+                    'type' : messaging.NEW_GAME_CREATED_MSG,
+            }
+            if game_id:
+                    response['game_id'] = game_id
+            sock.send(json.dumps(response))
+
+    def request_next_move(self, game, team):
+            seconds_remaining = util.AI_CLIENT_TIMEOUT - (time.time() - game.game_started_at)
+            seconds_remaining -= 1 # Tell the client it has one second less than it actually has to account for latency.
+            response = {
+                    'type': messaging.AWAITING_NEXT_MOVE_MSG,
+                    'game_state': game.to_dict(),
+                    'seconds_remaining': seconds_remaining,
+            }
+            sock.send(json.dumps(response))
+
+    def send_game_over(self, game, team):
+            response = {
+                    'type': messaging.GAME_OVER_MSG,
+                    'game_state': game.to_dict(),
+                    'final_score': game.score,
+            }
+            sock.send(json.dumps(response))
+
 class DropbloxWebSocketHandler(WebSocket):
+    def __init__(self):
+        self.test_competition = None
+
     def handle_competition_msg_from_team(self, msg, team):
+        # RH: slowly turning these into RPCs
         global CURRENT_COMPETITION
         team_name = team[model.Database.TEAM_TEAM_NAME]
         if msg['type'] == messaging.CREATE_NEW_GAME_MSG:
@@ -31,15 +64,28 @@ class DropbloxWebSocketHandler(WebSocket):
             CURRENT_COMPETITION.make_move(team_name, self, msg['move_list'])
 
     def handle_testing_msg_from_team(self, msg, team):
+        # RH: slowly turning these into RPCs
         team_name = team[model.Database.TEAM_TEAM_NAME]
         if msg['type'] == messaging.CREATE_NEW_GAME_MSG:
-            test_competition = competition.Competition(is_test_run=True)
-            TESTING_COMPETITIONS[self] = test_competition
-            test_competition.whitelist_team(team_name)
-            test_competition.register_team(team_name, self)
-            test_competition.start_competition()
+            return self._create_new_test_game(team_name)
         elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
-            TESTING_COMPETITIONS[self].make_move(team_name, self, msg['move_list'])
+            return self._submit_test_move(team_name, msg['move_list'])
+
+    def _create_new_test_game(self, team_name):
+        self.test_competition = competition.Competition(is_test_run=True)
+        self.test_competition.whitelist_team(team_name)
+        self.test_competition.register_team(team_name)
+        self.test_competition.start_competition()
+
+    def _submit_test_move(self, team_name, move_list):
+        try:
+            msg = self.test_competition.make_move(team_name, move_list)
+        except competition.InvalidTeamError:
+            self.close(code=messaging.DO_NOT_RECONNECT,
+                       reason="This team is not active.")
+            return
+
+        self.send(json.dumps(msg))
 
     def received_message(self, msg):
         print "received_message %s" % msg
@@ -62,6 +108,9 @@ class DropbloxWebSocketHandler(WebSocket):
             del TESTING_COMPETITIONS[self]
         
 class DropbloxGameServer(object):
+    def __init__(self, db):
+        self.db = db
+
     @cherrypy.expose
     def ws(self):
         "Method must exist to serve as a exposed hook for the websocket"
@@ -195,6 +244,8 @@ def jsonify_error(status, message, traceback, version):
     return json.dumps({'status': status, 'message': message})
 
 def main(argv):
+    db_model = model.Database()
+
     WebSocketPlugin(cherrypy.engine).subscribe()
     cherrypy.tools.websocket = WebSocketTool()
 
@@ -229,7 +280,7 @@ def main(argv):
             },
         }
 
-    cherrypy.quickstart(DropbloxGameServer(), config=config)
+    cherrypy.quickstart(DropbloxGameServer(db_model), config=config)
 
     return 0
 
