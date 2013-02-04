@@ -86,20 +86,16 @@ class DropbloxGameServer(object):
         "Method must exist to serve as a exposed hook for the websocket"
         pass
 
-    def admin_only(f):
-        def wrapped(*args, **kwargs):
-            cl = cherrypy.request.headers['Content-Length']
-            rawbody = cherrypy.request.body.read(int(cl))
-
-            body = json.loads(rawbody)
-
-            team = model.Database.authenticate_team(body['team_name'], body['password'])
-            if not team or not team[model.Database.TEAM_IS_ADMIN]:
-                raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
-            else:
-                kwargs['body'] = body
-                return f(*args, **kwargs)
-        return wrapped
+    def require_team_auth(admin_only=False):
+        def wrapper(f):
+            def wrapped(*args, **kwargs):
+                body = cherrypy.request.json
+                team = model.Database.authenticate_team(body['team_name'], body['password']) 
+                if not team or (admin_only and not team[model.Database.TEAM_IS_ADMIN]):
+                    raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
+                return f(*args, team=team, body=body, **kwargs)
+            return cherrypy.tools.json_out()(cherrypy.tools.json_in()(wrapped))
+        return wrapper
 
     client = None
 
@@ -111,8 +107,8 @@ class DropbloxGameServer(object):
             return json.dumps(game.to_dict())
 
     @cherrypy.expose
-    @admin_only
-    def list_teams(self, body):
+    @require_team_auth(admin_only=True)
+    def list_teams(self, team, body):
         response = {}
         response['team_scores'] = {}
         response['team_connect'] = {}
@@ -127,11 +123,11 @@ class DropbloxGameServer(object):
             response['team_connect'][team_name] = CURRENT_COMPETITION.is_team_connected(team_name)
             response['team_whitelisted'][team_name] = CURRENT_COMPETITION.is_team_whitelisted(team_name)
 
-        return json.dumps(response)
+        return response
 
     @cherrypy.expose
-    @admin_only
-    def competition_state(self, body):
+    @require_team_auth(admin_only=True)
+    def competition_state(self, team, body):
         response = {}
         response['boards'] = {}
         for team in CURRENT_COMPETITION.team_to_game:
@@ -142,11 +138,11 @@ class DropbloxGameServer(object):
         response['round'] = CURRENT_COMPETITION.round
         response['started'] = CURRENT_COMPETITION.started
 
-        return json.dumps(response)
+        return response
 
     @cherrypy.expose
-    @admin_only
-    def start_next_round(self, body):
+    @require_team_auth(admin_only=True)
+    def start_next_round(self, team, body):
         if CURRENT_COMPETITION.started:
             raise cherrypy.HTTPError(400, "Can't restart a competition!")
 
@@ -158,29 +154,29 @@ class DropbloxGameServer(object):
                 raise cherrypy.HTTPError(400, "Team %s is not connected!" % (team_name,))
 
         CURRENT_COMPETITION.start_competition()
-        return json.dumps({'status': 200, 'message': 'Success!'})
+        return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
-    @admin_only
-    def whitelist_team(self, body):
+    @require_team_auth(admin_only=True)
+    def whitelist_team(self, team, body):
         CURRENT_COMPETITION.whitelist_team(body['target_team'])
-        return json.dumps({'status': 200, 'message': 'Success!'})
+        return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
-    @admin_only
-    def blacklist_team(self, body):
+    @require_team_auth(admin_only=True)
+    def blacklist_team(self, team, body):
         CURRENT_COMPETITION.blacklist_team(body['target_team'])
-        return json.dumps({'status': 200, 'message': 'Success!'})
+        return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
-    @admin_only
+    @require_team_auth(admin_only=True)
     def end_round(self, body):
         global CURRENT_COMPETITION
         if not CURRENT_COMPETITION.started:
           raise cherrypy.HTTPError(400, "This competition hasn't been started yet!")
         CURRENT_COMPETITION.record_remaining_games()
         CURRENT_COMPETITION = competition.Competition()
-        return json.dumps({'status': 200, 'message': 'Success!'})
+        return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
     def signup(self):
@@ -210,13 +206,36 @@ class DropbloxGameServer(object):
         cl = cherrypy.request.headers['Content-Length']
         rawbody = cherrypy.request.body.read(int(cl))
         body = json.loads(rawbody)
-        
         team = model.Database.authenticate_team(body['team_name'], body['password'])
         if not team:
             raise cherrypy.HTTPError(401, "Incorrect team name or password. Please check your config.txt and that the credentials matched what you signed up with at https://www.playdropblox.com/")
 
         return json.dumps({'status': 200, 'message': 'Success!'})
-                
+
+    @cherrypy.expose
+    @require_team_auth
+    def create_game(self, team, body):
+        team_name = team[model.Database.TEAM_TEAM_NAME]
+        if body['entry_mode'] == 'compete':
+            CURRENT_COMPETITION.register_team(team_name, self)
+            competition = CURRENT_COMPETITION
+        else: 
+            competition = competition.Competition(is_test_run=True)
+            competition.whitelist_team(team_name)
+            competition.register_team(team_name, self)
+            competition.start_competition()
+        return { 'message': "Success!",
+                 'game': competition.id }
+
+    @cherrypy.expose
+    @require_team_auth
+    def submit_move(self, team, body):
+        if body['entry_mode'] == 'compete':
+            CURRENT_COMPETITION.make_move(team_name, self, bod['move_list'])
+        else:
+            get_game_by_id(body['game']).make_move(team_name, self, msg['move_list'])
+            
+
 def jsonify_error(status, message, traceback, version):
     response = cherrypy.response
     response.headers['Content-Type'] = 'application/json'
