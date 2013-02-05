@@ -9,10 +9,12 @@ import messaging
 import cherrypy
 import bcrypt
 import model
+
 import json
 import os
 import re
 import sys
+import time
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
@@ -66,8 +68,8 @@ class DropbloxGameServer(object):
                 body = cherrypy.request.json
                 with self.db.transaction() as trans:
                     cherrypy.request.trans = trans
-                    team = trans.authenticate_team(body['team_name'], body['team_password'])
-                    if not team or (admin_only and not team[model.Database.TEAM_IS_ADMIN]):
+                    team = trans.authenticate_team(body['team_name'], body['password'])
+                    if not team or (admin_only and not team.is_admin):
                         raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
                     return f(self, *args, team=team, body=body, **kwargs)
                 del cherrypy.request.trans
@@ -81,8 +83,8 @@ class DropbloxGameServer(object):
         response['team_scores'] = {}
         response['team_connect'] = {}
         response['team_whitelisted'] = {}
-        scores_by_team = model.Database.scores_by_team()
-        for team in model.Database.list_all_teams():
+        scores_by_team = cherrypy.request.trans.scores_by_team()
+        for team in cherrypy.request.trans.list_all_teams():
             team_name = team[model.Database.TEAM_TEAM_NAME]
             scores = []
             if team_name in scores_by_team:
@@ -161,24 +163,19 @@ class DropbloxGameServer(object):
         if not re.match("^[A-Za-z0-9]*$", body['team_name']):
             raise cherrypy.HTTPError(400, "Team name can only contain letters (A-Za-z) and numbers (0-9)!")
 
-        team = model.Database.get_team(body['team_name'])
-        if team:
-            raise cherrypy.HTTPError(400, "Team name already taken!")
-
-        hashed = bcrypt.hashpw(body['password'], bcrypt.gensalt())
-        model.Database.add_team(body['team_name'], hashed)
-        return json.dumps({'status': 200, 'message': 'Success!'})
+        with self.db.transaction() as trans:
+            team = trans.get_team_by_name(body['team_name'])
+            if team:
+                raise cherrypy.HTTPError(400, "Team name already taken!")
+        
+            hashed = bcrypt.hashpw(body['password'], bcrypt.gensalt())
+            trans.add_team(-1, body['team_name'], hashed)
+            return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
-    def login(self):
-        cl = cherrypy.request.headers['Content-Length']
-        rawbody = cherrypy.request.body.read(int(cl))
-        body = json.loads(rawbody)
-        team = model.Database.authenticate_team(body['team_name'], body['password'])
-        if not team:
-            raise cherrypy.HTTPError(401, "Incorrect team name or password. Please check your config.txt and that the credentials matched what you signed up with at https://www.playdropblox.com/")
-
-        return json.dumps({'status': 200, 'message': 'Success!'})
+    @require_team_auth()
+    def login(self, team, body):
+        return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
     @require_team_auth
@@ -207,6 +204,14 @@ class DropbloxGameServer(object):
                     'final_score': e.game_state.score}
 
         return {'ret': 'ok'}
+
+    @cherrypy.expose
+    @require_team_auth
+    def wait_for_game(self, team, body):
+        while True:
+            time.sleep(1)
+        return {'ret': 'ok'}
+            
 
 def jsonify_error(status, message, traceback, version):
     response = cherrypy.response

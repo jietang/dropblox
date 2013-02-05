@@ -246,7 +246,7 @@ VALUES
                 assert isinstance(game_seed, int), "seed isn't int: %r" % (game_seed,)
                 assert isinstance(is_practice, bool), "is_practice isn't boolt : %r" % (is_practice,)
                 sql = """
-INSERT INTO competition (tournament_id, index, game_seed, is_pratice) VALUES(%s, %s, %s, %s)
+INSERT INTO competition (tournament_id, c_index, game_seed, is_pratice) VALUES(%s, %s, %s, %s)
 """
                 self.execute(sql, (tournament_id, index, game_seed, int(is_practice)))
                 competition_id = self.connection.insert_id()
@@ -292,10 +292,10 @@ ENGINE=InnoDB
 CREATE TABLE IF NOT EXISTS competition (
  id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,
  tournament_id INTEGER NOT NULL,
- index INTEGER NOT NULL,
+ c_index INTEGER NOT NULL,
  game_seed INTEGER NOT NULL,
  is_practice INTEGER NOT NULL,
- UNIQUE (tournament_id, is_practice, index)
+ UNIQUE (tournament_id, is_practice, c_index)
 )
 ENGINE=InnoDB
 """
