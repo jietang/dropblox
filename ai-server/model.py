@@ -11,9 +11,8 @@ import time
 import MySQLdb as mdb
 import bcrypt
 
-from . import util
-from .logic.board import Board
-
+import util
+from logic.board import Board
 
 DB_HOST = '10.35.9.6'
 ADMIN_PW = '$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy'
