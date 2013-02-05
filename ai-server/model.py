@@ -8,11 +8,12 @@ import random
 import threading
 
 import MySQLdb as mdb
+from MySQLdb.cursors import Cursor
 import bcrypt
 
-from logic.board import Board
+from logic.Board import Board
 
-DB_HOST = '10.35.9.6'
+DB_HOST = '127.0.0.1'
 ADMIN_PW = '$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy'
 
 class Container(object):
@@ -29,7 +30,7 @@ class Container(object):
                                 out[k] = v
                 return out
 
-class OurCursor(mdb.Cursor):
+class OurCursor(Cursor):
 	# Tuple indices for team objects
 	TEAM_TEAM_NAME = 1
 	TEAM_PASSWORD = 2
@@ -44,7 +45,7 @@ class OurCursor(mdb.Cursor):
 	SCORE_ROUND = 4
 
 	def add_team(self, tournament_id, team_name, password, is_admin=False):
-		sql = 'INSERT INTO teams (team_name, password, is_admin, tournament_id) VALUES(%s, %s, %s);'
+		sql = 'INSERT INTO teams (team_name, password, is_admin, tournament_id) VALUES(%s, %s, %s, %s);'
 		self.execute(sql, (team_name, password, int(bool(is_admin)), tournament_id))
 
 	def add_score(self, team_name, game_id, seed, score, round_num):
@@ -190,8 +191,8 @@ ENGINE=InnoDB
 CREATE TABLE IF NOT EXISTS teams (
  id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,
  team_name VARCHAR(64) NOT NULL,
- password CHAR(64) NOT NULL,,
- is_admin INTEGER NOT NULL, ,
+ password CHAR(64) NOT NULL,
+ is_admin INTEGER NOT NULL,
  tournament_id INTEGER NOT NULL,
  UNIQUE (tournament_id, team_name)
 )
@@ -229,9 +230,9 @@ ENGINE=InnoDB
                         self.execute(sql)
 
 		def create_admin_user():
-			if self.get_team('admin'):
+			if self.get_team_by_name('admin'):
                                 return
-                        self.add_team('admin', ADMIN_PW, is_admin=1)
+                        self.add_team(-1, 'admin', ADMIN_PW, is_admin=1)
 
                 create_tournament_table()
 		create_team_table()
@@ -265,7 +266,7 @@ class Database(object):
         def transaction(self):
                 conn = self._get_conn()
                 cursor = conn.cursor(OurCursor)
-                cursor.execute("BEGIN TRANSACTION")
+                cursor.execute("BEGIN")
                 try:
                         yield cursor
                 except:

@@ -25,8 +25,6 @@ class Competition(object):
 		self.team_whitelist = set()
 		self.common_seed = None
 		self.is_test_run = is_test_run
-		if not self.is_test_run:
-			self.round = model.Database.latest_round() + 1
 
 	def whitelist_team(self, team):
 		if self.started:
