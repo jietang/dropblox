@@ -10,7 +10,7 @@ import threading
 import MySQLdb as mdb
 import bcrypt
 
-from .logic.board import Board
+from logic.board import Board
 
 DB_HOST = '10.35.9.6'
 ADMIN_PW = '$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy'
