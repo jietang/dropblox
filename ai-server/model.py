@@ -162,7 +162,7 @@ INSERT INTO competition (tournament_id, index, game_seed, is_pratice) VALUES(%s,
 """
                 self.execute(sql, (tournament_id, index, game_seed, int(is_practice)))
                 competition_id = self.connection.insert_id()
-                return Container(competition_id=competition_id,
+                return Container(id=competition_id,
                                  tournament_id=tournament_id,
                                  index=index,
                                  game_seed=game_seed,

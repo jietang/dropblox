@@ -33,30 +33,6 @@ class DropbloxWebSocketHandler(WebSocket):
         elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
             CURRENT_COMPETITION.make_move(team_name, self, msg['move_list'])
 
-    def handle_testing_msg_from_team(self, msg, team):
-        # RH: slowly turning these into RPCs
-        team_name = team[model.Database.TEAM_TEAM_NAME]
-        if msg['type'] == messaging.CREATE_NEW_GAME_MSG:
-            return self._create_new_test_game(team_name)
-        elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
-            return self._submit_test_move(team_name, msg['move_list'])
-
-    def _create_new_test_game(self, team_name):
-        self.test_competition = competition.Competition(is_test_run=True)
-        self.test_competition.whitelist_team(team_name)
-        self.test_competition.register_team(team_name)
-        self.test_competition.start_competition()
-
-    def _submit_test_move(self, team_name, move_list):
-        try:
-            msg = self.test_competition.make_move(team_name, move_list)
-        except competition.InvalidTeamError:
-            self.close(code=messaging.DO_NOT_RECONNECT,
-                       reason="This team is not active.")
-            return
-
-        self.send(json.dumps(msg))
-
     def received_message(self, msg):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
@@ -67,8 +43,6 @@ class DropbloxWebSocketHandler(WebSocket):
 
         if msg['entry_mode'] == 'compete':
             self.handle_competition_msg_from_team(msg, team)
-        else:
-            self.handle_testing_msg_from_team(msg, team)
 
     def closed(self, code, reason=None):
         model.Database.report_session_ended(self)
@@ -90,21 +64,15 @@ class DropbloxGameServer(object):
         def wrapper(f):
             def wrapped(*args, **kwargs):
                 body = cherrypy.request.json
-                team = model.Database.authenticate_team(body['team_name'], body['password']) 
-                if not team or (admin_only and not team[model.Database.TEAM_IS_ADMIN]):
-                    raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
-                return f(*args, team=team, body=body, **kwargs)
+                with self.db.transaction() as trans:
+                    cherrypy.request.trans = trans
+                    team = trans.authenticate_team(body['team_name'], body['team_password'])
+                    if not team or (admin_only and not team[model.Database.TEAM_IS_ADMIN]):
+                        raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
+                    return f(*args, team=team, body=body, **kwargs)
+                del cherrypy.request.trans
             return cherrypy.tools.json_out()(cherrypy.tools.json_in()(wrapped))
         return wrapper
-
-    client = None
-
-    @client
-    def create_new_test_game(self, body):
-        with self.db.transaction() as trans:
-            team = trans.authenticate_team(body['team_name'], body['team_password'])
-            game = trans.create_test_game(team.tournament_id, team.id)
-            return json.dumps(game.to_dict())
 
     @cherrypy.expose
     @require_team_auth(admin_only=True)
@@ -142,7 +110,7 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @require_team_auth(admin_only=True)
-    def start_next_round(self, team, body):
+    def start_next_round(self, trans, team, body):
         if CURRENT_COMPETITION.started:
             raise cherrypy.HTTPError(400, "Can't restart a competition!")
 
@@ -214,18 +182,10 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @require_team_auth
-    def create_game(self, team, body):
-        team_name = team[model.Database.TEAM_TEAM_NAME]
-        if body['entry_mode'] == 'compete':
-            CURRENT_COMPETITION.register_team(team_name, self)
-            competition = CURRENT_COMPETITION
-        else: 
-            competition = competition.Competition(is_test_run=True)
-            competition.whitelist_team(team_name)
-            competition.register_team(team_name, self)
-            competition.start_competition()
-        return { 'message': "Success!",
-                 'game': competition.id }
+    def create_practice_game(self, team, body):
+        with self.db.transaction() as trans:
+            game = cherrypy.request.trans.create_test_game(team.tournament_id, team.id)
+            return game.to_dict()
 
     @cherrypy.expose
     @require_team_auth
@@ -234,7 +194,6 @@ class DropbloxGameServer(object):
             CURRENT_COMPETITION.make_move(team_name, self, bod['move_list'])
         else:
             get_game_by_id(body['game']).make_move(team_name, self, msg['move_list'])
-            
 
 def jsonify_error(status, message, traceback, version):
     response = cherrypy.response
