@@ -62,14 +62,14 @@ class DropbloxGameServer(object):
 
     def require_team_auth(admin_only=False):
         def wrapper(f):
-            def wrapped(*args, **kwargs):
+            def wrapped(self, *args, **kwargs):
                 body = cherrypy.request.json
                 with self.db.transaction() as trans:
                     cherrypy.request.trans = trans
                     team = trans.authenticate_team(body['team_name'], body['team_password'])
                     if not team or (admin_only and not team[model.Database.TEAM_IS_ADMIN]):
                         raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
-                    return f(*args, team=team, body=body, **kwargs)
+                    return f(self, *args, team=team, body=body, **kwargs)
                 del cherrypy.request.trans
             return cherrypy.tools.json_out()(cherrypy.tools.json_in()(wrapped))
         return wrapper
@@ -183,17 +183,30 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @require_team_auth
     def create_practice_game(self, team, body):
-        with self.db.transaction() as trans:
-            game = cherrypy.request.trans.create_test_game(team.tournament_id, team.id)
-            return game.to_dict()
+        game = cherrypy.request.trans.create_test_game(team.tournament_id, team.id)
+        return game.to_dict()
 
     @cherrypy.expose
     @require_team_auth
-    def submit_move(self, team, body):
-        if body['entry_mode'] == 'compete':
-            CURRENT_COMPETITION.make_move(team_name, self, bod['move_list'])
-        else:
-            get_game_by_id(body['game']).make_move(team_name, self, msg['move_list'])
+    def submit_game_move(self, team, body):
+        try:
+            cherrypy.request.trans.submit_game_move(team.game_id, team.id, body['move_list'])
+        except model.GamesDoesNotExistError:
+            return {'ret': 'fail',
+                    'code': messaging.DO_NOT_RECONNECT,
+                    'reason': "This team is not active."}
+        except model.TeamNotAuthorizedToChangeGameError:
+            return {'ret': 'fail',
+                    'code': messaging.DO_NOT_RECONNECT,
+                    'reason': "Your team is not authorized to submit moves for this game."}
+        except model.GameOverError, e:
+            return {'ret': 'fail',
+                    'code': messaging.DO_NOT_RECONNECT,
+                    'reason': "Game Is over!",
+                    'game_state': e.game_state.to_dict(),
+                    'final_score': e.game_state.score}
+
+        return {'ret': 'ok'}
 
 def jsonify_error(status, message, traceback, version):
     response = cherrypy.response
