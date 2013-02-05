@@ -103,12 +103,22 @@ class DropbloxGameServer(object):
 
     client = None
 
+    def _auth(self, trans, body):
+        return trans.authenticate_team(body['team_name'], body['team_password'])
+
     @client
     def create_new_test_game(self, body):
         with self.db.transaction() as trans:
-            team = trans.authenticate_team(body['team_name'], body['team_password'])
+            team = self._auth(trans, body)
             game = trans.create_test_game(team.tournament_id, team.id)
             return json.dumps(game.to_dict())
+
+    @client
+    def submit_move(self, body):
+        with self.db.transaction() as trans:
+            team = self._auth(trans, body)
+            ret = trans.submit_move(team.game_id, team.id, body['move_list'])
+            return json.dumps(ret)
 
     @cherrypy.expose
     @admin_only

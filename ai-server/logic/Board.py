@@ -18,7 +18,9 @@ R_INTERVAL = 480
 PREVIEW = 5
 
 class Board(object):
-  def __init__(self, seed):
+  def __init__(self, seed, _dont_do_anything=True):
+    if _dont_do_anything:
+      return
     assert(seed is not None)
     self.seed = seed
     self.random = random.Random()
@@ -54,7 +56,15 @@ class Board(object):
       'block': self.block,
       'preview': self.preview,
       'score': self.score,
+      'seed': self.seed,
     }
+
+  @classmethod
+  def from_dict(cls, d):
+    a = cls(None)
+    for name in d:
+      setattr(a, name, d[name])
+    return a
 
   def check(self, block):
     for point in block['offsets']:

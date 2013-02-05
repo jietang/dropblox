@@ -6,11 +6,14 @@ import contextlib
 import json
 import random
 import threading
+import time
 
 import MySQLdb as mdb
 import bcrypt
 
+from . import util
 from .logic.board import Board
+
 
 DB_HOST = '10.35.9.6'
 ADMIN_PW = '$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy'
@@ -28,6 +31,12 @@ class Container(object):
                         else:
                                 out[k] = v
                 return out
+
+class GameDoesNotExistError(Exception): pass
+class TeamNotAuthorizedToChangeGameError(Exception): pass
+class GameOverError(Exception): pass
+
+
 
 class OurCursor(mdb.Cursor):
 	# Tuple indices for team objects
@@ -113,6 +122,19 @@ class OurCursor(mdb.Cursor):
 
 		return team
 
+        def has_running_test_game(self, tournament_id, team_id):
+                sql = """
+SELECT EXISTS(
+    SELECT 1 FROM game WHERE
+    score IS NULL AND
+    competition_id = competition.id AND
+    team_id = %s
+) FROM competition WHERE tournament_id = %s AND is_practice
+"""
+
+                self.execute(sql, (team_id, tournament_id))
+                return self.fetchone()[0]
+
         def create_test_game(self, tournament_id, team_id):
                 game_seed = random.randint(-2**31, 2**31-1)
                 while True:
@@ -127,6 +149,71 @@ class OurCursor(mdb.Cursor):
                         else:
                                 break
                 return self._create_game(comp.id, team_id, game_seed)
+
+        def get_game_by_id(self, game_id):
+                sql = """
+SELECT id, number_moves_made, game_state, team_id, competition_id, score
+FROM game
+WHERE id = %s
+"""
+                self.execute(sql, (game_id,))
+                game_row = self.fetchone()
+                if game_row is None:
+                        return None
+
+                return Container(id=game_row[0],
+                                 number_moves_made=game_row[1],
+                                 game_state=Board.from_dict(json.loads(game_row[2])),
+                                 team_id=game_row[3],
+                                 competition_id=game_row[4])
+
+        def _update_game(self, game_id, game_state):
+                sql = """
+UPDATE game SET
+number_moves_made = number_moves_made + 1,
+game_state = %s,
+WHERE id = %s
+"""
+                self.execute(sql,
+                             (json.dumps(game_state.to_dict()), game_id))
+                if game_state.state != "failed":
+                        return
+
+                sql = """
+UPDATE game SET score = %s
+WHERE id = %s
+"""
+                self.execute(sql,
+                             (game_state.score, game_id))
+
+        def submit_move(self, game_id, team_id, move_list):
+                game = self.get_game_by_id(game_id)
+
+		if game is None:
+                        raise GameDoesNotExistError()
+
+                if game.team_id != team_id:
+                        raise TeamNotAuthorizedToChangeGameError()
+
+                game_state = game.game_state
+
+		if game_state.state == 'failed':
+                        raise GameOverError(game_state)
+
+		if time.time() - game_state.game_started_at > util.AI_CLIENT_TIMEOUT:
+                        # game is over
+			game_state.state = 'failed'
+		else:
+                        # this mutates the in-memory verison
+                        # of game.game_state
+			game_state.send_commands(move_list)
+
+                self._update_game(game_id, game_state)
+
+		if game_state.state == 'failed':
+                        raise GameOverError(game_state)
+
+                assert game_state.state == 'playing'
 
         def _create_game(self, competition_id, team_id, game_seed):
                 assert isinstance(competition_id, int), "bad competition id%r" % (competition_id,)

@@ -14,8 +14,6 @@ import util
 import json
 import time
 
-class InvalidTeamError(Exception): pass
-
 class Competition(object):
 
 	def __init__(self, is_test_run=False):
