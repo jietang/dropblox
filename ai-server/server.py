@@ -208,14 +208,6 @@ class DropbloxGameServer(object):
 
         return {'ret': 'ok'}
 
-    @cherrypy.expose
-    @require_team_auth
-    def submit_move(self, team, body):
-        if body['entry_mode'] == 'compete':
-            CURRENT_COMPETITION.make_move(team_name, self, bod['move_list'])
-        else:
-            get_game_by_id(body['game']).make_move(team_name, self, msg['move_list'])
-
 def jsonify_error(status, message, traceback, version):
     response = cherrypy.response
     response.headers['Content-Type'] = 'application/json'
