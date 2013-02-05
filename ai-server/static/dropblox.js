@@ -9,11 +9,11 @@ var dropblox = {
   initialize: function() {
     $('#top-bar a').each(function() {
       var link = this.id;
-      $(this).click(function() {
+      $(this).click(function(e) {
         if (!dropblox[link]()) {
           dropblox.set_active_link(link);
         }
-        window.event.preventDefault();
+        e.preventDefault();
       });
     });
 
@@ -201,7 +201,7 @@ var dropblox = {
                 dropblox.set_cur_game_state(game_id, ui.value);
               },
             });
-            $('#animate').click(function() {
+            $('#animate').click(function(e) {
               var index = dropblox.cur_game.index;
               if (index !== undefined && index < dropblox.cur_game.states.length - 1) {
                 dropblox.set_cur_game_state(game_id, index + 1);
@@ -209,7 +209,7 @@ var dropblox = {
                   dropblox.animate_game(game_id, index + 1);
                 }, dropblox.ANIMATE_MOVE);
               }
-              window.event.preventDefault();
+              e.preventDefault();
             });
             setTimeout(function() {
               $('#copy-state').zclip({
@@ -295,9 +295,9 @@ var dropblox = {
       '<div class="section-content"><div class="content-header">Log in</div>' + this.login_form + '</div>'
     );
     $('#team-name').focus();
-    $('#submit').click(function() {
+    $('#submit').click(function(e) {
       dropblox.submit_login('/login', $('#team-name').val(), $('#password').val());
-      window.event.preventDefault();
+      e.preventDefault();
     });
   },
 
@@ -308,9 +308,9 @@ var dropblox = {
       "whole team, stored in a config file on each of your computers.</div>"
     );
     $('#team-name').focus();
-    $('#submit').click(function() {
+    $('#submit').click(function(e) {
       dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val());
-      window.event.preventDefault();
+      e.preventDefault();
     });
   },
 
