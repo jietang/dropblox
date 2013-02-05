@@ -33,30 +33,6 @@ class DropbloxWebSocketHandler(WebSocket):
         elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
             CURRENT_COMPETITION.make_move(team_name, self, msg['move_list'])
 
-    def handle_testing_msg_from_team(self, msg, team):
-        # RH: slowly turning these into RPCs
-        team_name = team[model.Database.TEAM_TEAM_NAME]
-        if msg['type'] == messaging.CREATE_NEW_GAME_MSG:
-            return self._create_new_test_game(team_name)
-        elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
-            return self._submit_test_move(team_name, msg['move_list'])
-
-    def _create_new_test_game(self, team_name):
-        self.test_competition = competition.Competition(is_test_run=True)
-        self.test_competition.whitelist_team(team_name)
-        self.test_competition.register_team(team_name)
-        self.test_competition.start_competition()
-
-    def _submit_test_move(self, team_name, move_list):
-        try:
-            msg = self.test_competition.make_move(team_name, move_list)
-        except competition.InvalidTeamError:
-            self.close(code=messaging.DO_NOT_RECONNECT,
-                       reason="This team is not active.")
-            return
-
-        self.send(json.dumps(msg))
-
     def received_message(self, msg):
         print "received_message %s" % msg
         msg = json.loads(str(msg))
@@ -67,8 +43,6 @@ class DropbloxWebSocketHandler(WebSocket):
 
         if msg['entry_mode'] == 'compete':
             self.handle_competition_msg_from_team(msg, team)
-        else:
-            self.handle_testing_msg_from_team(msg, team)
 
     def closed(self, code, reason=None):
         model.Database.report_session_ended(self)
@@ -86,43 +60,23 @@ class DropbloxGameServer(object):
         "Method must exist to serve as a exposed hook for the websocket"
         pass
 
-    def admin_only(f):
-        def wrapped(*args, **kwargs):
-            cl = cherrypy.request.headers['Content-Length']
-            rawbody = cherrypy.request.body.read(int(cl))
-
-            body = json.loads(rawbody)
-
-            team = model.Database.authenticate_team(body['team_name'], body['password'])
-            if not team or not team[model.Database.TEAM_IS_ADMIN]:
-                raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
-            else:
-                kwargs['body'] = body
-                return f(*args, **kwargs)
-        return wrapped
-
-    client = None
-
-    def _auth(self, trans, body):
-        return trans.authenticate_team(body['team_name'], body['team_password'])
-
-    @client
-    def create_new_test_game(self, body):
-        with self.db.transaction() as trans:
-            team = self._auth(trans, body)
-            game = trans.create_test_game(team.tournament_id, team.id)
-            return json.dumps(game.to_dict())
-
-    @client
-    def submit_move(self, body):
-        with self.db.transaction() as trans:
-            team = self._auth(trans, body)
-            ret = trans.submit_move(team.game_id, team.id, body['move_list'])
-            return json.dumps(ret)
+    def require_team_auth(admin_only=False):
+        def wrapper(f):
+            def wrapped(self, *args, **kwargs):
+                body = cherrypy.request.json
+                with self.db.transaction() as trans:
+                    cherrypy.request.trans = trans
+                    team = trans.authenticate_team(body['team_name'], body['team_password'])
+                    if not team or (admin_only and not team[model.Database.TEAM_IS_ADMIN]):
+                        raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
+                    return f(self, *args, team=team, body=body, **kwargs)
+                del cherrypy.request.trans
+            return cherrypy.tools.json_out()(cherrypy.tools.json_in()(wrapped))
+        return wrapper
 
     @cherrypy.expose
-    @admin_only
-    def list_teams(self, body):
+    @require_team_auth(admin_only=True)
+    def list_teams(self, team, body):
         response = {}
         response['team_scores'] = {}
         response['team_connect'] = {}
@@ -137,11 +91,11 @@ class DropbloxGameServer(object):
             response['team_connect'][team_name] = CURRENT_COMPETITION.is_team_connected(team_name)
             response['team_whitelisted'][team_name] = CURRENT_COMPETITION.is_team_whitelisted(team_name)
 
-        return json.dumps(response)
+        return response
 
     @cherrypy.expose
-    @admin_only
-    def competition_state(self, body):
+    @require_team_auth(admin_only=True)
+    def competition_state(self, team, body):
         response = {}
         response['boards'] = {}
         for team in CURRENT_COMPETITION.team_to_game:
@@ -152,11 +106,11 @@ class DropbloxGameServer(object):
         response['round'] = CURRENT_COMPETITION.round
         response['started'] = CURRENT_COMPETITION.started
 
-        return json.dumps(response)
+        return response
 
     @cherrypy.expose
-    @admin_only
-    def start_next_round(self, body):
+    @require_team_auth(admin_only=True)
+    def start_next_round(self, trans, team, body):
         if CURRENT_COMPETITION.started:
             raise cherrypy.HTTPError(400, "Can't restart a competition!")
 
@@ -168,29 +122,29 @@ class DropbloxGameServer(object):
                 raise cherrypy.HTTPError(400, "Team %s is not connected!" % (team_name,))
 
         CURRENT_COMPETITION.start_competition()
-        return json.dumps({'status': 200, 'message': 'Success!'})
+        return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
-    @admin_only
-    def whitelist_team(self, body):
+    @require_team_auth(admin_only=True)
+    def whitelist_team(self, team, body):
         CURRENT_COMPETITION.whitelist_team(body['target_team'])
-        return json.dumps({'status': 200, 'message': 'Success!'})
+        return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
-    @admin_only
-    def blacklist_team(self, body):
+    @require_team_auth(admin_only=True)
+    def blacklist_team(self, team, body):
         CURRENT_COMPETITION.blacklist_team(body['target_team'])
-        return json.dumps({'status': 200, 'message': 'Success!'})
+        return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
-    @admin_only
+    @require_team_auth(admin_only=True)
     def end_round(self, body):
         global CURRENT_COMPETITION
         if not CURRENT_COMPETITION.started:
           raise cherrypy.HTTPError(400, "This competition hasn't been started yet!")
         CURRENT_COMPETITION.record_remaining_games()
         CURRENT_COMPETITION = competition.Competition()
-        return json.dumps({'status': 200, 'message': 'Success!'})
+        return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
     def signup(self):
@@ -220,13 +174,33 @@ class DropbloxGameServer(object):
         cl = cherrypy.request.headers['Content-Length']
         rawbody = cherrypy.request.body.read(int(cl))
         body = json.loads(rawbody)
-        
         team = model.Database.authenticate_team(body['team_name'], body['password'])
         if not team:
             raise cherrypy.HTTPError(401, "Incorrect team name or password. Please check your config.txt and that the credentials matched what you signed up with at https://www.playdropblox.com/")
 
         return json.dumps({'status': 200, 'message': 'Success!'})
-                
+
+    @cherrypy.expose
+    @require_team_auth
+    def create_practice_game(self, team, body):
+        game = cherrypy.request.trans.create_test_game(team.tournament_id, team.id)
+        return game.to_dict()
+
+    @cherrypy.expose
+    @require_team_auth
+    def submit_game_move(self, team, body):
+        # todo catch exceptions and return the appropriate error code
+        cherrypy.request.trans.submit_game_move(team.game_id, team.id, body['move_list'])
+        return {'ret' : 'ok'}
+
+    @cherrypy.expose
+    @require_team_auth
+    def submit_move(self, team, body):
+        if body['entry_mode'] == 'compete':
+            CURRENT_COMPETITION.make_move(team_name, self, bod['move_list'])
+        else:
+            get_game_by_id(body['game']).make_move(team_name, self, msg['move_list'])
+
 def jsonify_error(status, message, traceback, version):
     response = cherrypy.response
     response.headers['Content-Type'] = 'application/json'

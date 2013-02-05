@@ -186,7 +186,7 @@ WHERE id = %s
                 self.execute(sql,
                              (game_state.score, game_id))
 
-        def submit_move(self, game_id, team_id, move_list):
+        def submit_game_move(self, game_id, team_id, move_list):
                 game = self.get_game_by_id(game_id)
 
 		if game is None:
@@ -249,7 +249,7 @@ INSERT INTO competition (tournament_id, index, game_seed, is_pratice) VALUES(%s,
 """
                 self.execute(sql, (tournament_id, index, game_seed, int(is_practice)))
                 competition_id = self.connection.insert_id()
-                return Container(competition_id=competition_id,
+                return Container(id=competition_id,
                                  tournament_id=tournament_id,
                                  index=index,
                                  game_seed=game_seed,
