@@ -189,9 +189,24 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @require_team_auth
     def submit_game_move(self, team, body):
-        # todo catch exceptions and return the appropriate error code
-        cherrypy.request.trans.submit_game_move(team.game_id, team.id, body['move_list'])
-        return {'ret' : 'ok'}
+        try:
+            cherrypy.request.trans.submit_game_move(team.game_id, team.id, body['move_list'])
+        except model.GamesDoesNotExistError:
+            return {'ret': 'fail',
+                    'code': messaging.DO_NOT_RECONNECT,
+                    'reason': "This team is not active."}
+        except model.TeamNotAuthorizedToChangeGameError:
+            return {'ret': 'fail',
+                    'code': messaging.DO_NOT_RECONNECT,
+                    'reason': "Your team is not authorized to submit moves for this game."}
+        except model.GameOverError, e:
+            return {'ret': 'fail',
+                    'code': messaging.DO_NOT_RECONNECT,
+                    'reason': "Game Is over!",
+                    'game_state': e.game_state.to_dict(),
+                    'final_score': e.game_state.score}
+
+        return {'ret': 'ok'}
 
     @cherrypy.expose
     @require_team_auth

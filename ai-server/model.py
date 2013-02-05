@@ -33,8 +33,9 @@ class Container(object):
 
 class GameDoesNotExistError(Exception): pass
 class TeamNotAuthorizedToChangeGameError(Exception): pass
-class GameOverError(Exception): pass
-
+class GameOverError(Exception):
+        def __init__(self, game_state):
+                self.game_state = game_state
 
 
 class OurCursor(mdb.Cursor):
