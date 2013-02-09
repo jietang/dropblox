@@ -28,6 +28,10 @@ TESTING_COMPETITIONS = {} # Socket -> Practice competition instance
 def seconds_remaining_in_competition(competition):
     return util.AI_CLIENT_TIMEOUT + competition.ts - int(time.time())
 
+TEAM_ACTIVE_THRESHOLD = 1
+def is_team_active(team):
+    return (int(time.time()) - team.is_connected) < TEAM_ACTIVE_THRESHOLD
+
 class DropbloxWebSocketHandler(WebSocket):
     def __init__(self):
         self.test_competition = None
@@ -107,32 +111,49 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @require_team_auth(admin_only=True)
     def competition_state(self, team, body):
+        trans = cherrypy.request.trans
+        current_tournament = trans.get_current_tournament()
+        whitelisted_teams = trans.get_current_whitelisted_teams(current_tournament.id)
+        
         response = {}
         response['boards'] = {}
-        for team in CURRENT_COMPETITION.team_to_game:
-            response['boards'][team] = CURRENT_COMPETITION.team_to_game[team].to_dict()
 
-        remaining = len(CURRENT_COMPETITION.team_whitelist) - len(CURRENT_COMPETITION.sock_to_team)
+        total_teams = 0
+        connected_teams = 0
+        for team in trans.get_competition_state(competition.id):
+            total_teams += 1
+            active_teams += int(is_team_active(team))
+            response['boards'][team.name] = game.game_state.to_dict()
+
+        remaining = total_teams - active_teams
         response['waiting_for_players'] = remaining
-        response['round'] = CURRENT_COMPETITION.round
-        response['started'] = CURRENT_COMPETITION.started
+        response['round'] = current_tournament.next_competition_index
+        response['started'] = 
 
         return response
 
     @cherrypy.expose
     @require_team_auth(admin_only=True)
-    def start_next_round(self, trans, team, body):
-        if CURRENT_COMPETITION.started:
+    def start_next_round(self, team, body):
+        trans = cherrypy.request.trans
+        current_tournament = trans.get_current_tournament()
+        next_competition = trans.get_competition_by_index(current_tournament.id,
+                                                          current_tournament.next_competition_index)
+        
+        if (next_competition is not None and
+            trans.competition_has_started(next_competition.id)):
             raise cherrypy.HTTPError(400, "Can't restart a competition!")
 
-        if not len(CURRENT_COMPETITION.team_whitelist):
+        whitelisted_teams = trans.get_current_whitelisted_teams(current_tournament.id)
+        if not whitelisted_teams:
             raise cherrypy.HTTPError(400, "Can't start a competition with no participants!")
 
-        for team_name in CURRENT_COMPETITION.team_whitelist:
-            if not CURRENT_COMPETITION.is_team_connected(team_name):
-                raise cherrypy.HTTPError(400, "Team %s is not connected!" % (team_name,))
+        for team in whitelisted_teams:
+            if not team.is_connected:
+                raise cherrypy.HTTPError(400, "Team %s is not connected!" % (team.name,))
 
-        CURRENT_COMPETITION.start_competition()
+        trans.start_next_competition(current_tournament.id)
+
         return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
@@ -200,7 +221,7 @@ class DropbloxGameServer(object):
     def create_practice_game(self, team, body):
         trans = cherrypy.request.trans
         game = trans.create_practice_game(team.id)
-        competition = trans.get_competition_by_id(game.competition_id)
+        competition = trans.get_competition(game.competition_id)
         return {
             'ret': 'ok',
             'game': game.to_dict(),
@@ -233,7 +254,7 @@ class DropbloxGameServer(object):
                     'code': messaging.CODE_CONCURRENT_MOVE,
                     'reason': "Someone else has already made this move."}
 
-        competition = trans.get_competition_by_id(game.competition_id)
+        competition = trans.get_competition(game.competition_id)
         game_started_at = int(competition.ts - time.time())
 
         game_state = game.game_state
