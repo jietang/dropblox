@@ -58,6 +58,10 @@ class OurCursor(Cursor):
 		sql = 'INSERT INTO teams (team_name, password, is_admin, tournament_id, ts) VALUES (%s, %s, %s, %s, %s);'
 		self.execute(sql, (team_name, password, int(bool(is_admin)), tournament_id, self._cur_ts()))
 
+	def add_team_member(self, tournament_id, team_name, password, is_admin=False):
+		sql = 'INSERT INTO team_members (team_name, email, name, tournament_id, ts) VALUES (%s, %s, %s, %s, %s);'
+		self.execute(sql, (team_name, email, name, self._cur_ts()))
+
 	def add_score(self, team_name, game_id, seed, score, round_num):
 		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES(%s, %s, %s, %s, %s);'
 		self.execute(sql, (team_name, game_id, seed, score, round_num))
@@ -351,6 +355,23 @@ CREATE TABLE IF NOT EXISTS teams (
 ENGINE=InnoDB
 """
 			self.execute(sql)
+
+
+		def create_team_member_table():
+			sql = """
+CREATE TABLE IF NOT EXISTS team_members (
+ id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,
+ team_name VARCHAR(64) NOT NULL,
+ email CHAR(64) NOT NULL,
+ name INTEGER NOT NULL,
+ tournament_id INTEGER NOT NULL,
+ ts INTEGER NOT NULL,
+ UNIQUE (tournament_id, email)
+)
+ENGINE=InnoDB
+"""
+			self.execute(sql)
+
 
                 def create_competition_table():
                         sql = """

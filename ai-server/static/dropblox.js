@@ -285,6 +285,12 @@ var dropblox = {
     '<div><form>' +
     ' <input type="text" id="team-name" placeholder="Team name" />' +
     ' <input type="password" id="password" placeholder="Password" />' +
+    ' <input type="text" id="email1" placeholder="signup only" />' +
+    ' <input type="text" id="name1" placeholder="signup only" />' +
+    ' <input type="text" id="email2" placeholder="[optional] signup only" />' +
+    ' <input type="text" id="name2" placeholder="[optional] signup only" />' +
+    ' <input type="text" id="email3" placeholder="[optional] signup only" />' +
+    ' <input type="text" id="name3" placeholder="[optional] signup only" />' +
     ' <button id="submit" class="bloxbutton">Submit</button>' +
     '</form></div>' +
     '<div id="login-error"></div>'
@@ -309,7 +315,10 @@ var dropblox = {
     );
     $('#team-name').focus();
     $('#submit').click(function(e) {
-      dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val());
+      dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val(),
+			   $('#email1').val(), $('#name1').val(),
+			   $('#email2').val(), $('#name2').val(),
+			   $('#email3').val(), $('#name3').val());
       e.preventDefault();
     });
   },
