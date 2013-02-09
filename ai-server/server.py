@@ -11,6 +11,7 @@ import bcrypt
 import model
 
 import json
+import functools
 import os
 import re
 import sys
@@ -64,6 +65,7 @@ class DropbloxGameServer(object):
 
     def require_team_auth(admin_only=False):
         def wrapper(f):
+            @functools.wraps(f)
             def wrapped(self, *args, **kwargs):
                 body = cherrypy.request.json
                 with self.db.transaction() as trans:
@@ -178,13 +180,13 @@ class DropbloxGameServer(object):
         return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
-    @require_team_auth
+    @require_team_auth()
     def create_practice_game(self, team, body):
         game = cherrypy.request.trans.create_test_game(team.tournament_id, team.id)
         return game.to_dict()
 
     @cherrypy.expose
-    @require_team_auth
+    @require_team_auth()
     def submit_game_move(self, team, body):
         try:
             cherrypy.request.trans.submit_game_move(team.game_id, team.id, body['move_list'])

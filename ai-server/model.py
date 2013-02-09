@@ -17,6 +17,7 @@ from logic.Board import Board
 
 DB_HOST = '127.0.0.1'
 ADMIN_PW = '$2a$12$xmaAYZoZEyqGZWfoXZfZI.ik3mjrzVcGOg3sxvnfFU/lS5n6lgqyy'
+ACCEPTABLE_INT_TYPES = (int, long)
 
 class Container(object):
         def __init__(self, **kw):
@@ -217,21 +218,21 @@ WHERE id = %s
                 assert game_state.state == 'playing'
 
         def _create_game(self, competition_id, team_id, game_seed):
-                assert isinstance(competition_id, int), "bad competition id%r" % (competition_id,)
-                assert isinstance(team_id, int), "bad team id%r" % (team_id,)
-                assert isinstance(game_seed, int), "bad game seed id%r" % (game_seed,)
+                assert isinstance(competition_id, ACCEPTABLE_INT_TYPES), "bad competition id%r" % (competition_id,)
+                assert isinstance(team_id, ACCEPTABLE_INT_TYPES), "bad team id%r" % (team_id,)
+                assert isinstance(game_seed, ACCEPTABLE_INT_TYPES), "bad game seed id%r" % (game_seed,)
                 sql = """
 INSERT INTO game (
 number_moves_made,
 game_state,
 team_id,
-competition_id,
+competition_id
 )
 VALUES
-(?, ?, ?, ?)
+(%s, %s, %s, %s)
 """
                 gs = Board(game_seed)
-                self.execute(sql, (0, json.dumps(gs), team_id, competition_id))
+                self.execute(sql, (0, json.dumps(gs.to_dict()), team_id, competition_id))
                 game_id = self.connection.insert_id()
                 return Container(id=game_id,
                                  number_moves_made=0,
@@ -241,12 +242,12 @@ VALUES
 
         def _create_competition(self, tournament_id, index, game_seed, is_practice):
                 # sorry we need hard types, mysql isn't duck-type friendly
-                assert isinstance(tournament_id, int), "tournament_id isn't int: %r" % (tournament_id,)
-                assert isinstance(index, int), "index isn't int: %r" % (index,)
-                assert isinstance(game_seed, int), "seed isn't int: %r" % (game_seed,)
+                assert isinstance(tournament_id, ACCEPTABLE_INT_TYPES), "tournament_id isn't int: %r" % (tournament_id,)
+                assert isinstance(index, ACCEPTABLE_INT_TYPES), "index isn't int: %r" % (index,)
+                assert isinstance(game_seed, ACCEPTABLE_INT_TYPES), "seed isn't int: %r" % (game_seed,)
                 assert isinstance(is_practice, bool), "is_practice isn't boolt : %r" % (is_practice,)
                 sql = """
-INSERT INTO competition (tournament_id, c_index, game_seed, is_pratice) VALUES(%s, %s, %s, %s)
+INSERT INTO competition (tournament_id, c_index, game_seed, is_practice) VALUES(%s, %s, %s, %s)
 """
                 self.execute(sql, (tournament_id, index, game_seed, int(is_practice)))
                 competition_id = self.connection.insert_id()

@@ -18,7 +18,7 @@ R_INTERVAL = 480
 PREVIEW = 5
 
 class Board(object):
-  def __init__(self, seed, _dont_do_anything=True):
+  def __init__(self, seed, _dont_do_anything=False):
     if _dont_do_anything:
       return
     assert(seed is not None)
@@ -61,7 +61,7 @@ class Board(object):
 
   @classmethod
   def from_dict(cls, d):
-    a = cls(None)
+    a = cls(None, _dont_do_anything=True)
     for name in d:
       setattr(a, name, d[name])
     return a

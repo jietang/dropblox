@@ -9,19 +9,33 @@
 # back the move list.
 #
 
-import traceback
-import threading
-import cherrypy
-import platform
-import time
-import json
-import sys
+import contextlib
 import os
+import platform
+import sys
+import threading
+import time
+import traceback
+import urllib2
+
+import cherrypy
+import json
 
 from ws4py.client.threadedclient import WebSocketClient
 from subprocess import Popen, PIPE, STDOUT
 
 # Remote server to connect to:
+DEBUG = True
+
+if DEBUG:
+    DEFAULT_HOST = 'localhost'
+    DEFAULT_PORT = 8080
+    DEFAULT_SSL = False
+else:
+    DEFAULT_HOST = 'playdropblox.com'
+    DEFAULT_PORT = 443
+    DEFAULT_SSL = True
+
 SERVER_URL = 'https://playdropblox.com/'
 WEBSOCKET_URL = 'wss://playdropblox.com/ws'
 #SERVER_URL = 'https://ec2-23-20-109-136.compute-1.amazonaws.com/'
@@ -183,7 +197,44 @@ class Subscriber(WebSocketClient):
         else:
             os._exit(0)
 
-if __name__ == '__main__':
+class DropbloxServer(object):
+    def __init__(self, team_name, team_password, host, port, ssl):
+        # maybe support any transport
+        # but whatever
+        self.host = host
+        self.port = port
+        self.ssl = ssl
+
+        self.team_name = team_name
+        self.team_password = team_password
+        
+    def _request(self, path, tbd):
+        schema = 'https' if self.ssl else 'http'
+        url = '%s://%s:%d%s' % (schema, self.host, self.port, path)
+        
+        tbd = dict(tbd)
+        tbd['team_name'] = self.team_name
+        tbd['password'] = self.team_password
+        data = json.dumps(tbd)
+
+        req = urllib2.Request(url, data, {
+                'Content-Type': 'application/json'
+                })
+
+        with contextlib.closing(urllib2.urlopen(req)) as resp:
+            if resp.getcode() != 200:
+                raise Exception("Bad response: %r" % resp.getcode())
+            return json.loads(resp.read())
+
+    def create_practice_game(self):
+        return self._request("/create_practice_game", {})
+
+def run_practice(team_name, team_password):
+    a = DropbloxServer(team_name, team_password,
+                       DEFAULT_HOST, DEFAULT_PORT, DEFAULT_SSL)
+    print a.create_practice_game()
+
+def main(argv):
     with open('config.txt', 'r') as f:
         team_name = f.readline().rstrip('\n')
         team_password = f.readline().rstrip('\n')
@@ -201,6 +252,10 @@ if __name__ == '__main__':
 
     entry_mode = sys.argv[1]
 
+    if entry_mode == "practice":
+        run_practice(team_name, team_password)
+        return 0
+
     subscriber = SubscriberThread()
     subscriber.daemon = True
     subscriber.start()
@@ -209,3 +264,8 @@ if __name__ == '__main__':
         # For some reason, KeyboardInterrupts are only allowed
         # when the websocket subscriber is on a background thread.
         time.sleep(1)
+    
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
