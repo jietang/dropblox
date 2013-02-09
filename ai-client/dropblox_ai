@@ -106,8 +106,7 @@ class Board(object):
     return True
 
   # Handles a list of commands to move the current block, and drops it at the end.
-  # Appends a 'drop' command to the list if it does not appear, and returns the
-  # new Board state object.
+  # Returns the new Board state object.
   #
   # If the block is ever in an invalid position during this method, throws an
   # InvalidMoveError.
@@ -115,15 +114,12 @@ class Board(object):
     self.block.reset_position()
     if not self.check(self.block):
       raise InvalidMoveError()
-    commands.append('drop')
     for command in commands:
-      if command == 'drop':
-        new_board = self.place()
-        return new_board
-      else:
-        self.block.do_command(command)
-        if not self.check(self.block):
-          raise InvalidMoveError()
+      self.block.do_command(command)
+      if not self.check(self.block):
+        raise InvalidMoveError()
+
+    return self.place()
 
   # Drops the current block as far as it can fall unobstructed, then locks it onto the
   # board. Returns a new board with the next block drawn from the preview list.
@@ -183,7 +179,7 @@ def get_best_moves(board, objective):
         if result > best_result:
           best_result = result
           best_commands = commands
-  print '%s/%s moves were invalid' % (num_invalid_moves, 4*2*board.cols/2)
+  print >> sys.stderr, '%s/%s moves were invalid' % (num_invalid_moves, 4*2*board.cols/2)
   return best_commands
 
 if __name__ == '__main__':

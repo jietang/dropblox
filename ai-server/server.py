@@ -4,24 +4,29 @@
 # our Dropblox AI programming competition.
 #
 
-import competition
-import messaging
-import cherrypy
-import bcrypt
-import model
-
-import json
 import functools
+import json
 import os
 import re
 import sys
 import time
+
+import bcrypt
+import cherrypy
+
+import competition
+import messaging
+import model
+import util
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
 
 CURRENT_COMPETITION = competition.Competition()
 TESTING_COMPETITIONS = {} # Socket -> Practice competition instance
+
+def seconds_remaining_in_competition(competition):
+    return util.AI_CLIENT_TIMEOUT + competition.ts - int(time.time())
 
 class DropbloxWebSocketHandler(WebSocket):
     def __init__(self):
@@ -81,19 +86,18 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @require_team_auth(admin_only=True)
     def list_teams(self, team, body):
+        trans = cherrypy.request.trans
+        current_tournament = trans.get_current_tournament()
         response = {}
         response['team_scores'] = {}
         response['team_connect'] = {}
         response['team_whitelisted'] = {}
-        scores_by_team = cherrypy.request.trans.scores_by_team()
-        for team in cherrypy.request.trans.list_all_teams():
-            team_name = team[model.Database.TEAM_TEAM_NAME]
-            scores = []
-            if team_name in scores_by_team:
-                scores = scores_by_team[team_name]
+        team_states = trans.teams_scores_connected_whitelisted_state_for_tournament(current_tournament.tournament_id)
+        for (team, scores, is_connected, is_whitelisted) in teams_states:
+            team_name = team.name
             response['team_scores'][team_name] = scores
-            response['team_connect'][team_name] = CURRENT_COMPETITION.is_team_connected(team_name)
-            response['team_whitelisted'][team_name] = CURRENT_COMPETITION.is_team_whitelisted(team_name)
+            response['team_connect'][team_name] = is_connected
+            response['team_whitelisted'][team_name] = is_whitelisted_for_next_round
 
         return response
 
@@ -169,9 +173,13 @@ class DropbloxGameServer(object):
             team = trans.get_team_by_name(body['team_name'])
             if team:
                 raise cherrypy.HTTPError(400, "Team name already taken!")
-        
+
+            current_tournament = trans.get_current_tournament()
+            if current_tournament is None:
+                raise Exception("No tournament in progress!")
+
             hashed = bcrypt.hashpw(body['password'], bcrypt.gensalt())
-            trans.add_team(-1, body['team_name'], hashed)
+            trans.add_team(current_tournament.id, body['team_name'], hashed)
             return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose
@@ -182,31 +190,74 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @require_team_auth()
     def create_practice_game(self, team, body):
-        game = cherrypy.request.trans.create_test_game(team.tournament_id, team.id)
-        return game.to_dict()
+        trans = cherrypy.request.trans
+        game = trans.create_practice_game(team.id)
+        competition = trans.get_competition_by_id(game.competition_id)
+        return {
+            'ret': 'ok',
+            'game': game.to_dict(),
+            'competition_seconds_remaining': seconds_remaining_in_competition(competition),
+            }
 
     @cherrypy.expose
     @require_team_auth()
     def submit_game_move(self, team, body):
-        try:
-            cherrypy.request.trans.submit_game_move(team.game_id, team.id, body['move_list'])
-        except model.GamesDoesNotExistError:
+        game_id = body['game_id']
+        team_id = team.id
+        moves_made = body['moves_made']
+        move_list = body['move_list']
+        trans = cherrypy.request.trans
+
+        game = trans.get_game_by_id(game_id)
+
+        if game is None:
             return {'ret': 'fail',
-                    'code': messaging.DO_NOT_RECONNECT,
+                    'code': messaging.CODE_GAMES_DOES_NOT_EXIST,
                     'reason': "This team is not active."}
-        except model.TeamNotAuthorizedToChangeGameError:
+
+        if game.team_id != team_id:
             return {'ret': 'fail',
-                    'code': messaging.DO_NOT_RECONNECT,
+                    'code': messaging.CODE_TEAM_NOT_AUTHORIZED,
                     'reason': "Your team is not authorized to submit moves for this game."}
-        except model.GameOverError, e:
+
+        if game.number_moves_made != moves_made:
             return {'ret': 'fail',
-                    'code': messaging.DO_NOT_RECONNECT,
+                    'code': messaging.CODE_CONCURRENT_MOVE,
+                    'reason': "Someone else has already made this move."}
+
+        competition = trans.get_competition_by_id(game.competition_id)
+        game_started_at = int(competition.ts - time.time())
+
+        game_state = game.game_state
+
+        if seconds_remaining_in_competition(competition) <= 0:
+                # game is over
+                game_state.state = 'failed'
+        else:
+                # this mutates the in-memory verison
+                # of game.game_state
+                game_state.send_commands(move_list)
+
+        trans.update_game(game_id,
+                          moves_made + 1,
+                          game_state,
+                          game_state.score,
+                          game_state.state == 'failed')
+
+        if game_state.state == 'failed':
+            return {'ret': 'fail',
+                    'code': messaging.CODE_GAME_OVER,
                     'reason': "Game Is over!",
-                    'game_state': e.game_state.to_dict(),
-                    'final_score': e.game_state.score}
+                    'game_state': game_state.to_dict()}
 
-        return {'ret': 'ok'}
+        assert game_state.state == 'playing'
 
+        return {
+            'ret': 'ok',
+            'game': game.to_dict(),
+            'competition_seconds_remaining':  seconds_remaining_in_competition(competition),
+            }
+    
     @cherrypy.expose
     @require_team_auth
     def wait_for_game(self, team, body):

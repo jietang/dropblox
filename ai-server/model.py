@@ -12,7 +12,6 @@ import MySQLdb as mdb
 from MySQLdb.cursors import Cursor
 import bcrypt
 
-import util
 from logic.Board import Board
 
 DB_HOST = '127.0.0.1'
@@ -54,9 +53,12 @@ class OurCursor(Cursor):
 	SCORE_SCORE = 3
 	SCORE_ROUND = 4
 
+	def _cur_ts(self):
+		return int(time.time())
+
 	def add_team(self, tournament_id, team_name, password, is_admin=False):
-		sql = 'INSERT INTO teams (team_name, password, is_admin, tournament_id) VALUES(%s, %s, %s, %s);'
-		self.execute(sql, (team_name, password, int(bool(is_admin)), tournament_id))
+		sql = 'INSERT INTO teams (team_name, password, is_admin, tournament_id, ts) VALUES (%s, %s, %s, %s, %s);'
+		self.execute(sql, (team_name, password, int(bool(is_admin)), tournament_id, self._cur_ts()))
 
 	def add_score(self, team_name, game_id, seed, score, round_num):
 		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES(%s, %s, %s, %s, %s);'
@@ -80,11 +82,9 @@ class OurCursor(Cursor):
 		return result
 
 	def scores_by_team(self):
-		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'SELECT * FROM scores ORDER BY team_name ASC, round ASC'
-		cursor = conn.cursor()
-		cursor.execute(sql)
-		scores = cursor.fetchall()
+		self.execute(sql)
+		scores = self.fetchall()
 
 		team_to_scores = {}
 		for score in scores:
@@ -96,12 +96,32 @@ class OurCursor(Cursor):
 			})
 		return team_to_scores
 
+	def teams_score_and_whitelisted_state_for_tournament(self):
+		"""
+		Returns a tuple of the team object, their scores and whether
+		or not they are whitelisted for the next round
+		for the admin page.
+
+		This method does a lot and in theory stuff this specialized
+		complicated the database layer but it needs to be efficient
+		since the admin page is refreshed every second.
+		"""
+		pass
+		
+
 	def get_team_by_name(self, team_name):
-		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
 		sql = 'SELECT id, team_name, password, is_admin, tournament_id FROM teams WHERE team_name=%s'
-		cursor = conn.cursor()
-		cursor.execute(sql, team_name)
-		t = cursor.fetchone()
+		self.execute(sql, (team_name,))
+		t = self.fetchone()
+                if t is None:
+                        return None
+                return Container(id=t[0], name=t[1], password=t[2], is_admin=t[3],
+                                 tournament_id=t[4])
+
+	def get_team_by_id(self, team_id):
+		sql = 'SELECT id, team_name, password, is_admin, tournament_id FROM teams WHERE id=%s'
+		self.execute(sql, (team_id,))
+		t = self.fetchone()
                 if t is None:
                         return None
                 return Container(id=t[0], name=t[1], password=t[2], is_admin=t[3],
@@ -124,7 +144,7 @@ class OurCursor(Cursor):
 
 		return team
 
-        def has_running_test_game(self, tournament_id, team_id):
+        def has_running_practice_game(self, tournament_id, team_id):
                 sql = """
 SELECT EXISTS(
     SELECT 1 FROM game WHERE
@@ -137,7 +157,10 @@ SELECT EXISTS(
                 self.execute(sql, (team_id, tournament_id))
                 return self.fetchone()[0]
 
-        def create_test_game(self, tournament_id, team_id):
+        def create_practice_game(self, team_id):
+		team = self.get_team_by_id(team_id)
+		tournament_id = team.tournament_id
+
                 game_seed = random.randint(-2**31, 2**31-1)
                 while True:
                         # index is unimportant for practice competitions
@@ -169,53 +192,26 @@ WHERE id = %s
                                  team_id=game_row[3],
                                  competition_id=game_row[4])
 
-        def _update_game(self, game_id, game_state):
+        def update_game(self, game_id, moves_made, game_state, score, is_finished):
                 sql = """
 UPDATE game SET
-number_moves_made = number_moves_made + 1,
-game_state = %s,
+number_moves_made = %s,
+game_state = %s
 WHERE id = %s
 """
                 self.execute(sql,
-                             (json.dumps(game_state.to_dict()), game_id))
-                if game_state.state != "failed":
+                             (moves_made, json.dumps(game_state.to_dict()), game_id))
+                if not is_finished:
                         return
 
                 sql = """
-UPDATE game SET score = %s
+UPDATE game SET
+score = %s,
+finished_ts = %s
 WHERE id = %s
 """
                 self.execute(sql,
-                             (game_state.score, game_id))
-
-        def submit_game_move(self, game_id, team_id, move_list):
-                game = self.get_game_by_id(game_id)
-
-		if game is None:
-                        raise GameDoesNotExistError()
-
-                if game.team_id != team_id:
-                        raise TeamNotAuthorizedToChangeGameError()
-
-                game_state = game.game_state
-
-		if game_state.state == 'failed':
-                        raise GameOverError(game_state)
-
-		if time.time() - game_state.game_started_at > util.AI_CLIENT_TIMEOUT:
-                        # game is over
-			game_state.state = 'failed'
-		else:
-                        # this mutates the in-memory verison
-                        # of game.game_state
-			game_state.send_commands(move_list)
-
-                self._update_game(game_id, game_state)
-
-		if game_state.state == 'failed':
-                        raise GameOverError(game_state)
-
-                assert game_state.state == 'playing'
+                             (game_state.score, self._cur_ts(), game_id))
 
         def _create_game(self, competition_id, team_id, game_seed):
                 assert isinstance(competition_id, ACCEPTABLE_INT_TYPES), "bad competition id%r" % (competition_id,)
@@ -243,13 +239,15 @@ VALUES
         def _create_competition(self, tournament_id, index, game_seed, is_practice):
                 # sorry we need hard types, mysql isn't duck-type friendly
                 assert isinstance(tournament_id, ACCEPTABLE_INT_TYPES), "tournament_id isn't int: %r" % (tournament_id,)
+		assert tournament_id >= 0, "tournament_id is negative: %r" % (tournament_id,)
                 assert isinstance(index, ACCEPTABLE_INT_TYPES), "index isn't int: %r" % (index,)
                 assert isinstance(game_seed, ACCEPTABLE_INT_TYPES), "seed isn't int: %r" % (game_seed,)
                 assert isinstance(is_practice, bool), "is_practice isn't boolt : %r" % (is_practice,)
                 sql = """
-INSERT INTO competition (tournament_id, c_index, game_seed, is_practice) VALUES(%s, %s, %s, %s)
+INSERT INTO competition (tournament_id, c_index, game_seed, is_practice, ts)
+VALUES (%s, %s, %s, %s, %s)
 """
-                self.execute(sql, (tournament_id, index, game_seed, int(is_practice)))
+                self.execute(sql, (tournament_id, index, game_seed, int(is_practice), self._cur_ts()))
                 competition_id = self.connection.insert_id()
                 return Container(id=competition_id,
                                  tournament_id=tournament_id,
@@ -257,9 +255,44 @@ INSERT INTO competition (tournament_id, c_index, game_seed, is_practice) VALUES(
                                  game_seed=game_seed,
                                  is_practice=is_practice)
 
+	def get_current_tournament(self):
+		sql = """
+SELECT id, school_name, date FROM tournament
+WHERE id = (
+    SELECT tournament_id FROM current_tournament
+    WHERE id = 0
+    LIMIT 1
+)
+"""
+		self.execute(sql)
+		row = self.fetchone()
+		if row is None:
+			return None
+		return Container(id=row[0],
+				 school_name=row[1],
+				 date=row[2])
+				 
 	def report_session_ended(self, session_sock):
 		if session_sock in Database.AUTHENTICATED_SOCKETS:
 			del Database.AUTHENTICATED_SOCKETS[session_sock]
+
+	def get_competition_by_id(self, competition_id):
+                sql = """
+SELECT id, tournament_id, c_index, game_seed, is_practice, ts
+FROM competition
+WHERE id = %s
+"""
+                self.execute(sql, (competition_id,))
+                row = self.fetchone()
+                if row is None:
+                        return None
+
+                return Container(id=row[0],
+                                 tournament_id=row[1],
+                                 index=row[2],
+                                 game_seed=row[3],
+                                 is_practice=row[4],
+				 ts=row[5])
 
         def _init_db(self):
                 def create_tournament_table():
@@ -274,6 +307,16 @@ ENGINE=InnoDB
 """
                         self.execute(sql)
 
+                def create_current_tournament_table():
+                        sql = """
+CREATE TABLE IF NOT EXISTS current_tournament (
+ id INTEGER PRIMARY KEY NOT NULL,
+ tournament_id INTEGER NOT NULL
+)
+ENGINE=InnoDB
+"""
+                        self.execute(sql)
+
 		def create_team_table():
 			sql = """
 CREATE TABLE IF NOT EXISTS teams (
@@ -282,6 +325,7 @@ CREATE TABLE IF NOT EXISTS teams (
  password CHAR(64) NOT NULL,
  is_admin INTEGER NOT NULL,
  tournament_id INTEGER NOT NULL,
+ ts INTEGER NOT NULL,
  UNIQUE (tournament_id, team_name)
 )
 ENGINE=InnoDB
@@ -296,6 +340,7 @@ CREATE TABLE IF NOT EXISTS competition (
  c_index INTEGER NOT NULL,
  game_seed INTEGER NOT NULL,
  is_practice INTEGER NOT NULL,
+ ts INTEGER NOT NULL,
  UNIQUE (tournament_id, is_practice, c_index)
 )
 ENGINE=InnoDB
@@ -311,6 +356,7 @@ CREATE TABLE IF NOT EXISTS game (
  team_id INTEGER NOT NULL,
  competition_id INTEGER NOT NULL,
  score INTEGER,
+ finished_ts INTEGER,
  UNIQUE (competition_id, team_id)
 )
 ENGINE=InnoDB
@@ -323,6 +369,7 @@ ENGINE=InnoDB
                         self.add_team(-1, 'admin', ADMIN_PW, is_admin=1)
 
                 create_tournament_table()
+                create_current_tournament_table()
 		create_team_table()
 		create_admin_user()
                 create_competition_table()

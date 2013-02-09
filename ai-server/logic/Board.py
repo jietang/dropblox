@@ -57,11 +57,21 @@ class Board(object):
       'preview': self.preview,
       'score': self.score,
       'seed': self.seed,
+      'rand_state': self.random.getstate(),
     }
 
   @classmethod
   def from_dict(cls, d):
     a = cls(None, _dont_do_anything=True)
+    a.random = random.Random()
+    def map_tuple(o):
+      if type(o) in (list, tuple):
+        return tuple(map(map_tuple, o))
+      else:
+        return o
+
+    new_state = map_tuple(d.pop('rand_state'))
+    a.random.setstate(new_state)
     for name in d:
       setattr(a, name, d[name])
     return a
