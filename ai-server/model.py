@@ -8,6 +8,8 @@ import random
 import threading
 import time
 
+from collections import defaultdict
+
 import MySQLdb as mdb
 from MySQLdb.cursors import Cursor
 import bcrypt
@@ -32,12 +34,8 @@ class Container(object):
                                 out[k] = v
                 return out
 
-class GameDoesNotExistError(Exception): pass
-class TeamNotAuthorizedToChangeGameError(Exception): pass
-class GameOverError(Exception):
-        def __init__(self, game_state):
-                self.game_state = game_state
-
+	def __repr__(self):
+		return 'Container(**%r)' % (self.to_dict(),)
 
 class OurCursor(Cursor):
 	# Tuple indices for team objects
@@ -81,33 +79,26 @@ class OurCursor(Cursor):
 			result = 0
 		return result
 
-	def scores_by_team(self):
-		sql = 'SELECT * FROM scores ORDER BY team_name ASC, round ASC'
-		self.execute(sql)
+	def get_scores_by_team_for_tournament(self, tournament_id):
+		sql = """
+SELECT game.team_id, competition.c_index as round, game.score FROM game
+LEFT JOIN competition ON
+game.competition_id = competition.id
+WHERE
+competition.tournament_id = %s AND
+game.score IS NOT NULL AND
+competition.is_practice = 0
+"""
+		self.execute(sql, (tournament_id,))
 		scores = self.fetchall()
 
-		team_to_scores = {}
-		for score in scores:
-			if score[Database.SCORE_TEAM_NAME] not in team_to_scores:
-				team_to_scores[score[Database.SCORE_TEAM_NAME]] = []
-			team_to_scores[score[Database.SCORE_TEAM_NAME]].append({
-				'score' : score[Database.SCORE_SCORE],
-				'round' : score[Database.SCORE_ROUND],
-			})
+		team_to_scores = defaultdict(list)
+		for (team_id, round, score) in scores:
+			team_to_scores[team_id].append({
+					'score' : score,
+					'round' : round,
+					})
 		return team_to_scores
-
-	def teams_score_and_whitelisted_state_for_tournament(self):
-		"""
-		Returns a tuple of the team object, their scores and whether
-		or not they are whitelisted for the next round
-		for the admin page.
-
-		This method does a lot and in theory stuff this specialized
-		complicated the database layer but it needs to be efficient
-		since the admin page is refreshed every second.
-		"""
-		pass
-		
 
 	def get_team_by_name(self, team_name):
 		sql = 'SELECT id, team_name, password, is_admin, tournament_id FROM teams WHERE team_name=%s'
@@ -118,7 +109,7 @@ class OurCursor(Cursor):
                 return Container(id=t[0], name=t[1], password=t[2], is_admin=t[3],
                                  tournament_id=t[4])
 
-	def get_team_by_id(self, team_id):
+	def get_team(self, team_id):
 		sql = 'SELECT id, team_name, password, is_admin, tournament_id FROM teams WHERE id=%s'
 		self.execute(sql, (team_id,))
 		t = self.fetchone()
@@ -127,12 +118,25 @@ class OurCursor(Cursor):
                 return Container(id=t[0], name=t[1], password=t[2], is_admin=t[3],
                                  tournament_id=t[4])
 
-	def list_all_teams(self):
-		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
-		sql = 'SELECT * FROM teams'
-		cursor = conn.cursor()
-		cursor.execute(sql)
-		return cursor.fetchall()
+	def list_all_teams_for_tournament(self, tournament_id):
+		sql = """
+SELECT
+id, team_name, password, is_admin, ts, is_connected, is_whitelisted_next_round
+FROM teams
+WHERE tournament_id = %s
+ORDER BY team_name ASC
+"""
+		self.execute(sql, (tournament_id,))
+		res = self.fetchall()
+		return [Container(id=row[0],
+				  name=row[1],
+				  password=row[2],
+				  is_admin=row[3],
+				  ts=row[4],
+				  is_connected=row[5],
+				  is_whitelisted_next_round=row[6],
+				  tournament_id=tournament_id)
+			for row in res]
 
 	def authenticate_team(self, team_name, password):
 		team = self.get_team_by_name(team_name)
@@ -158,7 +162,7 @@ SELECT EXISTS(
                 return self.fetchone()[0]
 
         def create_practice_game(self, team_id):
-		team = self.get_team_by_id(team_id)
+		team = self.get_team(team_id)
 		tournament_id = team.tournament_id
 
                 game_seed = random.randint(-2**31, 2**31-1)
@@ -294,6 +298,19 @@ WHERE id = %s
                                  is_practice=row[4],
 				 ts=row[5])
 
+	def set_is_whitelisted_team_by_name(self, tournament_id, team_name, whitelisted):
+                assert isinstance(tournament_id, ACCEPTABLE_INT_TYPES), "tournament id is bad: %r" % (tournament_id,)
+                assert isinstance(whitelisted, bool), "whitelisted isn't bool : %r" % (whitelisted,)
+		sql = """
+UPDATE teams SET
+is_whitelisted_next_round = %s
+WHERE
+team_name = %s AND
+tournament_id = %s
+"""
+		print "HAI", tournament_id, repr(team_name), int(whitelisted)
+		self.execute(sql, (int(whitelisted), team_name, tournament_id))
+
         def _init_db(self):
                 def create_tournament_table():
                         sql = """
@@ -301,6 +318,7 @@ CREATE TABLE IF NOT EXISTS tournament (
  id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,
  school_name VARCHAR(255) NOT NULL,
  date INTEGER NOT NULL,
+ next_competition_index INTEGER NOT NULL,
  UNIQUE (school_name)
 )
 ENGINE=InnoDB
@@ -326,6 +344,8 @@ CREATE TABLE IF NOT EXISTS teams (
  is_admin INTEGER NOT NULL,
  tournament_id INTEGER NOT NULL,
  ts INTEGER NOT NULL,
+ is_connected INTEGER NOT NULL,
+ is_whitelisted_next_round INTEGER NOT NULL,
  UNIQUE (tournament_id, team_name)
 )
 ENGINE=InnoDB

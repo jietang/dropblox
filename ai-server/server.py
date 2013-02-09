@@ -92,13 +92,16 @@ class DropbloxGameServer(object):
         response['team_scores'] = {}
         response['team_connect'] = {}
         response['team_whitelisted'] = {}
-        team_states = trans.teams_scores_connected_whitelisted_state_for_tournament(current_tournament.tournament_id)
-        for (team, scores, is_connected, is_whitelisted) in teams_states:
+        # ordered by team_name
+        teams = trans.list_all_teams_for_tournament(current_tournament.id)
+        scores_by_team = trans.get_scores_by_team_for_tournament(current_tournament.id)
+        for team in teams:
             team_name = team.name
-            response['team_scores'][team_name] = scores
-            response['team_connect'][team_name] = is_connected
-            response['team_whitelisted'][team_name] = is_whitelisted_for_next_round
+            response['team_scores'][team_name] = scores_by_team.get(team.id, [])
+            response['team_connect'][team_name] = team.is_connected
+            response['team_whitelisted'][team_name] = team.is_whitelisted_next_round
 
+        print response
         return response
 
     @cherrypy.expose
@@ -135,13 +138,18 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @require_team_auth(admin_only=True)
     def whitelist_team(self, team, body):
-        CURRENT_COMPETITION.whitelist_team(body['target_team'])
+        trans = cherrypy.request.trans
+        current_tournament = trans.get_current_tournament()
+        print body['target_team']
+        trans.set_is_whitelisted_team_by_name(current_tournament.id, body['target_team'], True)
         return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
     @require_team_auth(admin_only=True)
     def blacklist_team(self, team, body):
-        CURRENT_COMPETITION.blacklist_team(body['target_team'])
+        trans = cherrypy.request.trans
+        current_tournament = trans.get_current_tournament()
+        trans.set_is_whitelisted_team_by_name(current_tournament.id, body['target_team'], False)
         return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
