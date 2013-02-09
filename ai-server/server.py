@@ -209,6 +209,11 @@ class DropbloxGameServer(object):
 
     @cherrypy.expose
     @require_team_auth()
+    def get_compete_game(self, team, body):
+        trans = cherrypy.request.trans
+
+    @cherrypy.expose
+    @require_team_auth()
     def submit_game_move(self, team, body):
         game_id = body['game_id']
         team_id = team.id
