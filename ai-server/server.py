@@ -31,6 +31,8 @@ class DropbloxWebSocketHandler(WebSocket):
             CURRENT_COMPETITION.make_move(team_name, self, msg['move_list'])
 
     def handle_testing_msg_from_team(self, msg, team):
+        #self.close(code=messaging.DO_NOT_RECONNECT, reason="Practice period is now finished. Head to PH100 for the final showdown!")
+        #return
         team_name = team[model.Database.TEAM_TEAM_NAME]
         if msg['type'] == messaging.CREATE_NEW_GAME_MSG:
             test_competition = competition.Competition(is_test_run=True)
