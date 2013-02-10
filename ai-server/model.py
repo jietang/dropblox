@@ -37,6 +37,7 @@ class Container(object):
 	def __repr__(self):
 		return 'Container(**%r)' % (self.to_dict(),)
 
+NUM_TEAM_ROWS = 8
 def container_from_team_row(row):
 	return Container(id=row[0],
 			 name=row[1],
@@ -60,6 +61,16 @@ def container_from_tournament_row(row):
 			 school_name=row[1],
 			 date=row[2],
 			 next_competition_index=row[3])
+
+def container_from_game_row(row, offset=0):
+	return Container(id=row[offset],
+			 number_moves_made=row[offset + 1],
+			 game_state=Board.from_dict(json.loads(row[offset + 2])),
+			 team_id=row[offset + 3],
+			 competition_id=row[offset + 4],
+			 score=row[offset + 5],
+			 finished_ts=row[offset + 6],
+			 )
 
 class OurCursor(Cursor):
 	# Tuple indices for team objects
@@ -197,7 +208,7 @@ SELECT EXISTS(
 
         def get_game_by_id(self, game_id):
                 sql = """
-SELECT id, number_moves_made, game_state, team_id, competition_id, score
+SELECT *
 FROM game
 WHERE id = %s
 """
@@ -206,11 +217,7 @@ WHERE id = %s
                 if game_row is None:
                         return None
 
-                return Container(id=game_row[0],
-                                 number_moves_made=game_row[1],
-                                 game_state=Board.from_dict(json.loads(game_row[2])),
-                                 team_id=game_row[3],
-                                 competition_id=game_row[4])
+                return container_from_game_row(game_row)
 
         def update_game(self, game_id, moves_made, game_state, score, is_finished):
                 sql = """
@@ -252,7 +259,7 @@ VALUES
 """
                 gs = Board(game_seed)
                 self.execute(sql, (0, json.dumps(gs.to_dict()), team_id, competition_id))
-                game_id = self.connection.insert_id()
+                game_id = self.lastrowid
                 return Container(id=game_id,
                                  number_moves_made=0,
                                  game_state=gs,
@@ -271,7 +278,7 @@ INSERT INTO competition (tournament_id, c_index, game_seed, is_practice, ts)
 VALUES (%s, %s, %s, %s, %s)
 """
                 self.execute(sql, (tournament_id, index, game_seed, int(is_practice), self._cur_ts()))
-                competition_id = self.connection.insert_id()
+                competition_id = self.lastrowid
                 return Container(id=competition_id,
                                  tournament_id=tournament_id,
                                  index=index,
@@ -327,7 +334,7 @@ teams.is_whitelisted_next_round
 		self.execute(sql, (tournament_id,))
 		return map(container_from_team_row, self.fetchall())
 
-	def get_current_competition_state(self):
+	def get_current_competition_state_for_tournament(self, tournament_id):
 		"""
 		This method does a lot because all this information is polled
 		during the main competition display.
@@ -339,15 +346,22 @@ teams.is_whitelisted_next_round
 SELECT teams.*, game.* FROM teams LEFT JOIN game ON
 teams.id = game.team_id
 WHERE
-teams.tournament_id = (
-    SELECT tournament_id FROM current_tournament WHERE id = 0
-) AND
+teams.tournament_id = %s AND
 teams.is_whitelisted_next_round AND
 game.competition_id = (
-    SELECT id FROM 
+    SELECT competition.id FROM competition JOIN tournament ON
+    competition.tournament_id = tournament.id
+    WHERE
+    tournament.id = %s AND
+    competition.c_index = tournament.next_competition_index
 )
 """
-	
+		self.execute(sql, (tournament_id, tournament_id))
+		rows = self.fetchall()
+		return [(container_from_team_row(row),
+			 (None if row[NUM_TEAM_ROWS] is None else
+			  container_from_game_row(row, offset=NUM_TEAM_ROWS)))
+			for row in rows]
 
 	def start_next_competition(self, tournament_id):
 		tournament = self.get_tournament(tournament_id)

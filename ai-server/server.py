@@ -105,7 +105,6 @@ class DropbloxGameServer(object):
             response['team_connect'][team_name] = team.is_connected
             response['team_whitelisted'][team_name] = team.is_whitelisted_next_round
 
-        print response
         return response
 
     @cherrypy.expose
@@ -113,22 +112,21 @@ class DropbloxGameServer(object):
     def competition_state(self, team, body):
         trans = cherrypy.request.trans
         current_tournament = trans.get_current_tournament()
-        whitelisted_teams = trans.get_current_whitelisted_teams(current_tournament.id)
-        
+        current_competition_state = trans.get_current_competition_state_for_tournament(current_tournament.id)
         response = {}
         response['boards'] = {}
 
         total_teams = 0
         connected_teams = 0
-        for team in trans.get_competition_state(competition.id):
+        for (team, game) in current_competition_state:
             total_teams += 1
-            active_teams += int(is_team_active(team))
-            response['boards'][team.name] = game.game_state.to_dict()
+            connected_teams += int(bool(is_team_active(team)))
+            if game is not None:
+                response['boards'][team.name] = game.game_state.to_dict()
 
-        remaining = total_teams - active_teams
-        response['waiting_for_players'] = remaining
+        response['waiting_for_players'] = total_teams - connected_teams
         response['round'] = current_tournament.next_competition_index
-        response['started'] = 
+        response['started'] = bool(response['boards'])
 
         return response
 
