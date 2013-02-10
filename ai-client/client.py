@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # This client connects to the centralized game server
-# via websocket. After creating a new game on the game
+# via http. After creating a new game on the game
 # server, it spaws an AI subprocess called "dropblox_ai."
 # For each turn, this client passes in the current game
 # state to a new instance of dropblox_ai, waits ten seconds
@@ -22,7 +22,6 @@ import urllib2
 import cherrypy
 import json
 
-from ws4py.client.threadedclient import WebSocketClient
 from subprocess import Popen, PIPE, STDOUT
 
 import messaging
@@ -60,9 +59,9 @@ class Command(object):
 
     def run(self, timeout):
         cmds = []
+        is_windows = platform.system() == "Windows"
+        self.process = Popen([self.cmd] + self.args, stdout=PIPE, universal_newlines=True, shell=is_windows)
         def target():
-            is_windows = platform.system() == "Windows"
-            self.process = Popen([self.cmd] + self.args, stdout=PIPE, universal_newlines=True, shell=is_windows)
             for line in iter(self.process.stdout.readline, ''):
                 line = line.rstrip('\n')
                 if line not in VALID_CMDS:
@@ -109,6 +108,10 @@ def catch_exceptions(f):
             print traceback.format_exc()
     return wrapped
 
+
+class AuthException(Exception):
+    pass
+
 class DropbloxServer(object):
     def __init__(self, team_name, team_password, host, port, ssl):
         # maybe support any transport
@@ -133,10 +136,15 @@ class DropbloxServer(object):
                 'Content-Type': 'application/json'
                 })
 
-        with contextlib.closing(urllib2.urlopen(req)) as resp:
-            if resp.getcode() != 200:
-                raise Exception("Bad response: %r" % resp.getcode())
-            return json.loads(resp.read())
+        try:
+            with contextlib.closing(urllib2.urlopen(req)) as resp:
+                if resp.getcode() != 200:
+                    raise Exception("Bad response: %r" % resp.getcode())
+                return json.loads(resp.read())
+        except urllib2.HTTPError, err:
+           if err.code == 401:
+               raise AuthException()
+
 
     def create_practice_game(self):
         return self._request("/create_practice_game", {})
@@ -144,7 +152,7 @@ class DropbloxServer(object):
     def get_compete_game(self):
         # return None if game is not ready to go yet
         resp = self._request("/get_compete_game", {})
-        return None if resp['ret'] == 'wait' else resp # w00t, magic string
+        return resp
 
     def submit_game_move(self, game_id, move_list, moves_made):
         resp = self._request("/submit_game_move", {
@@ -177,7 +185,7 @@ def run_ai(game_state_dict, seconds_remaining, logger=None):
 
 def run_game(server, game, use_logger=True):
     game_id = game['game']['id']
-    moves_made = 0
+    moves_made = game['game']['number_moves_made']
 
     logger = GameStateLogger(game_id) if use_logger else None
 
@@ -203,11 +211,20 @@ def run_compete(server):
     # TODO: it might be better for this to be an actual game object
     #       instead of the dictionary serialization of it
     new_game = server.get_compete_game()
-    if not new_game:
+
+    # HAX: didn't have time to clean up this abstraction
+    if new_game['ret'] == 'wait':
+        wait_time = float(new_game.get('wait_time', 0.5))
         print colorred.format("Waiting to compete...")
-    while not new_game:
-        time.sleep(0.5)
+
+    while new_game['ret'] == 'wait':
+        time.sleep(wait_time)
+
         new_game = server.get_compete_game()
+        # HAX: didn't have time to clean up this abstraction
+        if new_game['ret'] == 'wait':
+            wait_time = float(new_game.get('wait_time', 0.5))
+
     print colorred.format("Fired up and ready to go!")
     run_game(server, new_game, use_logger=True)
 
@@ -241,13 +258,17 @@ def main(argv):
 
     server = DropbloxServer(team_name, team_password, *connect_details)
 
-    if entry_mode == "practice":
-        run_practice(server)
-        return 0
-    elif entry_mode == "compete":
-        run_compete(server)
-        return 0
-    else:
-        assert False, 'wtf? mode = %s' % entry_mode
+    try:
+        if entry_mode == "practice":
+            run_practice(server)
+            return 0
+        elif entry_mode == "compete":
+            run_compete(server)
+            return 0
+        else:
+            assert False, 'wtf? mode = %s' % entry_mode
+    except AuthException:
+        print colorred.format("Cannot authenticate, please check config.txt")
+
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
