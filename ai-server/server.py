@@ -14,16 +14,9 @@ import time
 import bcrypt
 import cherrypy
 
-import competition
 import messaging
 import model
 import util
-
-from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
-from ws4py.websocket import WebSocket
-
-CURRENT_COMPETITION = competition.Competition()
-TESTING_COMPETITIONS = {} # Socket -> Practice competition instance
 
 def seconds_remaining_in_competition(competition):
     return util.AI_CLIENT_TIMEOUT + competition.ts - int(time.time())
@@ -32,45 +25,9 @@ TEAM_ACTIVE_THRESHOLD = 2
 def is_team_active(team):
     return (int(time.time()) - team.is_connected) < TEAM_ACTIVE_THRESHOLD
 
-class DropbloxWebSocketHandler(WebSocket):
-    def __init__(self):
-        self.test_competition = None
-
-    def handle_competition_msg_from_team(self, msg, team):
-        # RH: slowly turning these into RPCs
-        global CURRENT_COMPETITION
-        team_name = team[model.Database.TEAM_TEAM_NAME]
-        if msg['type'] == messaging.CREATE_NEW_GAME_MSG:
-            CURRENT_COMPETITION.register_team(team_name, self)
-        elif msg['type'] == messaging.SUBMIT_MOVE_MSG:
-            CURRENT_COMPETITION.make_move(team_name, self, msg['move_list'])
-
-    def received_message(self, msg):
-        print "received_message %s" % msg
-        msg = json.loads(str(msg))
-        team = model.Database.authenticate_team(msg['team_name'], msg['team_password'], session_sock=self)
-        if not team:
-            self.close(code=messaging.DO_NOT_RECONNECT, reason="Incorrect team name or password")
-            return
-
-        if msg['entry_mode'] == 'compete':
-            self.handle_competition_msg_from_team(msg, team)
-
-    def closed(self, code, reason=None):
-        model.Database.report_session_ended(self)
-        CURRENT_COMPETITION.disconnect_sock(self)
-        if self in TESTING_COMPETITIONS:
-            TESTING_COMPETITIONS[self].disconnect_sock(self)
-            del TESTING_COMPETITIONS[self]
-        
 class DropbloxGameServer(object):
     def __init__(self, db):
         self.db = db
-
-    @cherrypy.expose
-    def ws(self):
-        "Method must exist to serve as a exposed hook for the websocket"
-        pass
 
     def require_team_auth(admin_only=False):
         def wrapper(f):
@@ -147,7 +104,7 @@ class DropbloxGameServer(object):
             raise cherrypy.HTTPError(400, "Can't start a competition with no participants!")
 
         for team in whitelisted_teams:
-            if not team.is_connected:
+            if not is_team_active(team):
                 raise cherrypy.HTTPError(400, "Team %s is not connected!" % (team.name,))
 
         trans.start_next_competition(current_tournament.id)
@@ -203,6 +160,7 @@ class DropbloxGameServer(object):
                               gs, gs.score, True)
 
         trans.increment_next_competition_index(current_tournament.id)
+        trans.reset_whitelist_state(current_tournament.id)
 
         return {'status': 200, 'message': 'Success!'}
 
@@ -211,7 +169,6 @@ class DropbloxGameServer(object):
         cl = cherrypy.request.headers['Content-Length']
         rawbody = cherrypy.request.body.read(int(cl))
         body = json.loads(rawbody)
-        print "mitak: body:", str(body)
 
         if len(body['team_name']) < 5:
             raise cherrypy.HTTPError(400, "Team name must be at least 5 characters long!")
@@ -273,24 +230,17 @@ class DropbloxGameServer(object):
         competition_index = current_tournament.next_competition_index
         competition = trans.get_competition_by_index(current_tournament.id, competition_index)
 
-        if competition:
-            whitelisted_teams = trans.get_current_whitelisted_teams(current_tournament.id)
-            num_teams, num_connected_teams = 0, 0
-            for team in whitelisted_teams:
-                num_teams += 1
-                if is_team_active(team):
-                    num_connected_teams += 1
-
-            assert num_connected_teams <= num_teams, "num_connected_teams %d > num_teams %d" % (num_connected_teams, num_teams)
-
-            if num_connected_teams == num_teams:
-                # even if everyone is connected, we will need to wait until the next competition is started first
-                game = trans.get_or_create_compete_game(team, competition)
-                return {
-                    'ret': 'ok',
-                    'game': game.to_dict(),
-                    'competition_seconds_remaining': seconds_remaining_in_competition(competition),
-                    }
+        if (competition and
+            trans.competition_has_started(competition.id) and
+            team.is_whitelisted_next_round):
+            # even if everyone is connected, we will need to wait until the next competition is started first
+            game = trans.get_compete_game(team, competition)
+            assert game is not None, "Game should not be None here: %r %r" % (team, competition)
+            return {
+                'ret': 'ok',
+                'game': game.to_dict(),
+                'competition_seconds_remaining': seconds_remaining_in_competition(competition),
+                }
 
         print 'updating is_connected with time %s' % time.time()
         trans.update_is_connected_team_by_id(team.id, int(time.time()))
@@ -358,14 +308,6 @@ class DropbloxGameServer(object):
             'competition_seconds_remaining':  seconds_remaining_in_competition(competition),
             }
     
-    @cherrypy.expose
-    @require_team_auth
-    def wait_for_game(self, team, body):
-        while True:
-            time.sleep(1)
-        return {'ret': 'ok'}
-            
-
 def jsonify_error(status, message, traceback, version):
     response = cherrypy.response
     response.headers['Content-Type'] = 'application/json'
@@ -373,9 +315,6 @@ def jsonify_error(status, message, traceback, version):
 
 def main(argv):
     db_model = model.Database()
-
-    WebSocketPlugin(cherrypy.engine).subscribe()
-    cherrypy.tools.websocket = WebSocketTool()
 
     if len(argv) > 1:
         # read info from a config file
@@ -395,10 +334,6 @@ def main(argv):
 
     config = {
         'global': global_config,
-        '/ws': {
-            'tools.websocket.on': True,
-            'tools.websocket.handler_cls': DropbloxWebSocketHandler
-            },
         '/': {
             'tools.staticdir.root': os.getcwd(),
             'tools.staticdir.on': True,

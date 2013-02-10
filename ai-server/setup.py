@@ -4,6 +4,5 @@
 # mysql-python (i used 1.2.4)
 # py-bcrypt (i used 0.2)
 # cherrypy (i used 3.2.2)
-# ws4py (i used 0.2.4)
 # pyopenssl (i used 0.13)
 

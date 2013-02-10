@@ -137,8 +137,7 @@ competition.is_practice = 0
 
 	def list_all_teams_for_tournament(self, tournament_id):
 		sql = """
-SELECT
-*
+SELECT *
 FROM teams
 WHERE tournament_id = %s
 ORDER BY team_name ASC
@@ -190,13 +189,8 @@ SELECT EXISTS(
                                 break
                 return self._create_game(comp.id, team_id, game_seed)
 
-        def get_or_create_compete_game(self, team, competition):
-                game = self.get_game_by_team_and_competition_id(team.id, competition.id)
-                if game:
-                    return game
-                else:
-                    game_seed = self._create_game_seed()
-                    return self._create_game(comp.id, team.id, game_seed)
+        def get_compete_game(self, team, competition):
+                return self.get_game_by_team_and_competition_id(team.id, competition.id)
 
         def get_game_by_id(self, game_id):
                 sql = """
@@ -473,14 +467,22 @@ WHERE id = %s
 """
 		self.execute(sql, (tournament_id,))
 
+	def reset_whitelist_state(self, tournament_id):
+		sql = """
+UPDATE teams SET
+is_whitelisted_next_round = 0
+WHERE teams.tournament_id = %s
+"""
+		self.execute(sql, (tournament_id,))
+
         def _init_db(self):
                 def create_tournament_table():
                         sql = """
 CREATE TABLE IF NOT EXISTS tournament (
  id INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,
  school_name VARCHAR(255) NOT NULL,
- date INTEGER NOT NULL,
- next_competition_index INTEGER NOT NULL,
+ date INTEGER NOT NULL DEFAULT 0,
+ next_competition_index INTEGER NOT NULL DEFAULT 0,
  UNIQUE (school_name)
 )
 ENGINE=InnoDB
@@ -523,8 +525,7 @@ CREATE TABLE IF NOT EXISTS team_members (
  email CHAR(64) NOT NULL,
  name CHAR(64) NOT NULL,
  tournament_id INTEGER NOT NULL,
- ts INTEGER NOT NULL,
- UNIQUE (tournament_id, email)
+ ts INTEGER NOT NULL
 )
 ENGINE=InnoDB
 """
