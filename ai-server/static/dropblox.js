@@ -284,6 +284,15 @@ var dropblox = {
     '<div><form>' +
     ' <input type="text" id="team-name" placeholder="Team name" />' +
     ' <input type="password" id="password" placeholder="Password" />' +
+    ' <button id="submit" class="bloxbutton">Submit</button>' +
+    '</form></div>' +
+    '<div id="login-error"></div>'
+  ),
+
+  signup_form: (
+    '<div><form>' +
+    ' <input type="text" id="team-name" placeholder="Team name" />' +
+    ' <input type="password" id="password" placeholder="Password" />' +
     ' <input type="text" id="email1" placeholder="email1" />' +
     ' <input type="text" id="name1" placeholder="name1" />' +
     ' <input type="text" id="email2" placeholder="[optional] email2" />' +
@@ -308,7 +317,7 @@ var dropblox = {
 
   sign_up: function() {
     $('#content').html(
-      '<div class="section-content"><div class="content-header">Sign up</div> ' + this.login_form + 
+      '<div class="section-content"><div class="content-header">Sign up</div> ' + this.signup_form + 
       "<div>Don't use any personal passwords here! You'll share one password for your " +
       "whole team, stored in a config file on each of your computers.</div>"
     );
