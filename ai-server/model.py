@@ -158,19 +158,6 @@ ORDER BY team_name ASC
 
 		return team
 
-        def has_running_practice_game(self, tournament_id, team_id):
-                sql = """
-SELECT EXISTS(
-    SELECT 1 FROM game WHERE
-    score IS NULL AND
-    competition_id = competition.id AND
-    team_id = %s
-) FROM competition WHERE tournament_id = %s AND is_practice
-"""
-
-                self.execute(sql, (team_id, tournament_id))
-                return self.fetchone()[0]
-
 	def _create_game_seed(self):
 		return random.randint(-2**31, 2**31-1)
 
@@ -478,6 +465,16 @@ WHERE teams.tournament_id = %s
 """
 		self.execute(sql, (tournament_id,))
 
+	def update_ip_for_team(self, team_id, ip_address):
+		sql = """
+INSERT INTO team_ip (team_id, ip)
+VALUES
+(%s, %s)
+ON DUPLICATE KEY UPDATE
+ip = %s
+"""
+		self.execute(sql, (team_id, ip_address, ip_address))
+
         def _init_db(self):
                 def create_tournament_table():
                         sql = """
@@ -571,6 +568,12 @@ ENGINE=InnoDB
                                 return
                         self.add_team(-1, 'admin', ADMIN_PW, is_admin=1)
 
+		def create_team_ip_table():
+			sql = """
+create table if not exists team_ip (team_id INTEGER PRIMARY KEY NOT NULL, ip varchar(255) NOT NULL)
+"""
+			self.execute(sql)
+
                 create_tournament_table()
                 create_current_tournament_table()
 		create_team_table()
@@ -578,6 +581,7 @@ ENGINE=InnoDB
 		create_admin_user()
                 create_competition_table()
                 create_game_table()
+		create_team_ip_table()
 
 class Database(object):
         def __init__(self):

@@ -10,6 +10,7 @@ import os
 import re
 import sys
 import time
+import traceback
 
 import bcrypt
 import cherrypy
@@ -233,6 +234,14 @@ class DropbloxGameServer(object):
         competition = trans.get_competition(game.competition_id)
         game_dict = game.to_dict()
         sanitize_game_state(game_dict['game_state'])
+        try:
+            try:
+                ip = cherrypy.request.headers['X-Real-IP']
+            except KeyError:
+                ip = cherrypy.request.remote.ip
+            trans.update_ip_for_team(team.id, ip)
+        except Exception:
+            traceback.print_exc()
         return {
             'ret': 'ok',
             'game': game_dict,
