@@ -125,7 +125,7 @@ class DropbloxGameServer(object):
                 response['boards'][team.name] = game.game_state.to_dict()
 
         response['waiting_for_players'] = total_teams - connected_teams
-        response['round'] = current_tournament.next_competition_index
+        response['round'] = current_tournament.next_competition_index + 1
         response['started'] = bool(response['boards'])
 
         return response
@@ -159,7 +159,13 @@ class DropbloxGameServer(object):
     def whitelist_team(self, team, body):
         trans = cherrypy.request.trans
         current_tournament = trans.get_current_tournament()
-        print body['target_team']
+
+        next_competition = trans.get_competition_by_index(current_tournament.id,
+                                                          current_tournament.next_competition_index)
+        if (next_competition is not None and
+            trans.competition_has_started(next_competition.id)):
+            raise cherrypy.HTTPError(400, "Can't whitelist a team while the competition has already begin!")
+
         trans.set_is_whitelisted_team_by_name(current_tournament.id, body['target_team'], True)
         return {'status': 200, 'message': 'Success!'}
 
@@ -168,17 +174,36 @@ class DropbloxGameServer(object):
     def blacklist_team(self, team, body):
         trans = cherrypy.request.trans
         current_tournament = trans.get_current_tournament()
+
+        next_competition = trans.get_competition_by_index(current_tournament.id,
+                                                          current_tournament.next_competition_index)
+        if (next_competition is not None and
+            trans.competition_has_started(next_competition.id)):
+            raise cherrypy.HTTPError(400, "Can't blacklist a team while the competition has already begin!")
+
         trans.set_is_whitelisted_team_by_name(current_tournament.id, body['target_team'], False)
         return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
     @require_team_auth(admin_only=True)
-    def end_round(self, body):
-        global CURRENT_COMPETITION
-        if not CURRENT_COMPETITION.started:
-          raise cherrypy.HTTPError(400, "This competition hasn't been started yet!")
-        CURRENT_COMPETITION.record_remaining_games()
-        CURRENT_COMPETITION = competition.Competition()
+    def end_round(self, team, body):
+        trans = cherrypy.request.trans
+        current_tournament = trans.get_current_tournament()
+
+        next_competition = trans.get_competition_by_index(current_tournament.id,
+                                                          current_tournament.next_competition_index)
+        if (next_competition is None or
+            not trans.competition_has_started(next_competition.id)):
+            raise cherrypy.HTTPError(400, "This competition hasn't been started yet!")
+        
+        for game in trans.games_for_competition(next_competition.id):
+            gs = game.game_state
+            gs.state = 'failed'
+            trans.update_game(game.id, game.number_moves_made,
+                              gs, gs.score, True)
+
+        trans.increment_next_competition_index(current_tournament.id)
+
         return {'status': 200, 'message': 'Success!'}
 
     @cherrypy.expose
@@ -287,16 +312,19 @@ class DropbloxGameServer(object):
 
         game_state = game.game_state
 
-        if seconds_remaining_in_competition(competition) <= 0:
+        made_move = False
+        if game_state.state != 'failed':
+            if seconds_remaining_in_competition(competition) <= 0:
                 # game is over
                 game_state.state = 'failed'
-        else:
-                # this mutates the in-memory verison
+            else:
+                # this mutates the in-memory version
                 # of game.game_state
                 game_state.send_commands(move_list)
+                made_move = True
 
         trans.update_game(game_id,
-                          moves_made + 1,
+                          moves_made + int(bool(made_move)),
                           game_state,
                           game_state.score,
                           game_state.state == 'failed')

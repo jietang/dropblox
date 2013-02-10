@@ -132,7 +132,7 @@ competition.is_practice = 0
 		for (team_id, round, score) in scores:
 			team_to_scores[team_id].append({
 					'score' : score,
-					'round' : round,
+					'round' : round + 1,
 					})
 		return team_to_scores
 
@@ -473,6 +473,22 @@ team_name = %s AND
 tournament_id = %s
 """
 		self.execute(sql, (int(whitelisted), team_name, tournament_id))
+
+	def games_for_competition(self, competition_id):
+		sql = """
+SELECT * FROM game WHERE
+competition_id = %s
+"""
+		self.execute(sql, (competition_id,))
+		return map(container_from_game_row, self.fetchall())
+
+	def increment_next_competition_index(self, tournament_id):
+		sql = """
+UPDATE tournament SET
+next_competition_index = next_competition_index + 1
+WHERE id = %s
+"""
+		self.execute(sql, (tournament_id,))
 
         def _init_db(self):
                 def create_tournament_table():
