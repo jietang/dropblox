@@ -122,7 +122,7 @@ var dropblox = {
           $('#subcontent').html(
             '<div>Request failed! Make sure your history server is running.</div>' +
             '<div class="spacer">You can start this server by running ' +
-            '<span class="code">./historyserver</span> ' +
+            '<span class="code">./history_server</span> ' +
             'in your ai-client folder.</div>'
           );
         }
