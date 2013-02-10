@@ -211,6 +211,7 @@ class DropbloxGameServer(object):
         cl = cherrypy.request.headers['Content-Length']
         rawbody = cherrypy.request.body.read(int(cl))
         body = json.loads(rawbody)
+        print "mitak: body:", str(body)
 
         if len(body['team_name']) < 5:
             raise cherrypy.HTTPError(400, "Team name must be at least 5 characters long!")
@@ -232,6 +233,15 @@ class DropbloxGameServer(object):
 
             hashed = bcrypt.hashpw(body['password'], bcrypt.gensalt())
             trans.add_team(current_tournament.id, body['team_name'], hashed)
+            has_contact_info = False
+            for em, nm in [('email%d' % i, 'name%d' % i) for i in range(1,4)]:
+                if body[em] and body[nm]:
+                    if "@" not in body[em]:
+                        raise cherrypy.HTTPError(400, "Malformed email address")
+                    trans.add_team_member(current_tournament.id, body['team_name'], body[em], body[nm])
+                    has_contact_info = True
+            if not has_contact_info:
+                raise cherrypy.HTTPError(400, "Need at least one email and name per team")
             return json.dumps({'status': 200, 'message': 'Success!'})
 
     @cherrypy.expose

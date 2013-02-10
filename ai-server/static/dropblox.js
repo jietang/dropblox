@@ -285,6 +285,12 @@ var dropblox = {
     '<div><form>' +
     ' <input type="text" id="team-name" placeholder="Team name" />' +
     ' <input type="password" id="password" placeholder="Password" />' +
+    ' <input type="text" id="email1" placeholder="email1" />' +
+    ' <input type="text" id="name1" placeholder="name1" />' +
+    ' <input type="text" id="email2" placeholder="[optional] email2" />' +
+    ' <input type="text" id="name2" placeholder="[optional] name2" />' +
+    ' <input type="text" id="email3" placeholder="[optional] email3" />' +
+    ' <input type="text" id="name3" placeholder="[optional] name3" />' +
     ' <button id="submit" class="bloxbutton">Submit</button>' +
     '</form></div>' +
     '<div id="login-error"></div>'
@@ -309,7 +315,10 @@ var dropblox = {
     );
     $('#team-name').focus();
     $('#submit').click(function(e) {
-      dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val());
+      dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val(),
+			   $('#email1').val(), $('#name1').val(),
+			   $('#email2').val(), $('#name2').val(),
+			   $('#email3').val(), $('#name3').val());
       e.preventDefault();
     });
   },
@@ -319,10 +328,16 @@ var dropblox = {
     return true;
   },
 
-  submit_login: function(url, team_name, password) {
+  submit_login: function(url, team_name, password, email1, name1, email2, name2, email3, name3) {
     this.post(url, {
       team_name: team_name,
       password: password,
+      email1: email1,
+      name1: name1,
+      email2: email2,
+      name2: name2,
+      email3: email3,
+      name3: name3,
     },
     function(response) {
       var verb = (url == '/login' ? 'logged in' : 'signed up');
