@@ -11,7 +11,6 @@
 
 import traceback
 import threading
-import cherrypy
 import platform
 import time
 import json
@@ -19,7 +18,11 @@ import sys
 import os
 
 from ws4py.client.threadedclient import WebSocketClient
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE
+
+from logic.Board import Board
+import util
+import messaging
 
 # Remote server to connect to:
 SERVER_URL = 'https://playdropblox.com/'
@@ -83,7 +86,10 @@ class SubscriberThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        ws = Subscriber(WEBSOCKET_URL)
+        if entry_mode == 'local':
+            ws = LocalSubscriber(WEBSOCKET_URL)
+        else:
+            ws = Subscriber(WEBSOCKET_URL)
         ws.connect()
 
 class GameStateLogger(object):
@@ -110,33 +116,11 @@ def catch_exceptions(f):
     def wrapped(*args, **kwargs):
         try:
             return f(*args, **kwargs)
-        except Exception, e:
+        except Exception:
             print traceback.format_exc()
     return wrapped
 
-class Subscriber(WebSocketClient):
-    game_id = -1
-    logger = None
-
-    @catch_exceptions
-    def handshake_ok(self):
-        self._th.start()
-        self._th.join()
-
-    @catch_exceptions
-    def send_msg(self, msg):
-        msg['team_name'] = team_name
-        msg['team_password'] = team_password
-        msg['entry_mode'] = entry_mode
-        self.send(json.dumps(msg))
-
-    @catch_exceptions
-    def opened(self):
-        msg = {
-            'type' : CREATE_NEW_GAME_MSG,
-        }
-        self.send_msg(msg)
-
+class BaseSubscriber(object):
     @catch_exceptions
     def received_message(self, msg):
         msg = json.loads(str(msg))
@@ -170,6 +154,87 @@ class Subscriber(WebSocketClient):
         else:
             print colorred.format("Received unsupported message type")
 
+class LocalServer(object):
+    def __init__(self):
+        self.game = Board(0)
+        self.game.game_started_at = time.time()
+        self.game.game_id = 0
+
+    def request_next_move(self):
+        seconds_remaining = util.AI_CLIENT_TIMEOUT - (time.time() - self.game.game_started_at)
+        seconds_remaining -= 1 # Tell the client it has one second less than it actually has to account for latency.
+        response = {
+            'type': messaging.AWAITING_NEXT_MOVE_MSG,
+            'game_state': self.game.to_dict(),
+            'seconds_remaining': seconds_remaining,
+            }
+        return response
+        
+    def received_message(self, msg):
+        msg = json.loads(str(msg))
+
+        def send_game_over():
+            return {
+                'type': messaging.GAME_OVER_MSG,
+                'game_state': self.game.to_dict(),
+                'final_score': self.game.score,
+                }
+
+        if self.game.state == 'failed':
+            return send_game_over()
+
+        if time.time() - self.game.game_started_at > util.AI_CLIENT_TIMEOUT:
+			self.game.state = 'failed'
+        else:
+			self.game.send_commands(msg['move_list'])
+
+        if self.game.state == 'failed':
+            print "RESULTS: ", self.game.game_id, self.game.score
+            return send_game_over()
+        elif self.game.state == 'playing':
+            return self.request_next_move()
+
+class LocalSubscriber(BaseSubscriber):
+    def __init__(self, *n, **kw):
+        self.local_server = LocalServer()
+        self.logger = GameStateLogger(0)
+
+    def send_msg(self, msg):
+        self.last_message = msg
+
+    def close(self, code, reason):
+        print "Code: %s Reason: %s" % (code, reason)
+        os._exit(0)
+
+    def connect(self):
+        result = self.local_server.request_next_move()
+        while result:
+            self.received_message(json.dumps(result))
+            result = self.local_server.received_message(json.dumps(self.last_message))
+
+class Subscriber(WebSocketClient, BaseSubscriber):
+    game_id = -1
+    logger = None
+
+    @catch_exceptions
+    def handshake_ok(self):
+        self._th.start()
+        self._th.join()
+
+    @catch_exceptions
+    def send_msg(self, msg):
+        msg['team_name'] = team_name
+        msg['team_password'] = team_password
+        msg['entry_mode'] = entry_mode
+        self.send(json.dumps(msg))
+
+    @catch_exceptions
+    def opened(self):
+        msg = {
+            'type' : CREATE_NEW_GAME_MSG,
+        }
+        self.send_msg(msg)
+
     def closed(self, code, reason=None):
         print colorred.format("Connection to server closed. Code=%s, Reason=%s" % (code, reason))
 
@@ -181,22 +246,22 @@ class Subscriber(WebSocketClient):
             os._exit(0)
 
 if __name__ == '__main__':
-    with open('config.txt', 'r') as f:
-        team_name = f.readline().rstrip('\n')
-        team_password = f.readline().rstrip('\n')
-    if team_name == "TEAM_NAME_HERE" or team_password == "TEAM_PASSWORD_HERE":
-        print colorred.format("Please specify a team name and password in config.txt")
-        sys.exit(0)
-
     if len(sys.argv) != 2:
-        print colorred.format("Usage: client.py [compete|practice]")
-        sys.exit(0)
-
-    if sys.argv[1] != "compete" and sys.argv[1] != "practice":
-        print colorred.format("Usage: client.py [compete|practice]")
+        print colorred.format("Usage: client.py [compete|practice|local]")
         sys.exit(0)
 
     entry_mode = sys.argv[1]
+    if entry_mode not in ('compete', 'practice', 'local'):
+        print colorred.format("Usage: client.py [compete|practice|local]")
+        sys.exit(0)
+
+    if entry_mode in ('compete', 'practice'):
+        with open('config.txt', 'r') as f:
+            team_name = f.readline().rstrip('\n')
+            team_password = f.readline().rstrip('\n')
+        if team_name == "TEAM_NAME_HERE" or team_password == "TEAM_PASSWORD_HERE":
+            print colorred.format("Please specify a team name and password in config.txt")
+            sys.exit(0)
 
     subscriber = SubscriberThread()
     subscriber.daemon = True
