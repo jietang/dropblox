@@ -43,10 +43,11 @@ def container_from_team_row(row):
 			 name=row[1],
 			 password=row[2],
 			 is_admin=row[3],
-			 ts=row[4],
-			 is_connected=row[5],
-			 is_whitelisted_next_round=row[6],
-			 tournament_id=row[7])
+                         tournament_id=row[4],
+			 ts=row[5],
+			 is_connected=row[6],
+			 is_whitelisted_next_round=row[7]
+			 )
 
 def container_from_competition_row(row):
 	return Container(id=row[0],
@@ -206,12 +207,7 @@ SELECT EXISTS(
                                 break
                 return self._create_game(comp.id, team_id, game_seed)
 
-        def get_or_create_compete_game(self, team, tournament):
-                competition_index = tournament.next_competition_index
-                # can probably assume the competition exists at this point (start_next_round)
-                competition = self.get_competition_by_index(tournament.id, competition_index)
-                assert competition, "no competition by the time we are ready to start a game for this round"
-
+        def get_or_create_compete_game(self, team, competition):
                 game = self.get_game_by_team_and_competition_id(team.id, competition.id)
                 if game:
                     return game
@@ -454,6 +450,17 @@ c_index = %s
 		if row is None:
 			return None
 		return container_from_competition_row(row)
+
+        def update_is_connected_team_by_id(self, team_id, is_connected):
+                assert isinstance(team_id, ACCEPTABLE_INT_TYPES), "team id is bad: %r" % (team_id,)
+                assert isinstance(is_connected, ACCEPTABLE_INT_TYPES), "is_connected isn't an int : %r" % (is_connected,)
+		sql = """
+UPDATE teams SET
+is_connected = %s
+WHERE
+id = %s
+"""
+		self.execute(sql, (is_connected, team_id))
 
 	def set_is_whitelisted_team_by_name(self, tournament_id, team_name, whitelisted):
                 assert isinstance(tournament_id, ACCEPTABLE_INT_TYPES), "tournament id is bad: %r" % (tournament_id,)

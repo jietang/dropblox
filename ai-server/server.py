@@ -233,19 +233,28 @@ class DropbloxGameServer(object):
         trans = cherrypy.request.trans
 
         current_tournament = trans.get_current_tournament()
-        whitelisted_teams = trans.get_current_whitelisted_teams(current_tournament.id)
 
-        num_teams, num_connected_teams = 0, 0
-        for team in whitelisted_teams:
-            num_teams += 1
-            if is_team_active(team):
-                num_connected_teams += 1
+        # even if everyone is connected, we will need to wait until the next competition is started first
+        competition_index = current_tournament.next_competition_index
+        competition = trans.get_competition_by_index(current_tournament.id, competition_index)
 
-        assert num_connected_teams <= num_teams, "num_connected_teams %d > num_teams %d" % (num_connected_teams, num_teams)
-        if num_connected_teams < num_teams:
-            return { 'ret': 'wait' }
-        else:
-            return trans.get_or_create_compete_game(team, current_tournament)
+        if competition:
+            whitelisted_teams = trans.get_current_whitelisted_teams(current_tournament.id)
+            num_teams, num_connected_teams = 0, 0
+            for team in whitelisted_teams:
+                num_teams += 1
+                if is_team_active(team):
+                    num_connected_teams += 1
+
+            assert num_connected_teams <= num_teams, "num_connected_teams %d > num_teams %d" % (num_connected_teams, num_teams)
+
+            if num_connected_teams == num_teams:
+                # even if everyone is connected, we will need to wait until the next competition is started first
+                return trans.get_or_create_compete_game(team, competition)
+
+        print 'updating is_connected with time %s' % time.time()
+        trans.update_is_connected_team_by_id(team.id, int(time.time()))
+        return { 'ret': 'wait' }
 
     @cherrypy.expose
     @require_team_auth()
