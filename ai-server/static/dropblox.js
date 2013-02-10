@@ -38,7 +38,6 @@ var dropblox = {
       ' <img src="/images/logo-big.png" />' +
       ' <div class="get-started-desc">The goal of this competition is to write a ' +
       '  program that will autonomously play a Tetris variant.</div>' +
-      '<div style="color: #FF0000; font-weight: bold; font-size: 250%;">FINAL SHOWDOWN AT 4.30PM PH100</div>' +
       ' <div id=get-started> ' +
       ' <a id="get-started-button" href="/dropblox_intro.html" class="bloxbutton">Get Started Here!</a>' +
       ' </div>' +
