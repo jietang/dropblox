@@ -100,13 +100,13 @@ class OurCursor(Cursor):
 
 	def get_scores_by_team_for_tournament(self, tournament_id):
 		sql = """
-SELECT game.team_id, competition.c_index as round, game.score FROM game
-LEFT JOIN competition ON
-game.competition_id = competition.id
+SELECT game.team_id, competition.c_index as round, game.score
+FROM competition INNER JOIN game
+ON game.competition_id = competition.id
 WHERE
 competition.tournament_id = %s AND
-game.score IS NOT NULL AND
-competition.is_practice = 0
+competition.is_practice = 0 AND
+game.score IS NOT NULL
 """
 		self.execute(sql, (tournament_id,))
 		scores = self.fetchall()
