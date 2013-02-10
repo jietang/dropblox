@@ -205,15 +205,17 @@ class DropbloxGameServer(object):
             if current_tournament is None:
                 raise Exception("No tournament in progress!")
 
-            hashed = bcrypt.hashpw(body['password'], bcrypt.gensalt())
+            hashed = bcrypt.hashpw(body['password'].encode('utf8'), bcrypt.gensalt())
             trans.add_team(current_tournament.id, body['team_name'], hashed)
             has_contact_info = False
-            for em, nm in [('email%d' % i, 'name%d' % i) for i in range(1,4)]:
+            for (i, (em, nm)) in enumerate([('email%d' % i, 'name%d' % i) for i in range(1,4)]):
                 if body[em] and body[nm]:
                     if "@" not in body[em]:
                         raise cherrypy.HTTPError(400, "Malformed email address")
                     trans.add_team_member(current_tournament.id, body['team_name'], body[em], body[nm])
                     has_contact_info = True
+                elif body[em] or body[nm]:
+                    raise cherrypy.HTTPError(400, "Must fill out both name %d and email address %d or neither of them!" % (i,))
             if not has_contact_info:
                 raise cherrypy.HTTPError(400, "Need at least one email and name per team")
             return json.dumps({'status': 200, 'message': 'Success!'})

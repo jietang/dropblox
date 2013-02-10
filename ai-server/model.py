@@ -150,6 +150,9 @@ ORDER BY team_name ASC
 		if team is None:
 			return None
 
+		if type(password) is unicode:
+			password = password.encode('utf8')
+
 		if not skip_auth and bcrypt.hashpw(password, team.password) != team.password:
 			return None
 
@@ -592,7 +595,9 @@ class Database(object):
                         self.connhub.conn = mdb.connect(host=DB_HOST,
                                                         user='dropblox',
                                                         passwd='dropblox',
-                                                        db='dropblox')
+                                                        db='dropblox',
+							use_unicode=True,
+							charset="utf8")
                         return self.connhub.conn
 
         def _get_cursor(self):
