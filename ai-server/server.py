@@ -77,7 +77,7 @@ class DropbloxGameServer(object):
         for team in teams:
             team_name = team.name
             response['team_scores'][team_name] = scores_by_team.get(team.id, [])
-            response['team_connect'][team_name] = team.is_connected
+            response['team_connect'][team_name] = is_team_active(team)
             response['team_whitelisted'][team_name] = team.is_whitelisted_next_round
 
         return response
