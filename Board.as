@@ -409,7 +409,7 @@ package {
           drop = true;
         } else if (keysFired[i] == Key.UP) {
           block.y--;
-          if (checkBlock(block)) {
+          if (checkBlock(block) == OK) {
             block.rowsFree++;
           } else {
             block.y++;

@@ -9,11 +9,11 @@ var dropblox = {
   initialize: function() {
     $('#top-bar a').each(function() {
       var link = this.id;
-      $(this).click(function() {
+      $(this).click(function(e) {
         if (!dropblox[link]()) {
           dropblox.set_active_link(link);
         }
-        window.event.preventDefault();
+        e.preventDefault();
       });
     });
 
@@ -72,7 +72,7 @@ var dropblox = {
     $('#content').html(
       '<div id="subcontent">Loading...</div>'
     );
-    $.ajax('http://localhost:9000', {
+    $.ajax('http://127.0.0.1:9000', {
       success: function(json) {
         if ($.cookie('active-link') == 'submission_history') {
           var response = JSON.parse(json);
@@ -155,7 +155,7 @@ var dropblox = {
     $('#' + game_id).addClass('active');
 
     $('#history-message').html('Loading game data...');
-    $.ajax('http://localhost:9000/details?game_id=' + game_id, {
+    $.ajax('http://127.0.0.1:9000/details?game_id=' + game_id, {
       success: function(json) {
         if (dropblox.cur_game.id == game_id) {
           var response = JSON.parse(json);
@@ -201,7 +201,7 @@ var dropblox = {
                 dropblox.set_cur_game_state(game_id, ui.value);
               },
             });
-            $('#animate').click(function() {
+            $('#animate').click(function(e) {
               var index = dropblox.cur_game.index;
               if (index !== undefined && index < dropblox.cur_game.states.length - 1) {
                 dropblox.set_cur_game_state(game_id, index + 1);
@@ -209,7 +209,7 @@ var dropblox = {
                   dropblox.animate_game(game_id, index + 1);
                 }, dropblox.ANIMATE_MOVE);
               }
-              window.event.preventDefault();
+              e.preventDefault();
             });
             setTimeout(function() {
               $('#copy-state').zclip({
@@ -285,6 +285,12 @@ var dropblox = {
     '<div><form>' +
     ' <input type="text" id="team-name" placeholder="Team name" />' +
     ' <input type="password" id="password" placeholder="Password" />' +
+    ' <input type="text" id="email1" placeholder="email1" />' +
+    ' <input type="text" id="name1" placeholder="name1" />' +
+    ' <input type="text" id="email2" placeholder="[optional] email2" />' +
+    ' <input type="text" id="name2" placeholder="[optional] name2" />' +
+    ' <input type="text" id="email3" placeholder="[optional] email3" />' +
+    ' <input type="text" id="name3" placeholder="[optional] name3" />' +
     ' <button id="submit" class="bloxbutton">Submit</button>' +
     '</form></div>' +
     '<div id="login-error"></div>'
@@ -295,9 +301,9 @@ var dropblox = {
       '<div class="section-content"><div class="content-header">Log in</div>' + this.login_form + '</div>'
     );
     $('#team-name').focus();
-    $('#submit').click(function() {
+    $('#submit').click(function(e) {
       dropblox.submit_login('/login', $('#team-name').val(), $('#password').val());
-      window.event.preventDefault();
+      e.preventDefault();
     });
   },
 
@@ -308,9 +314,12 @@ var dropblox = {
       "whole team, stored in a config file on each of your computers.</div>"
     );
     $('#team-name').focus();
-    $('#submit').click(function() {
-      dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val());
-      window.event.preventDefault();
+    $('#submit').click(function(e) {
+      dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val(),
+			   $('#email1').val(), $('#name1').val(),
+			   $('#email2').val(), $('#name2').val(),
+			   $('#email3').val(), $('#name3').val());
+      e.preventDefault();
     });
   },
 
@@ -319,10 +328,16 @@ var dropblox = {
     return true;
   },
 
-  submit_login: function(url, team_name, password) {
+  submit_login: function(url, team_name, password, email1, name1, email2, name2, email3, name3) {
     this.post(url, {
       team_name: team_name,
       password: password,
+      email1: email1,
+      name1: name1,
+      email2: email2,
+      name2: name2,
+      email3: email3,
+      name3: name3,
     },
     function(response) {
       var verb = (url == '/login' ? 'logged in' : 'signed up');
