@@ -150,6 +150,7 @@ class BaseSubscriber(object):
             if self.logger:
                 self.logger.log_game_state(ai_arg)
             print colorgrn.format("Game over! Your score was: %s" % msg['final_score'])
+            print "Game over! Your score was: %s" % msg['final_score']
             self.close(code=DO_NOT_RECONNECT, reason="Game over!")
         else:
             print colorred.format("Received unsupported message type")
@@ -159,6 +160,7 @@ class LocalServer(object):
         self.game = Board(0)
         self.game.game_started_at = time.time()
         self.game.game_id = 0
+        self.game.total_steps = 0
 
     def request_next_move(self):
         seconds_remaining = util.AI_CLIENT_TIMEOUT - (time.time() - self.game.game_started_at)
@@ -168,8 +170,9 @@ class LocalServer(object):
             'game_state': self.game.to_dict(),
             'seconds_remaining': seconds_remaining,
             }
+        self.game.total_steps += 1
         return response
-        
+
     def received_message(self, msg):
         msg = json.loads(str(msg))
 
@@ -189,7 +192,8 @@ class LocalServer(object):
 			self.game.send_commands(msg['move_list'])
 
         if self.game.state == 'failed':
-            print "RESULTS: ", self.game.game_id, self.game.score
+            print "RESULTS:", self.game.score
+            print "RESULTS_TIME:", self.game.total_steps
             return send_game_over()
         elif self.game.state == 'playing':
             return self.request_next_move()
@@ -204,6 +208,7 @@ class LocalSubscriber(BaseSubscriber):
 
     def close(self, code, reason):
         print "Code: %s Reason: %s" % (code, reason)
+        sys.stdout.flush()
         os._exit(0)
 
     def connect(self):

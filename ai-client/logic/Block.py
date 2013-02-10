@@ -1,6 +1,7 @@
 from RawBlockData import raw_block_data
 
 COLS = 12
+#ROWS = 33
 ROWS = 33
 MAX_BLOCK_SIZE = 10
 
