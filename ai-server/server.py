@@ -231,7 +231,23 @@ class DropbloxGameServer(object):
     @cherrypy.expose
     @require_team_auth()
     def get_compete_game(self, team, body):
+        # check if everyone is connected and ready to go. if not, return "wait"
         trans = cherrypy.request.trans
+
+        current_tournament = trans.get_current_tournament()
+        whitelisted_teams = trans.get_current_whitelisted_teams(current_tournament.id)
+
+        num_teams, num_connected_teams = 0, 0
+        for team in whitelisted_teams:
+            num_teams += 1
+            if is_team_active(team):
+                num_connected_teams += 1
+
+        assert num_connected_teams <= num_teams, "num_connected_teams %d > num_teams %d" % (num_connected_teams, num_teams)
+        if num_connected_teams < num_teams:
+            return { 'ret': 'wait' }
+        else:
+            return trans.get_or_create_compete_game(team, current_tournament)
 
     @cherrypy.expose
     @require_team_auth()

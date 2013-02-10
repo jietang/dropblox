@@ -195,6 +195,19 @@ SELECT EXISTS(
                                 break
                 return self._create_game(comp.id, team_id, game_seed)
 
+        def get_or_create_compete_game(self, team, tournament):
+                competition_index = tournament.next_competition_index
+                # can probably assume the competition exists at this point (start_next_round)
+                competition = self.get_competition_by_index(tournament.id, competition_index)
+                assert competition, "no competition by the time we are ready to start a game for this round"
+
+                game = self.get_game_by_team_and_competition_id(team.id, competition.id)
+                if game:
+                    return game
+                else:
+                    game_seed = self._create_game_seed()
+                    return self._create_game(comp.id, team.id, game_seed)
+
         def get_game_by_id(self, game_id):
                 sql = """
 SELECT id, number_moves_made, game_state, team_id, competition_id, score
@@ -202,6 +215,23 @@ FROM game
 WHERE id = %s
 """
                 self.execute(sql, (game_id,))
+                game_row = self.fetchone()
+                if game_row is None:
+                        return None
+
+                return Container(id=game_row[0],
+                                 number_moves_made=game_row[1],
+                                 game_state=Board.from_dict(json.loads(game_row[2])),
+                                 team_id=game_row[3],
+                                 competition_id=game_row[4])
+
+        def get_game_by_team_and_competition_id(self, team_id, competition_id):
+                sql = """
+SELECT id, number_moves_made, game_state, team_id, competition_id, score
+FROM game
+WHERE team_id = %s AND competition_id = %s
+"""
+                self.execute(sql, (team_id, competition_id))
                 game_row = self.fetchone()
                 if game_row is None:
                         return None

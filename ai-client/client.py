@@ -223,8 +223,8 @@ class DropbloxServer(object):
 
     def get_compete_game(self):
         # return None if game is not ready to go yet
-        res = self._request("/get_compete_game", {})
-        return None if res == 'WAIT' else res # w00t, magic string
+        resp = self._request("/get_compete_game", {})
+        return None if resp['ret'] == 'wait' else resp # w00t, magic string
 
     def submit_game_move(self, game_id, move_list, moves_made):
         resp = self._request("/submit_game_move", {
