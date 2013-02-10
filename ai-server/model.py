@@ -90,33 +90,12 @@ class OurCursor(Cursor):
 		return int(time.time())
 
 	def add_team(self, tournament_id, team_name, password, is_admin=False):
-		sql = 'INSERT INTO teams (team_name, password, is_admin, tournament_id, ts) VALUES (%s, %s, %s, %s, %s);'
+		sql = 'INSERT INTO teams (team_name, password, is_admin, tournament_id, ts, is_whitelisted_next_round, is_connected) VALUES (%s, %s, %s, %s, %s, 0, 0);'
 		self.execute(sql, (team_name, password, int(bool(is_admin)), tournament_id, self._cur_ts()))
 
 	def add_team_member(self, tournament_id, team_name, email, name):
 		sql = 'INSERT INTO team_members (team_name, email, name, tournament_id, ts) VALUES (%s, %s, %s, %s, %s);'
 		self.execute(sql, (team_name, email, name, tournament_id, self._cur_ts()))
-
-	def add_score(self, team_name, game_id, seed, score, round_num):
-		sql = 'INSERT INTO scores (team_name, game_id, seed, score, round) VALUES(%s, %s, %s, %s, %s);'
-		self.execute(sql, (team_name, game_id, seed, score, round_num))
-
-	def add_practice_score(self, team_name, game_id, seed, score):
-		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
-		sql = 'INSERT INTO practice_scores (team_name, game_id, seed, score) VALUES(%s, %s, %s, %s);'
-		cursor = conn.cursor()
-		cursor.execute(sql, (team_name, game_id, seed, score))
-		conn.commit()
-
-	def latest_round(self):
-		conn = mdb.connect(host=DB_HOST, user='dropblox', passwd='dropblox', db='dropblox')
-		sql = 'SELECT MAX(round) FROM scores'
-		cursor = conn.cursor()
-		cursor.execute(sql)
-		result = cursor.fetchone()[0]
-		if result == None:
-			result = 0
-		return result
 
 	def get_scores_by_team_for_tournament(self, tournament_id):
 		sql = """
