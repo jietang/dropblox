@@ -145,12 +145,12 @@ ORDER BY team_name ASC
 		self.execute(sql, (tournament_id,))
 		return map(container_from_team_row, self.fetchall())
 
-	def authenticate_team(self, team_name, password):
+	def authenticate_team(self, team_name, password, skip_auth=False):
 		team = self.get_team_by_name(team_name)
 		if team is None:
 			return None
 
-		if bcrypt.hashpw(password, team.password) != team.password:
+		if not skip_auth and bcrypt.hashpw(password, team.password) != team.password:
 			return None
 
 		return team
