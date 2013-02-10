@@ -26,10 +26,6 @@ from subprocess import Popen, PIPE, STDOUT
 
 import messaging
 
-class GameOverError(Exception):
-    def __init__(self, game_state_dict):
-        self.game_state_dict = game_state_dict
-
 # Remote server to connect to:
 PROD_HOST = 'playdropblox.com'
 PROD_PORT = 443
@@ -55,14 +51,13 @@ class Command(object):
     def __init__(self, cmd, *args):
         self.cmd = cmd
         self.args = list(args)
-        self.process = None
 
     def run(self, timeout):
         cmds = []
         is_windows = platform.system() == "Windows"
-        self.process = Popen([self.cmd] + self.args, stdout=PIPE, universal_newlines=True, shell=is_windows)
+        process = Popen([self.cmd] + self.args, stdout=PIPE, universal_newlines=True, shell=is_windows)
         def target():
-            for line in iter(self.process.stdout.readline, ''):
+            for line in iter(process.stdout.readline, ''):
                 line = line.rstrip('\n')
                 if line not in VALID_CMDS:
                     print 'INVALID COMMAND:', line # Forward debug output to terminal
@@ -73,10 +68,9 @@ class Command(object):
         thread.start()
 
         thread.join(timeout)
-        if thread.is_alive():
-            print colorred.format('Terminating process')
-            self.process.terminate()
-            thread.join()
+        print colorred.format('Terminating process')
+        process.terminate()
+        thread.join()
         print colorgrn.format('commands received: %s' % cmds)
         return cmds
 
@@ -100,17 +94,12 @@ class GameStateLogger(object):
             f.write(move_list)
         self.turn_num += 1
 
-def catch_exceptions(f):
-    def wrapped(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except Exception, e:
-            print traceback.format_exc()
-    return wrapped
-
-
 class AuthException(Exception):
     pass
+
+class GameOverError(Exception):
+    def __init__(self, game_state_dict):
+        self.game_state_dict = game_state_dict
 
 class DropbloxServer(object):
     def __init__(self, team_name, team_password, host, port, ssl):
@@ -144,7 +133,8 @@ class DropbloxServer(object):
         except urllib2.HTTPError, err:
            if err.code == 401:
                raise AuthException()
-
+           else:
+               raise
 
     def create_practice_game(self):
         return self._request("/create_practice_game", {})

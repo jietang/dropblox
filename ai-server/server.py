@@ -25,6 +25,11 @@ TEAM_ACTIVE_THRESHOLD = 2
 def is_team_active(team):
     return (int(time.time()) - team.is_connected) < TEAM_ACTIVE_THRESHOLD
 
+def sanitize_game_state(game_state_dict):
+    for k in game_state_dict:
+        if k not in ["state", "score", "bitmap", "block", "preview"]:
+            del game_state_dict[k]
+
 cached_passwords = {}
 
 class DropbloxGameServer(object):
@@ -224,9 +229,11 @@ class DropbloxGameServer(object):
         trans = cherrypy.request.trans
         game = trans.create_practice_game(team.id)
         competition = trans.get_competition(game.competition_id)
+        game_dict = game.to_dict()
+        sanitize_game_state(game_dict['game_state'])
         return {
             'ret': 'ok',
-            'game': game.to_dict(),
+            'game': game_dict,
             'competition_seconds_remaining': seconds_remaining_in_competition(competition),
             }
 
@@ -248,9 +255,11 @@ class DropbloxGameServer(object):
             # even if everyone is connected, we will need to wait until the next competition is started first
             game = trans.get_compete_game(team, competition)
             assert game is not None, "Game should not be None here: %r %r" % (team, competition)
+            game_dict = game.to_dict()
+            sanitize_game_state(game_dict['game_state'])
             return {
                 'ret': 'ok',
-                'game': game.to_dict(),
+                'game': game_dict,
                 'competition_seconds_remaining': seconds_remaining_in_competition(competition),
                 }
 
@@ -307,16 +316,19 @@ class DropbloxGameServer(object):
                           game_state.state == 'failed')
 
         if game_state.state == 'failed':
+            game_state_dict = game_state.to_dict()
+            sanitize_game_state(game_state_dict)
             return {'ret': 'fail',
                     'code': messaging.CODE_GAME_OVER,
                     'reason': "Game Is over!",
-                    'game_state': game_state.to_dict()}
+                    'game_state': game_state_dict}
 
         assert game_state.state == 'playing'
-
+        game_to_ret = game.to_dict()
+        sanitize_game_state(game_to_ret['game_state'])
         return {
             'ret': 'ok',
-            'game': game.to_dict(),
+            'game': game_to_ret,
             'competition_seconds_remaining':  seconds_remaining_in_competition(competition),
             }
     
