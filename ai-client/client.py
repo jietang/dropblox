@@ -221,6 +221,11 @@ class DropbloxServer(object):
     def create_practice_game(self):
         return self._request("/create_practice_game", {})
 
+    def get_compete_game(self):
+        # return None if game is not ready to go yet
+        resp = self._request("/get_compete_game", {})
+        return None if resp['ret'] == 'wait' else resp # w00t, magic string
+
     def submit_game_move(self, game_id, move_list, moves_made):
         resp = self._request("/submit_game_move", {
                 'game_id': game_id,
@@ -250,22 +255,19 @@ def run_ai(game_state_dict, seconds_remaining, logger=None):
         logger.log_ai_move(json.dumps(ai_cmds))
     return ai_cmds
 
-def run_practice(server):
-    # TODO: it might be better for this to be an actual game object
-    #       instead of the dictionary serialization of it
-    new_game = server.create_practice_game()
-    game_id = new_game['game']['id']
+def run_game(server, game):
+    game_id = game['game']['id']
     moves_made = 0
 
     logger = GameStateLogger(game_id)
 
     while True:
-        ai_cmds = run_ai(new_game['game']['game_state'],
-                         new_game['competition_seconds_remaining'],
+        ai_cmds = run_ai(game['game']['game_state'],
+                         game['competition_seconds_remaining'],
                          logger=logger)
 
         try:
-            new_game = server.submit_game_move(game_id, ai_cmds, moves_made)
+            game = server.submit_game_move(game_id, ai_cmds, moves_made)
         except GameOverError, e:
             final_game_state_dict = e.game_state_dict
             break
@@ -275,6 +277,22 @@ def run_practice(server):
 
     print colorgrn.format("Game over! Your score was: %s" %
                           (final_game_state_dict['score'],))
+
+def run_compete(server):
+    # TODO: it might be better for this to be an actual game object
+    #       instead of the dictionary serialization of it
+    new_game = server.get_compete_game()
+    while not new_game:
+        time.sleep(0.5)
+        new_game = server.get_compete_game()
+        print 'new_game = %r' % new_game
+    run_game(server, new_game)
+
+def run_practice(server):
+    # TODO: it might be better for this to be an actual game object
+    #       instead of the dictionary serialization of it
+    new_game = server.create_practice_game()
+    run_game(server, new_game)
 
 def main(argv):
     with open('config.txt', 'r') as f:
@@ -303,10 +321,16 @@ def main(argv):
     if entry_mode == "practice":
         run_practice(server)
         return 0
+    elif entry_mode == "compete":
+        run_compete(server)
+        return 0
+    else:
+        print 'wtf? mode = %s' % entry_mode
+        return 0
 
-    subscriber = SubscriberThread()
-    subscriber.daemon = True
-    subscriber.start()
+    # subscriber = SubscriberThread()
+    # subscriber.daemon = True
+    # subscriber.start()
 
     while (True):
         # For some reason, KeyboardInterrupts are only allowed
