@@ -25,6 +25,8 @@ TEAM_ACTIVE_THRESHOLD = 2
 def is_team_active(team):
     return (int(time.time()) - team.is_connected) < TEAM_ACTIVE_THRESHOLD
 
+cached_passwords = {}
+
 class DropbloxGameServer(object):
     def __init__(self, db):
         self.db = db
@@ -36,9 +38,19 @@ class DropbloxGameServer(object):
                 body = cherrypy.request.json
                 with self.db.transaction() as trans:
                     cherrypy.request.trans = trans
-                    team = trans.authenticate_team(body['team_name'], body['password'])
+
+                    if body['team_name'] in cached_passwords:
+                        if cached_passwords[body['team_name']] == body['password']:
+                            team = trans.authenticate_team(body['team_name'], body['password'], skip_auth=True)
+                        else:
+                            team = None
+                    else:
+                        team = trans.authenticate_team(body['team_name'], body['password'])
+
                     if not team or (admin_only and not team.is_admin):
                         raise cherrypy.HTTPError(401, "You are not authorized to perform this action.")
+                    else:
+                        cached_passwords[body['team_name']] = body['password']
                     return f(self, *args, team=team, body=body, **kwargs)
                 del cherrypy.request.trans
             return cherrypy.tools.json_out()(cherrypy.tools.json_in()(wrapped))
