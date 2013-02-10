@@ -26,7 +26,7 @@ def is_team_active(team):
     return (int(time.time()) - team.is_connected) < TEAM_ACTIVE_THRESHOLD
 
 def sanitize_game_state(game_state_dict):
-    for k in game_state_dict:
+    for k in list(game_state_dict):
         if k not in ["state", "score", "bitmap", "block", "preview"]:
             del game_state_dict[k]
 
