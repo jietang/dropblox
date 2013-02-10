@@ -167,6 +167,7 @@ class DropbloxGameServer(object):
         cl = cherrypy.request.headers['Content-Length']
         rawbody = cherrypy.request.body.read(int(cl))
         body = json.loads(rawbody)
+        print "mitak: body:", str(body)
 
         if len(body['team_name']) < 5:
             raise cherrypy.HTTPError(400, "Team name must be at least 5 characters long!")
