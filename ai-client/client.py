@@ -73,9 +73,9 @@ class Command(object):
         print colorred.format('Terminating process')
         try:
             process.terminate()
+            thread.join(60)
         except Exception:
             pass
-        thread.join()
         print colorgrn.format('commands received: %s' % cmds)
         return cmds
 
