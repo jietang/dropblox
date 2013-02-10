@@ -39,7 +39,7 @@ public class Block {
 			for (int i = 0; i < _offsets.length; i ++) {
 				toReturn[i] = new Point(
 						_center.i + _translation.i + (2 - _rotation)*_offsets[i].j,
-						_center.j + _translation.j + (2 - _rotation)*_offsets[i].i
+						_center.j + _translation.j - (2 - _rotation)*_offsets[i].i
 						);
 			}
 		}
