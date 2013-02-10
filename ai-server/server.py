@@ -28,7 +28,7 @@ TESTING_COMPETITIONS = {} # Socket -> Practice competition instance
 def seconds_remaining_in_competition(competition):
     return util.AI_CLIENT_TIMEOUT + competition.ts - int(time.time())
 
-TEAM_ACTIVE_THRESHOLD = 1
+TEAM_ACTIVE_THRESHOLD = 2
 def is_team_active(team):
     return (int(time.time()) - team.is_connected) < TEAM_ACTIVE_THRESHOLD
 
@@ -275,7 +275,12 @@ class DropbloxGameServer(object):
 
             if num_connected_teams == num_teams:
                 # even if everyone is connected, we will need to wait until the next competition is started first
-                return trans.get_or_create_compete_game(team, competition)
+                game = trans.get_or_create_compete_game(team, competition)
+                return {
+                    'ret': 'ok',
+                    'game': game.to_dict(),
+                    'competition_seconds_remaining': seconds_remaining_in_competition(competition),
+                    }
 
         print 'updating is_connected with time %s' % time.time()
         trans.update_is_connected_team_by_id(team.id, int(time.time()))

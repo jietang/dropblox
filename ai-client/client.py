@@ -285,6 +285,7 @@ def run_compete(server):
     while not new_game:
         time.sleep(0.5)
         new_game = server.get_compete_game()
+        print 'new_game = %r' % new_game
     run_game(server, new_game)
 
 def run_practice(server):
