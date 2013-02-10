@@ -467,13 +467,16 @@ WHERE teams.tournament_id = %s
 
 	def update_ip_for_team(self, team_id, ip_address):
 		sql = """
-INSERT INTO team_ip (team_id, ip)
+INSERT INTO team_ip (team_id, ip, ts)
 VALUES
-(%s, %s)
+(%s, %s, %s)
 ON DUPLICATE KEY UPDATE
-ip = %s
+ip = %s, 
+ts = %s
 """
-		self.execute(sql, (team_id, ip_address, ip_address))
+		self.execute(sql, (team_id,
+				   ip_address, self._cur_ts(),
+				   ip_address, self._cur_ts()))
 
         def _init_db(self):
                 def create_tournament_table():
@@ -570,7 +573,7 @@ ENGINE=InnoDB
 
 		def create_team_ip_table():
 			sql = """
-create table if not exists team_ip (team_id INTEGER PRIMARY KEY NOT NULL, ip varchar(255) NOT NULL)
+create table if not exists team_ip (team_id INTEGER PRIMARY KEY NOT NULL, ip varchar(255) NOT NULL, ts integer not null default 0)
 """
 			self.execute(sql)
 
