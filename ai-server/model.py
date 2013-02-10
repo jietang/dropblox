@@ -37,6 +37,41 @@ class Container(object):
 	def __repr__(self):
 		return 'Container(**%r)' % (self.to_dict(),)
 
+NUM_TEAM_ROWS = 8
+def container_from_team_row(row):
+	return Container(id=row[0],
+			 name=row[1],
+			 password=row[2],
+			 is_admin=row[3],
+			 ts=row[4],
+			 is_connected=row[5],
+			 is_whitelisted_next_round=row[6],
+			 tournament_id=row[7])
+
+def container_from_competition_row(row):
+	return Container(id=row[0],
+			 tournament_id=row[1],
+			 index=row[2],
+			 game_seed=row[3],
+			 is_practice=row[4],
+			 ts=row[5])
+
+def container_from_tournament_row(row):
+	return Container(id=row[0],
+			 school_name=row[1],
+			 date=row[2],
+			 next_competition_index=row[3])
+
+def container_from_game_row(row, offset=0):
+	return Container(id=row[offset],
+			 number_moves_made=row[offset + 1],
+			 game_state=Board.from_dict(json.loads(row[offset + 2])),
+			 team_id=row[offset + 3],
+			 competition_id=row[offset + 4],
+			 score=row[offset + 5],
+			 finished_ts=row[offset + 6],
+			 )
+
 class OurCursor(Cursor):
 	# Tuple indices for team objects
 	TEAM_TEAM_NAME = 1
@@ -100,47 +135,36 @@ competition.is_practice = 0
 		for (team_id, round, score) in scores:
 			team_to_scores[team_id].append({
 					'score' : score,
-					'round' : round,
+					'round' : round + 1,
 					})
 		return team_to_scores
 
 	def get_team_by_name(self, team_name):
-		sql = 'SELECT id, team_name, password, is_admin, tournament_id FROM teams WHERE team_name=%s'
+		sql = 'SELECT * FROM teams WHERE team_name = %s'
 		self.execute(sql, (team_name,))
 		t = self.fetchone()
                 if t is None:
                         return None
-                return Container(id=t[0], name=t[1], password=t[2], is_admin=t[3],
-                                 tournament_id=t[4])
+                return container_from_team_row(t)
 
 	def get_team(self, team_id):
-		sql = 'SELECT id, team_name, password, is_admin, tournament_id FROM teams WHERE id=%s'
+		sql = 'SELECT * FROM teams WHERE id = %s'
 		self.execute(sql, (team_id,))
 		t = self.fetchone()
                 if t is None:
                         return None
-                return Container(id=t[0], name=t[1], password=t[2], is_admin=t[3],
-                                 tournament_id=t[4])
+                return container_from_team_row(t)
 
 	def list_all_teams_for_tournament(self, tournament_id):
 		sql = """
 SELECT
-id, team_name, password, is_admin, ts, is_connected, is_whitelisted_next_round
+*
 FROM teams
 WHERE tournament_id = %s
 ORDER BY team_name ASC
 """
 		self.execute(sql, (tournament_id,))
-		res = self.fetchall()
-		return [Container(id=row[0],
-				  name=row[1],
-				  password=row[2],
-				  is_admin=row[3],
-				  ts=row[4],
-				  is_connected=row[5],
-				  is_whitelisted_next_round=row[6],
-				  tournament_id=tournament_id)
-			for row in res]
+		return map(container_from_team_row, self.fetchall())
 
 	def authenticate_team(self, team_name, password):
 		team = self.get_team_by_name(team_name)
@@ -165,11 +189,14 @@ SELECT EXISTS(
                 self.execute(sql, (team_id, tournament_id))
                 return self.fetchone()[0]
 
+	def _create_game_seed(self):
+		return random.randint(-2**31, 2**31-1)
+
         def create_practice_game(self, team_id):
 		team = self.get_team(team_id)
 		tournament_id = team.tournament_id
 
-                game_seed = random.randint(-2**31, 2**31-1)
+                game_seed = self._create_game_seed()
                 while True:
                         # index is unimportant for practice competitions
                         index = random.randint(-2**31, 2**31-1)
@@ -185,7 +212,7 @@ SELECT EXISTS(
 
         def get_game_by_id(self, game_id):
                 sql = """
-SELECT id, number_moves_made, game_state, team_id, competition_id, score
+SELECT *
 FROM game
 WHERE id = %s
 """
@@ -194,11 +221,7 @@ WHERE id = %s
                 if game_row is None:
                         return None
 
-                return Container(id=game_row[0],
-                                 number_moves_made=game_row[1],
-                                 game_state=Board.from_dict(json.loads(game_row[2])),
-                                 team_id=game_row[3],
-                                 competition_id=game_row[4])
+                return container_from_game_row(game_row)
 
         def update_game(self, game_id, moves_made, game_state, score, is_finished):
                 sql = """
@@ -221,6 +244,9 @@ WHERE id = %s
                 self.execute(sql,
                              (game_state.score, self._cur_ts(), game_id))
 
+	def _empty_game_state(self, game_seed):
+		return 
+
         def _create_game(self, competition_id, team_id, game_seed):
                 assert isinstance(competition_id, ACCEPTABLE_INT_TYPES), "bad competition id%r" % (competition_id,)
                 assert isinstance(team_id, ACCEPTABLE_INT_TYPES), "bad team id%r" % (team_id,)
@@ -237,7 +263,7 @@ VALUES
 """
                 gs = Board(game_seed)
                 self.execute(sql, (0, json.dumps(gs.to_dict()), team_id, competition_id))
-                game_id = self.connection.insert_id()
+                game_id = self.lastrowid
                 return Container(id=game_id,
                                  number_moves_made=0,
                                  game_state=gs,
@@ -256,7 +282,7 @@ INSERT INTO competition (tournament_id, c_index, game_seed, is_practice, ts)
 VALUES (%s, %s, %s, %s, %s)
 """
                 self.execute(sql, (tournament_id, index, game_seed, int(is_practice), self._cur_ts()))
-                competition_id = self.connection.insert_id()
+                competition_id = self.lastrowid
                 return Container(id=competition_id,
                                  tournament_id=tournament_id,
                                  index=index,
@@ -265,7 +291,7 @@ VALUES (%s, %s, %s, %s, %s)
 
 	def get_current_tournament(self):
 		sql = """
-SELECT id, school_name, date FROM tournament
+SELECT * FROM tournament
 WHERE id = (
     SELECT tournament_id FROM current_tournament
     WHERE id = 0
@@ -276,17 +302,109 @@ WHERE id = (
 		row = self.fetchone()
 		if row is None:
 			return None
-		return Container(id=row[0],
-				 school_name=row[1],
-				 date=row[2])
-				 
+		return container_from_tournament_row(row)
+
+	def get_tournament(self, tournament_id):
+		sql = """
+SELECT * FROM tournament
+WHERE id = %s
+"""
+		self.execute(sql, (tournament_id,))
+		row = self.fetchone()
+		if row is None:
+			return None
+		return container_from_tournament_row(row)
+
+	def competition_has_started(self, competition_id):
+		sql = """
+SELECT EXISTS(
+    SELECT 1 FROM
+    competition INNER JOIN game
+    ON competition.id = game.competition_id
+    WHERE
+    competition.id = %s
+)
+"""
+		self.execute(sql, (competition_id,))
+		(has_started,) = self.fetchone()
+		return has_started
+
+	def get_current_whitelisted_teams(self, tournament_id):
+		sql = """
+SELECT * FROM teams WHERE
+teams.tournament_id = %s AND
+teams.is_whitelisted_next_round
+"""
+		self.execute(sql, (tournament_id,))
+		return map(container_from_team_row, self.fetchall())
+
+	def get_current_competition_state_for_tournament(self, tournament_id):
+		"""
+		This method does a lot because all this information is polled
+		during the main competition display.
+
+		We want to limit the round trips to MySQL so we do it all
+		in one mega query.
+		"""
+		sql = """
+SELECT teams.*, game.* FROM teams LEFT JOIN game ON
+teams.id = game.team_id
+WHERE
+teams.tournament_id = %s AND
+teams.is_whitelisted_next_round AND
+game.competition_id = (
+    SELECT competition.id FROM competition JOIN tournament ON
+    competition.tournament_id = tournament.id
+    WHERE
+    tournament.id = %s AND
+    competition.c_index = tournament.next_competition_index
+)
+"""
+		self.execute(sql, (tournament_id, tournament_id))
+		rows = self.fetchall()
+		return [(container_from_team_row(row),
+			 (None if row[NUM_TEAM_ROWS] is None else
+			  container_from_game_row(row, offset=NUM_TEAM_ROWS)))
+			for row in rows]
+
+	def start_next_competition(self, tournament_id):
+		tournament = self.get_tournament(tournament_id)
+		next_competition_index = tournament.next_competition_index
+                game_seed = self._create_game_seed()
+
+		sql = """
+INSERT INTO competition (
+    tournament_id,
+    c_index, game_seed,
+    is_practice, ts
+) VALUES
+(%s, %s, %s, 0, %s)
+"""
+		self.execute(sql, (
+				tournament_id,
+				next_competition_index,
+				game_seed,
+				int(time.time()),
+				))
+		competition_id = self.lastrowid
+
+                empty_game = json.dumps(Board(game_seed).to_dict())
+		sql = """
+INSERT INTO game
+(number_moves_made, game_state, team_id, competition_id)
+SELECT 0, %s, teams.id, %s FROM teams WHERE
+teams.is_whitelisted_next_round AND
+teams.tournament_id = %s
+"""
+		self.execute(sql, (empty_game, competition_id, tournament_id))
+
 	def report_session_ended(self, session_sock):
 		if session_sock in Database.AUTHENTICATED_SOCKETS:
 			del Database.AUTHENTICATED_SOCKETS[session_sock]
 
-	def get_competition_by_id(self, competition_id):
+	def get_competition(self, competition_id):
                 sql = """
-SELECT id, tournament_id, c_index, game_seed, is_practice, ts
+SELECT *
 FROM competition
 WHERE id = %s
 """
@@ -295,12 +413,21 @@ WHERE id = %s
                 if row is None:
                         return None
 
-                return Container(id=row[0],
-                                 tournament_id=row[1],
-                                 index=row[2],
-                                 game_seed=row[3],
-                                 is_practice=row[4],
-				 ts=row[5])
+                return container_from_competition_row(row)
+
+	def get_competition_by_index(self, tournament_id, competition_index):
+		sql = """
+SELECT *
+FROM competition
+WHERE
+tournament_id = %s AND
+c_index = %s
+"""
+		self.execute(sql, (tournament_id, competition_index))
+		row = self.fetchone()
+		if row is None:
+			return None
+		return container_from_competition_row(row)
 
 	def set_is_whitelisted_team_by_name(self, tournament_id, team_name, whitelisted):
                 assert isinstance(tournament_id, ACCEPTABLE_INT_TYPES), "tournament id is bad: %r" % (tournament_id,)
@@ -312,8 +439,23 @@ WHERE
 team_name = %s AND
 tournament_id = %s
 """
-		print "HAI", tournament_id, repr(team_name), int(whitelisted)
 		self.execute(sql, (int(whitelisted), team_name, tournament_id))
+
+	def games_for_competition(self, competition_id):
+		sql = """
+SELECT * FROM game WHERE
+competition_id = %s
+"""
+		self.execute(sql, (competition_id,))
+		return map(container_from_game_row, self.fetchall())
+
+	def increment_next_competition_index(self, tournament_id):
+		sql = """
+UPDATE tournament SET
+next_competition_index = next_competition_index + 1
+WHERE id = %s
+"""
+		self.execute(sql, (tournament_id,))
 
         def _init_db(self):
                 def create_tournament_table():
