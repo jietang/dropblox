@@ -16,7 +16,7 @@ class DropbloxDebugServer(object):
       response['error'] = (
         '<div>The history directory does not exist yet.<div>'
         '<div class="spacer">It will be created when you test an AI with '
-        '<span class="code">python client.py test</span>.<div>'
+        '<span class="code">python client.py practice</span>.<div>'
       )
       return json.dumps(response)
     active_time = int(time.time()) - ACTIVE_TIMEOUT
@@ -37,7 +37,7 @@ class DropbloxDebugServer(object):
       response['error'] = (
         '<div>The history directory exists, but there are no games in it.<div>'
         '<div class="spacer">You can make your AI play a game by running '
-        '<span class="code">python client.py test</span>.<div>'
+        '<span class="code">python client.py practice</span>.<div>'
       )
       return json.dumps(response)
     response['games'].sort(key=lambda x: (1 if x['active'] else 0, x['timestamp']))

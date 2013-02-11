@@ -9,11 +9,11 @@ var dropblox = {
   initialize: function() {
     $('#top-bar a').each(function() {
       var link = this.id;
-      $(this).click(function() {
+      $(this).click(function(e) {
         if (!dropblox[link]()) {
           dropblox.set_active_link(link);
         }
-        window.event.preventDefault();
+        e.preventDefault();
       });
     });
 
@@ -38,7 +38,6 @@ var dropblox = {
       ' <img src="/images/logo-big.png" />' +
       ' <div class="get-started-desc">The goal of this competition is to write a ' +
       '  program that will autonomously play a Tetris variant.</div>' +
-      '<div style="color: #FF0000; font-weight: bold; font-size: 250%;">FINAL SHOWDOWN AT 4.30PM PH100</div>' +
       ' <div id=get-started> ' +
       ' <a id="get-started-button" href="/dropblox_intro.html" class="bloxbutton">Get Started Here!</a>' +
       ' </div>' +
@@ -201,7 +200,7 @@ var dropblox = {
                 dropblox.set_cur_game_state(game_id, ui.value);
               },
             });
-            $('#animate').click(function() {
+            $('#animate').click(function(e) {
               var index = dropblox.cur_game.index;
               if (index !== undefined && index < dropblox.cur_game.states.length - 1) {
                 dropblox.set_cur_game_state(game_id, index + 1);
@@ -209,7 +208,7 @@ var dropblox = {
                   dropblox.animate_game(game_id, index + 1);
                 }, dropblox.ANIMATE_MOVE);
               }
-              window.event.preventDefault();
+              e.preventDefault();
             });
             setTimeout(function() {
               $('#copy-state').zclip({
@@ -290,27 +289,45 @@ var dropblox = {
     '<div id="login-error"></div>'
   ),
 
+  signup_form: (
+    '<div><form>' +
+    ' <input type="text" id="team-name" placeholder="Team name" />' +
+    ' <input type="password" id="password" placeholder="Password" />' +
+    ' <input type="text" id="email1" placeholder="email1" />' +
+    ' <input type="text" id="name1" placeholder="name1" />' +
+    ' <input type="text" id="email2" placeholder="[optional] email2" />' +
+    ' <input type="text" id="name2" placeholder="[optional] name2" />' +
+    ' <input type="text" id="email3" placeholder="[optional] email3" />' +
+    ' <input type="text" id="name3" placeholder="[optional] name3" />' +
+    ' <button id="submit" class="bloxbutton">Submit</button>' +
+    '</form></div>' +
+    '<div id="login-error"></div>'
+  ),
+
   log_in: function() {
     $('#content').html(
       '<div class="section-content"><div class="content-header">Log in</div>' + this.login_form + '</div>'
     );
     $('#team-name').focus();
-    $('#submit').click(function() {
+    $('#submit').click(function(e) {
       dropblox.submit_login('/login', $('#team-name').val(), $('#password').val());
-      window.event.preventDefault();
+      e.preventDefault();
     });
   },
 
   sign_up: function() {
     $('#content').html(
-      '<div class="section-content"><div class="content-header">Sign up</div> ' + this.login_form + 
+      '<div class="section-content"><div class="content-header">Sign up</div> ' + this.signup_form + 
       "<div>Don't use any personal passwords here! You'll share one password for your " +
       "whole team, stored in a config file on each of your computers.</div>"
     );
     $('#team-name').focus();
-    $('#submit').click(function() {
-      dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val());
-      window.event.preventDefault();
+    $('#submit').click(function(e) {
+      dropblox.submit_login('/signup', $('#team-name').val(), $('#password').val(),
+			   $('#email1').val(), $('#name1').val(),
+			   $('#email2').val(), $('#name2').val(),
+			   $('#email3').val(), $('#name3').val());
+      e.preventDefault();
     });
   },
 
@@ -319,10 +336,16 @@ var dropblox = {
     return true;
   },
 
-  submit_login: function(url, team_name, password) {
+  submit_login: function(url, team_name, password, email1, name1, email2, name2, email3, name3) {
     this.post(url, {
       team_name: team_name,
       password: password,
+      email1: email1,
+      name1: name1,
+      email2: email2,
+      name2: name2,
+      email3: email3,
+      name3: name3,
     },
     function(response) {
       var verb = (url == '/login' ? 'logged in' : 'signed up');
