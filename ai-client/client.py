@@ -40,7 +40,7 @@ UP_CMD = 'up'
 DOWN_CMD = 'down'
 ROTATE_CMD = 'rotate'
 VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, ROTATE_CMD]
-AI_PROCESS_PATH = os.path.join(os.getcwd(), 'dropblox_ai' if not is_windows else 'dropblox_ai.exe')
+AI_PROCESS_PATH = os.path.join(os.getcwd(), 'dropblox_ai' if not is_windows else 'dropblox_ai.bat')
 
 # Printing utilities
 colorred = "\033[01;31m{0}\033[00m" if not is_windows else "{0}"
