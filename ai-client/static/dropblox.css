@@ -1,0 +1,305 @@
+body, table {
+  font-family: 'Lucida Sans', 'Lucida Sans Unicode','Lucida Grande', 'DejaVu Sans Condensed', sans-serif;
+  font-size: 14px;
+  margin: 0;
+}
+
+fieldset {
+  margin-top: 14px;
+}
+
+h3 {
+  margin: 0px;
+}
+
+#top-bar {
+  background-color: #1f75cc;
+  color: white;
+  font-size: 28px;
+}
+
+#top-bar.competition {
+  height: 39px;
+}
+
+#top-bar a {
+  display: inline-block;
+  padding: 8px;
+  cursor: pointer;
+}
+
+#page-title {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 12px;
+}	    
+
+#page-title.competition {
+  margin-top: 4px;
+}
+
+#page-title img {
+  height: 32px;
+}	    
+
+#round-text {
+  font-size: 20px;
+}
+
+#top-bar #nav-items {
+  margin-left: 10px;
+}
+
+#top-bar #nav-items .nav-item {
+  font-size: 20px;
+}
+
+#top-bar #nav-items .nav-item:hover {
+  background: #1f65cc;
+  background: -moz-linear-gradient(#159, #16A);
+  background: -webkit-linear-gradient(#159, #16A);
+}
+
+#top-bar #nav-items .nav-item.active {
+  background: #1c45cc;
+  background: -moz-linear-gradient(#148, #159);
+  background: -webkit-linear-gradient(#148, #159);
+}
+
+#top-bar #login-bar {
+  float: right;
+  font-size: 14px;
+  margin: 2px;
+}
+
+#top-bar #login-bar a {
+  color: white;
+  margin-left: 7px;
+}
+
+#content {
+  width: 800px;
+  margin: 20px auto;
+}
+
+#subcontent {
+  margin-top: 7px;
+}
+
+#get-started {
+  font-size: 50px;
+  margin-top: 20px;
+}
+
+#instructions {
+  color: #444;
+  font-size: 16px;
+  margin: 20px 0px 5px;
+}
+
+#instructions-table {
+  text-align: center;
+  margin: 5px auto;
+}
+
+.spacer {
+  margin-top: 4px;
+}
+
+#select-a-move, #cur-move {
+  margin: 6px 6px 6px 0px;
+}
+
+#move-slider {
+  margin: 8px 12px 8px 8px;
+  width: 300px;
+}
+
+.ui-slider-handle {
+  outline: none;
+}
+
+.code {
+  font-family: 'Courier New', Courier, 'Nimbus Mono L', serif, monospace;
+}
+
+#leftcontent, #rightcontent {
+  float: left;
+  background: #e5ebff;
+  border: 1px solid #ccdbeb;
+  margin-bottom: 15px;
+}
+
+#leftcontent {
+  border-radius: 2px 0px 0px 2px;
+  border-right: none;
+  padding: 0;
+  height: 587px;
+}
+
+#rightcontent {
+  border-radius: 0px 2px 2px 0px;
+  text-align: center;
+  padding: 10px;
+  height: 567px;
+}
+
+.game-link {
+  cursor: pointer;
+  padding: 6px;
+  color: #666;
+}
+
+.game-link:hover {
+  background-color: #3f95dd;
+  color: #fff;
+}
+
+.game-link.active {
+  background-color: #1f75cc;
+  color: #fff;
+}
+
+.container {
+  width: 280px;
+  margin: 16px auto 7px;
+}
+
+.competition.container {
+  float: left;
+  margin: 24px 0px 0px 24px;
+  width: 175px;
+}
+
+.header {
+  background-color: #1f75cc;
+  border: 1px solid black; 
+  padding: 7px;
+  border-radius: 5px 5px 0px 0px;
+  text-align: center;
+  color: #fff;
+}
+
+.competition.header {
+  padding: 4px;
+}
+
+.section-content {
+  width: 305px;
+  margin: 0 auto;
+}	       
+
+.content-header {
+  font-size: 20px;
+  margin-bottom: 5px;
+}
+
+form {
+  float: left;
+}
+
+input {
+  display: block;
+  margin: 10px 0px;
+  border: none;
+  box-shadow: 0px 0px 0px 1px #ddd;
+  font-size: 20px;
+  border-radius: 2px;
+  padding: 6px;
+  width: 300px;
+}
+
+input:focus {
+  box-shadow: 0px 0px 0px 1px #aaa;
+}
+
+#login-error {
+  clear: both;
+  color: red;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.col-header {
+  margin: 10px 6px 6px;
+}
+
+.col-header.spacer {
+  margin-top: 25px;
+}
+
+.no-games {
+  color: #666;
+  margin: 0px 6px;
+}
+
+#animate {
+  font-size: 14px;
+  padding: 4px 9px;
+}
+
+#copy-state {
+  color: black;
+}
+
+.big-spacer {
+  margin-top: 8px;
+}
+
+.bloxbutton {
+  font-size: 16px;
+  padding: 6px 15px;
+  color: #fff;
+  border: 1px #217dbd solid;
+  background: #37a2eb;
+  background: -moz-linear-gradient(#37a2eb, #2283d0);
+  background: -webkit-linear-gradient(#37a2eb, #2283d0);
+  cursor: pointer;
+  border-radius: 3px;
+  text-shadow: #11629e 0 1px 0;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  margin: 0;
+}
+
+.bloxbutton:hover {
+  border: 1px #1dba3 solid;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.bloxbutton:active {
+  border: 1px #113d5d solid;
+  background: #1c95e8;
+  background: -moz-linear-gradient(#1c95e8, #1e75bb);
+  background: -webkit-linear-gradient(#1c95e8, #1e75bb);
+  box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.4);
+}
+
+#submit {
+  margin-top: 5px;
+}
+
+#get-started-content {
+  text-align: center;
+}
+
+#get-started-content img {
+  margin: 5px 0px 15px;
+}
+
+.get-started-title {
+  font-size: 28px;
+  margin: 11px;
+}
+
+.get-started-desc {
+  color: #444;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+#get-started-button {
+  text-decoration: none;
+  font-size: 24px;
+}
