@@ -89,7 +89,7 @@ dd{margin-left:2em;margin-bottom:1em;}
 
 <h2>Getting Started</h2>
 
-<p>Start by downloading our <a href="https://www.dropbox.com/sh/vmik81v24zfrr0l/XOoKs6mRSU">getting started materials</a>! You'll use these materials to connect to our game server and test out your AI. In the getting-started subfolder for your operating system, you'll find the following files:</p>
+<p>Start by downloading our <a href="https://www.dropbox.com/sh/a1qo8zmxq294w0t/1CeFsOOTZr">getting started materials</a>! You'll use these materials to connect to our game server and test out your AI. In the getting-started subfolder for your operating system, you'll find the following files:</p>
 
 <ol>
 <li><code>client(.exe)</code>: The program that communicates with our centralized game server. It will spawn your AI process and forward the moves that you generate to the server.</li>
@@ -108,7 +108,7 @@ dd{margin-left:2em;margin-bottom:1em;}
 
 <p>If you're on Mac or Linux, you may need to <code>chmod +x</code> the files <code>history_server</code>, <code>client</code> and <code>dropblox_ai</code> to make sure they're executable.</p>
 
-<p>If you're on Windows, you'll need to set two environment variables: <code>PYTHONPATH</code> and <code>PYTHONHOME</code>. Set them both to <code>.</code>. (If you're not sure how to do this, look online or ask for help.)</p>
+<!-- <p>If you're on Windows, you'll need to set two environment variables: <code>PYTHONPATH</code> and <code>PYTHONHOME</code>. Set them both to <code>.</code>. (If you're not sure how to do this, look online or ask for help.)</p> -->
 
 <p>Open up a terminal and run <code>./history_server</code>. You should keep the history server running for the next few hours. It will allow you to view your AI's games at <a href="https://playdropblox.com#submission_history">the submission history page</a>.</p>
 
@@ -198,7 +198,7 @@ dd{margin-left:2em;margin-bottom:1em;}
 <pre><code>void remove_full_rows(bitmap)
     bitmap = [row for row in bitmap if not all(row)]
     num_rows_removed = 33 - len(bitmap)
-    bitmap = num_rows_removed*[12*[0]] + bitmap
+    bitmap = [12*[0] for _ in xrange(num_rows_removed)] + bitmap
     score += (1 &lt;&lt; num_rows_removed) - 1
 </code></pre>
 

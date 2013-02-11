@@ -10,6 +10,7 @@ import os
 import re
 import sys
 import time
+import traceback
 
 import bcrypt
 import cherrypy
@@ -26,7 +27,7 @@ def is_team_active(team):
     return (int(time.time()) - team.is_connected) < TEAM_ACTIVE_THRESHOLD
 
 def sanitize_game_state(game_state_dict):
-    for k in game_state_dict:
+    for k in list(game_state_dict):
         if k not in ["state", "score", "bitmap", "block", "preview"]:
             del game_state_dict[k]
 
@@ -76,7 +77,7 @@ class DropbloxGameServer(object):
         for team in teams:
             team_name = team.name
             response['team_scores'][team_name] = scores_by_team.get(team.id, [])
-            response['team_connect'][team_name] = team.is_connected
+            response['team_connect'][team_name] = is_team_active(team)
             response['team_whitelisted'][team_name] = team.is_whitelisted_next_round
 
         return response
@@ -233,6 +234,14 @@ class DropbloxGameServer(object):
         competition = trans.get_competition(game.competition_id)
         game_dict = game.to_dict()
         sanitize_game_state(game_dict['game_state'])
+        try:
+            try:
+                ip = cherrypy.request.headers['X-Real-IP']
+            except KeyError:
+                ip = cherrypy.request.remote.ip
+            trans.update_ip_for_team(team.id, ip)
+        except Exception:
+            traceback.print_exc()
         return {
             'ret': 'ok',
             'game': game_dict,
