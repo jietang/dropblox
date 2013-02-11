@@ -11,6 +11,7 @@ Start by downloading our [getting started materials](https://www.dropbox.com/sh/
 2. `config.txt`: A file in which you'll specify your team name and password. Used to authenticate the client.
 3. `history_server(.exe)`: A program you can run to review the games you've played and watch games you're playing in real-time. Running this server will make your games visible on the [the submission history page](https://playdropblox.com#submission_history).
 4. `dropblox_ai`: The executable that the client calls to make Dropblox moves. We've provided a sample AI in Python. To run your AI, replace this file with your program.
+5. `viewer(.exe), viewer_server(.exe)`: Helper programs you can use to review game logs locally.
 
 The getting-started folder also contains a `samples/` folder. This directory contains helper code and sample AIs in several languages that you can use as a starting point. We've taken care of dealing with I/O and duplicating the game logic for you!
 
@@ -31,6 +32,14 @@ Next, run `./client practice`. It should connect to the game server, read your l
 Every time you run `./client practice`, a new game will be created and your AI will be invoked to make moves. At the end of the allotted time, when we start official competition rounds, you'll run `./client compete`, which will enter you into these rounds. Don't worry about that for now, though. 
 
 If you have any issues getting `./client practice` to work, please talk to a Dropboxer.
+
+### Running games locally
+
+The client can also be run in a local-only mode. Run `./client local` from your terminal. This should play through a full Dropblox game locally, spawning the `dropbox_ai` process as necessary. 
+
+After the game is finished, start up `./viewer_server`. This program starts a simple web server for hosting the Dropblox web site locally. Running `./viewer` after the viewer server has been started opens the graphical Dropblox visualizer with the logs from the most recent game played. You can also pass in as an argument the path to a folder containing Dropblox game logs (e.g., `./viewer history/0_1234567890`). These logs are stored in the `history/` subdirectory (created when you first run the client) and follow the naming convention `<game id>_<timestamp>`. All games run locally have a game_id of 0.
+
+Running locally can be faster for debugging, but keep in mind that the time it takes to play a game is different when running on the server - an agent that runs to completion locally may hit the time limit when run against the server. Remember to run `./client practice` occasionally.
 
 The Rules of Dropblox
 ----
