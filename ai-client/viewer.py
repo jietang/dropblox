@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import webbrowser
+import requests
 
 def generate_game_file(game_dir):
     response = {'code': 200,
@@ -25,7 +26,7 @@ def generate_game_file(game_dir):
             'state': state_data,
             "moves": move_data,
             })
-    return repr(json.dumps(response))
+    return json.dumps(response)
 
 def find_most_recent_game(d='history'):
     return sorted([(os.stat(os.path.join(d, f)).st_mtime, os.path.join(d, f)) for f in os.listdir(d)], reverse=True)[0][1]
@@ -37,9 +38,5 @@ if __name__ == "__main__":
     else:
         game_dir = sys.argv[1]
 
-    with open(os.path.join(os.getcwd(), 'static', 'dropblox.js.template')) as f:
-        template = f.read()
-    with open(os.path.join(os.getcwd(), 'static', 'dropblox.js'), 'w') as f:
-        f.write(template % generate_game_file(game_dir))
-    
-    webbrowser.open("http://localhost:8080")
+    r = requests.post("http://localhost:8080/post_game", data=generate_game_file(game_dir))
+    webbrowser.open("http://localhost:8080/view_game?id=%s" % r.text)
