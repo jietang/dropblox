@@ -32,6 +32,8 @@ PROD_HOST = 'playdropblox.com'
 PROD_PORT = 443
 PROD_SSL = True
 
+is_windows = platform.system() == "Windows"
+
 # Subprocess
 LEFT_CMD = 'left'
 RIGHT_CMD = 'right'
@@ -39,11 +41,11 @@ UP_CMD = 'up'
 DOWN_CMD = 'down'
 ROTATE_CMD = 'rotate'
 VALID_CMDS = [LEFT_CMD, RIGHT_CMD, UP_CMD, DOWN_CMD, ROTATE_CMD]
-AI_PROCESS_PATH = os.path.join(os.getcwd(), 'dropblox_ai')
+AI_PROCESS_PATH = os.path.join(os.getcwd(), 'dropblox_ai' if not is_windows else 'dropblox_ai.bat')
 
 # Printing utilities
-colorred = "\033[01;31m{0}\033[00m"
-colorgrn = "\033[1;36m{0}\033[00m"
+colorred = "\033[01;31m{0}\033[00m" if not is_windows else "{0}"
+colorgrn = "\033[1;36m{0}\033[00m" if not is_windows else "{0}"
 
 # Logging AI actions for debug webserver
 LOGGING_DIR = os.path.join(os.getcwd(), 'history')
