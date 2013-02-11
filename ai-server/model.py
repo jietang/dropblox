@@ -100,13 +100,13 @@ class OurCursor(Cursor):
 
 	def get_scores_by_team_for_tournament(self, tournament_id):
 		sql = """
-SELECT game.team_id, competition.c_index as round, game.score FROM game
-LEFT JOIN competition ON
-game.competition_id = competition.id
+SELECT game.team_id, competition.c_index as round, game.score
+FROM competition INNER JOIN game
+ON game.competition_id = competition.id
 WHERE
 competition.tournament_id = %s AND
-game.score IS NOT NULL AND
-competition.is_practice = 0
+competition.is_practice = 0 AND
+game.score IS NOT NULL
 """
 		self.execute(sql, (tournament_id,))
 		scores = self.fetchall()
@@ -157,19 +157,6 @@ ORDER BY team_name ASC
 			return None
 
 		return team
-
-        def has_running_practice_game(self, tournament_id, team_id):
-                sql = """
-SELECT EXISTS(
-    SELECT 1 FROM game WHERE
-    score IS NULL AND
-    competition_id = competition.id AND
-    team_id = %s
-) FROM competition WHERE tournament_id = %s AND is_practice
-"""
-
-                self.execute(sql, (team_id, tournament_id))
-                return self.fetchone()[0]
 
 	def _create_game_seed(self):
 		return random.randint(-2**31, 2**31-1)
@@ -478,6 +465,19 @@ WHERE teams.tournament_id = %s
 """
 		self.execute(sql, (tournament_id,))
 
+	def update_ip_for_team(self, team_id, ip_address):
+		sql = """
+INSERT INTO team_ip (team_id, ip, ts)
+VALUES
+(%s, %s, %s)
+ON DUPLICATE KEY UPDATE
+ip = %s, 
+ts = %s
+"""
+		self.execute(sql, (team_id,
+				   ip_address, self._cur_ts(),
+				   ip_address, self._cur_ts()))
+
         def _init_db(self):
                 def create_tournament_table():
                         sql = """
@@ -571,6 +571,12 @@ ENGINE=InnoDB
                                 return
                         self.add_team(-1, 'admin', ADMIN_PW, is_admin=1)
 
+		def create_team_ip_table():
+			sql = """
+create table if not exists team_ip (team_id INTEGER PRIMARY KEY NOT NULL, ip varchar(255) NOT NULL, ts integer not null default 0)
+"""
+			self.execute(sql)
+
                 create_tournament_table()
                 create_current_tournament_table()
 		create_team_table()
@@ -578,6 +584,7 @@ ENGINE=InnoDB
 		create_admin_user()
                 create_competition_table()
                 create_game_table()
+		create_team_ip_table()
 
 class Database(object):
         def __init__(self):

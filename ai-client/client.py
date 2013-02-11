@@ -18,13 +18,14 @@ import threading
 import time
 import traceback
 import urllib2
+from subprocess import Popen, PIPE, STDOUT
 
 import cherrypy
 import json
 
-from subprocess import Popen, PIPE, STDOUT
-
 import messaging
+import util
+from logic.Board import Board
 
 # Remote server to connect to:
 PROD_HOST = 'playdropblox.com'
@@ -167,6 +168,47 @@ class DropbloxServer(object):
         
         raise Exception("Bad response: %r" % (resp,))
 
+class LocalServer(object):
+    def submit_game_move(self, game_id, move_list, moves_made):
+        # update local state, return json object
+        game_state = self.game
+        made_move = False
+        if game_state.state != 'failed':
+            if time.time() - self.game.game_started_at > util.AI_CLIENT_TIMEOUT:
+                game_state.state = 'failed'
+            else:
+                game_state.send_commands(move_list)
+                made_move = True
+        game_state.total_steps += int(bool(made_move))
+
+        if game_state.state == 'failed':
+            raise GameOverError(game_state.to_dict())
+        return dict(
+            ret='ok',
+            game=dict(
+                id=0,
+                number_moves_made=game_state.total_steps,
+                game_state=game_state.to_dict(),
+            ),
+            competition_seconds_remaining=util.AI_CLIENT_TIMEOUT - (time.time() - self.game.game_started_at) - 1,
+            )
+
+    def get_local_game(self):
+        # return a json object
+        self.game = Board(50)
+        self.game.game_started_at = time.time()
+        self.game.game_id = 0
+        self.game.total_steps = 0
+        return dict(
+            ret='ok',
+            game=dict(
+                id=0,
+                number_moves_made=self.game.total_steps,
+                game_state=self.game.to_dict(),
+            ),
+            competition_seconds_remaining=util.AI_CLIENT_TIMEOUT-1,
+            )
+
 def run_ai(game_state_dict, seconds_remaining, logger=None):
     ai_arg_one = json.dumps(game_state_dict)
     ai_arg_two = json.dumps(seconds_remaining)
@@ -201,6 +243,8 @@ def run_game(server, game, use_logger=True):
 
     print colorgrn.format("Game over! Your score was: %s" %
                           (final_game_state_dict['score'],))
+    print "RESULTS: %s" % final_game_state_dict['score']
+    print "RESULTS_TIME: %s" % moves_made
 
 def run_compete(server):
     # TODO: it might be better for this to be an actual game object
@@ -229,41 +273,51 @@ def run_practice(server):
     new_game = server.create_practice_game()
     run_game(server, new_game)
 
+def run_local():
+    # create practice games, run game
+    print "running local"
+    server = LocalServer()
+    run_game(server, server.get_local_game())
+
 def main(argv):
-    with open('config.txt', 'r') as f:
-        team_name = f.readline().rstrip('\n')
-        team_password = f.readline().rstrip('\n')
-
-    if team_name == "TEAM_NAME_HERE" or team_password == "TEAM_PASSWORD_HERE":
-        print colorred.format("Please specify a team name and password in config.txt")
+    if len(argv) != 2:
+        print colorred.format("Usage: client.py [compete|practice|local]")
         sys.exit(0)
 
-    if (len(sys.argv) != 2 or
-        sys.argv[1] not in ["compete", "practice"]):
-        print colorred.format("Usage: client.py [compete|practice]")
+    entry_mode = argv[1]
+    if entry_mode not in ('compete', 'practice', 'local'):
+        print colorred.format("Usage: client.py [compete|practice|local]")     
         sys.exit(0)
 
-    entry_mode = sys.argv[1]
+    if entry_mode in ('compete', 'practice'):
+        with open('config.txt', 'r') as f:
+            team_name = f.readline().rstrip('\n')
+            team_password = f.readline().rstrip('\n')
+        if team_name == "TEAM_NAME_HERE" or team_password == "TEAM_PASSWORD_HERE":
+            print colorred.format("Please specify a team name and password in config.txt")
+            sys.exit(0)
 
-    if (hashlib.md5(os.environ.get('DROPBLOX_DEBUG', '')).digest() ==
-        '\x98w\x01\x0b%O\x08\xfa\x07\xe8\xa3\xe6]\xe9\xf0\xeb'):
-        connect_details = ('localhost', 8080, False)
-    else:
-        connect_details = (PROD_HOST, PROD_PORT, PROD_SSL)
-
-    server = DropbloxServer(team_name, team_password, *connect_details)
-
-    try:
-        if entry_mode == "practice":
-            run_practice(server)
-            return 0
-        elif entry_mode == "compete":
-            run_compete(server)
-            return 0
+        if (hashlib.md5(os.environ.get('DROPBLOX_DEBUG', '')).digest() ==
+            '\x98w\x01\x0b%O\x08\xfa\x07\xe8\xa3\xe6]\xe9\xf0\xeb'):
+            connect_details = ('localhost', 8080, False)
         else:
-            assert False, 'wtf? mode = %s' % entry_mode
-    except AuthException:
-        print colorred.format("Cannot authenticate, please check config.txt")
+            connect_details = (PROD_HOST, PROD_PORT, PROD_SSL)
+        server = DropbloxServer(team_name, team_password, *connect_details)
+
+        try:
+            if entry_mode == "practice":
+                run_practice(server)
+                return 0
+            elif entry_mode == "compete":
+                run_compete(server)
+                return 0
+            else:
+                assert False, 'wtf? mode = %s' % entry_mode
+        except AuthException:
+            print colorred.format("Cannot authenticate, please check config.txt")
+    elif entry_mode == 'local':
+        run_local()
+        return 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

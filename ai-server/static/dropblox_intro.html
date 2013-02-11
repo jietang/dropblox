@@ -198,7 +198,7 @@ dd{margin-left:2em;margin-bottom:1em;}
 <pre><code>void remove_full_rows(bitmap)
     bitmap = [row for row in bitmap if not all(row)]
     num_rows_removed = 33 - len(bitmap)
-    bitmap = num_rows_removed*[12*[0]] + bitmap
+    bitmap = [12*[0] for _ in xrange(num_rows_removed)] + bitmap
     score += (1 &lt;&lt; num_rows_removed) - 1
 </code></pre>
 
