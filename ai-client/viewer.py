@@ -38,5 +38,5 @@ if __name__ == "__main__":
     else:
         game_dir = sys.argv[1]
 
-    r = requests.post("http://localhost:8080/post_game", data=generate_game_file(game_dir))
-    webbrowser.open("http://localhost:8080/view_game?id=%s" % r.text)
+    r = requests.post("http://127.0.0.1:8080/post_game", data=generate_game_file(game_dir))
+    webbrowser.open("http://127.0.0.1:8080/view_game?id=%s" % r.text)

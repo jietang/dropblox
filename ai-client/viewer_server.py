@@ -3,6 +3,7 @@ import os
 import cherrypy
 import json
 import random
+import sys
 
 class Root:
     game_cache = {}
@@ -54,10 +55,15 @@ if __name__ == '__main__':
     cherrypy.config.update({'environment': 'production',
                             'log.error_file': 'site.log',
                             'log.screen': True})
-
-    conf = {'/': {'tools.staticdir.root': os.getcwd(),
-                  'tools.staticdir.on': True,
-                  'tools.staticdir.dir': 'static',
-                  }}
+    if sys.frozen:
+        conf = {'/': {'tools.staticdir.root': sys._MEIPASS,
+                      'tools.staticdir.on': True,
+                      'tools.staticdir.dir': 'static',
+                      }}
+    else:
+        conf = {'/': {'tools.staticdir.root': os.getcwd(),
+                      'tools.staticdir.on': True,
+                      'tools.staticdir.dir': 'static',
+                      }}
 
     cherrypy.quickstart(Root(), config=conf)
